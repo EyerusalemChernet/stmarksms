@@ -1,0 +1,36 @@
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+/.idea
+/.vscode
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+
+# Environment — never commit real credentials
+.env
+
+# Laravel cache / compiled files
+/bootstrap/cache/*.php
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+
+# IDE helpers (generated, not needed in repo)
+_ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
+.editorconfig
+.phpunit.result.cache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploaded files (user content — not source code)
+/public/uploads/*
+!/public/uploads/.gitkeep
