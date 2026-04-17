@@ -88,7 +88,7 @@
                     <div class="col-4 mb-3"><a href="{{ route('attendance.index') }}" class="quick-link-card"><i class="bi bi-clipboard-check"></i><small>Attendance</small></a></div>
                     <div class="col-4 mb-3"><a href="{{ route('marks.index') }}" class="quick-link-card"><i class="bi bi-journal-check"></i><small>Marks</small></a></div>
                     <div class="col-4 mb-3"><a href="{{ route('reports.index') }}" class="quick-link-card"><i class="bi bi-bar-chart-line"></i><small>Reports</small></a></div>
-                    <div class="col-4 mb-3"><a href="{{ route('hr.index') }}" class="quick-link-card"><i class="bi bi-person-badge"></i><small>HR</small></a></div>
+                    <div class="col-4 mb-3"><a href="{{ route('announcements') }}" class="quick-link-card"><i class="bi bi-megaphone"></i><small>Announce</small></a></div>
                     <div class="col-4 mb-3"><a href="{{ route('inbox') }}" class="quick-link-card"><i class="bi bi-envelope"></i><small>Inbox @if(($unread_messages??0)>0)<span class="badge badge-danger" style="font-size:9px;">{{$unread_messages}}</span>@endif</small></a></div>
                 </div>
             </div>

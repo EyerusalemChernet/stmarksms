@@ -10,7 +10,7 @@ Route::get('/terms-of-use', 'HomeController@terms_of_use')->name('terms_of_use')
 Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/', 'HomeController@dashboard')->name('home');
-    Route::get('/home', 'HomeController@dashboard')->name('home');
+    Route::get('/home', 'HomeController@dashboard');
     Route::get('/dashboard', 'HomeController@dashboard')->name('dashboard');
 
     Route::group(['prefix' => 'my_account'], function() {
@@ -190,7 +190,7 @@ Route::group(['middleware' => 'auth'], function(){
     Route::get('/inbox', 'CommunicationController@inbox')->name('inbox');
     Route::get('/compose', 'CommunicationController@compose')->name('compose');
     Route::post('/messages', 'CommunicationController@sendMessage')->name('messages.send');
-    Route::get('/messages/{id}', 'CommunicationController@readMessage')->name('messages.read');
+    Route::get('/messages/{message}', 'CommunicationController@readMessage')->name('messages.read');
 
     /************************ REPORTS ****************************/
     Route::group(['prefix' => 'reports'], function(){

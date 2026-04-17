@@ -116,12 +116,18 @@ class CommunicationController extends Controller
         return redirect()->route('inbox')->with('flash_success', 'Message sent.');
     }
 
-    public function readMessage($id)
+    public function readMessage(\App\Models\Message $message)
     {
-        $msg = Message::findOrFail($id);
-        if ($msg->receiver_id !== Auth::id()) return Qs::goWithDanger();
-        $msg->update(['read' => true]);
-        $d['message'] = $msg->load('sender');
+        if ($message->sender_id != auth()->id() && $message->receiver_id != auth()->id()) {
+            return redirect()->route('inbox')
+                ->with('flash_danger', 'You do not have permission to read this message.');
+        }
+
+        if ($message->receiver_id == auth()->id() && !$message->read) {
+            $message->update(['read' => true]);
+        }
+
+        $d['message'] = $message->load('sender', 'receiver');
         return view('pages.communication.read', $d);
     }
 }

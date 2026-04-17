@@ -18,7 +18,7 @@
                     <td>{{ $m->sender->name ?? '-' }}</td>
                     <td>{{ $m->subject ?: '(no subject)' }}</td>
                     <td>{{ $m->created_at->format('d M Y H:i') }}</td>
-                    <td><a href="{{ route('messages.read', $m->id) }}" class="btn btn-xs btn-info">Read</a></td>
+                    <td><a href="{{ route('messages.read', $m) }}" class="btn btn-xs btn-info">Read</a></td>
                 </tr>
                 @empty
                 <tr><td colspan="4" class="text-center text-muted">No messages.</td></tr>

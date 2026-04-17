@@ -229,6 +229,42 @@ body {
   font-weight: 600 !important;
 }
 
+/* ── Collapsed sidebar (sidebar-xs) flyout overrides ────────────────────────
+   The legacy theme positions .nav-group-sub absolutely on hover.
+   modern.css !important rules break that — these rules restore it.
+   ─────────────────────────────────────────────────────────────────────────── */
+.sidebar-xs .sidebar-main .nav-sidebar > .nav-item-submenu > .nav-group-sub {
+  background: var(--sidebar-bg) !important;
+  border-radius: 0 8px 8px 0 !important;
+  margin: 0 !important;
+  padding: 6px 0 !important;
+  box-shadow: 4px 4px 16px rgba(0,0,0,.35) !important;
+  border-left: 1px solid rgba(255,255,255,.08) !important;
+  min-width: 200px !important;
+}
+
+/* Restore link padding in flyout — no left indent needed */
+.sidebar-xs .sidebar-main .nav-sidebar > .nav-item-submenu > .nav-group-sub .nav-link {
+  padding: 9px 20px !important;
+  margin: 1px 6px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  color: rgba(255,255,255,.75) !important;
+  white-space: nowrap !important;
+}
+
+.sidebar-xs .sidebar-main .nav-sidebar > .nav-item-submenu > .nav-group-sub .nav-link:hover {
+  background: rgba(255,255,255,.08) !important;
+  color: #fff !important;
+}
+
+/* Hide section labels and span text in collapsed mode */
+.sidebar-xs .sidebar-main .sidebar-section-label { display: none !important; }
+.sidebar-xs .sidebar-main .nav-sidebar > .nav-item > .nav-link > span { display: none !important; }
+
+/* Ensure nav-item is position:relative for flyout to anchor correctly */
+.sidebar-xs .sidebar-main .nav-sidebar > .nav-item { position: relative !important; }
+
 /* Sidebar section labels */
 .sidebar-section-label {
   font-size: 10px !important;
@@ -243,7 +279,28 @@ body {
 /* ── Page content ────────────────────────────────────────────── */
 .page-content { background: var(--body-bg) !important; }
 .content-wrapper { background: var(--body-bg) !important; }
-.content { padding: 20px !important; }
+.content { padding: 16px 1.25rem 1.25rem; }
+
+/* ── Sidebar hide/show toggle ────────────────────────────────── */
+/* When sidebar is fully hidden, content expands to full width   */
+body.sidebar-hidden .sidebar-main {
+  display: none !important;
+}
+body.sidebar-hidden .page-content {
+  padding-left: 0 !important;
+}
+body.sidebar-hidden .content-wrapper {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+/* Smooth transition */
+.sidebar-main {
+  transition: transform .2s ease, opacity .2s ease;
+}
+body.sidebar-hidden .sidebar-main {
+  transform: translateX(-100%);
+  opacity: 0;
+}
 
 /* ── Page header ─────────────────────────────────────────────── */
 .page-header {
