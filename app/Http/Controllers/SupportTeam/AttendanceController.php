@@ -11,6 +11,7 @@ use App\Models\MyClass;
 use App\Models\Section;
 use App\Repositories\MyClassRepo;
 use App\Repositories\StudentRepo;
+use App\Services\AttendanceRiskService;
 use App\Services\RulesEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,8 @@ class AttendanceController extends Controller
 
     public function __construct(MyClassRepo $my_class, StudentRepo $student)
     {
+        // All read routes: teamSAT (admin, super_admin, teacher)
+        // Write routes: teacher middleware applied at route level
         $this->middleware('teamSAT');
         $this->my_class = $my_class;
         $this->student  = $student;
@@ -28,36 +31,29 @@ class AttendanceController extends Controller
 
     /**
      * Attendance index.
-     * - Admin/Super Admin: show full class selector.
-     * - Teacher: auto-load their homeroom section(s) — no selector shown.
+     * - Admin/Super Admin: read-only view with info notice.
+     * - Teacher: homeroom section form.
      */
     public function index()
     {
         $uid = Auth::id();
 
         if (Qs::userIsTeamSA()) {
-            // Admin sees all classes
-            $d['my_classes'] = $this->my_class->all();
-            $d['is_admin']   = true;
-            $d['sections']   = collect();
+            // Admin: read-only, no form
+            $d['is_admin']         = true;
+            $d['homeroom_sections'] = collect();
         } else {
-            // Teacher: find sections where they are the homeroom teacher
-            $homeroomSections = Section::where('teacher_id', $uid)
-                ->with('my_class')
-                ->get();
-
-            $d['my_classes']       = collect();
+            // Teacher: find their homeroom sections
             $d['is_admin']         = false;
-            $d['homeroom_sections'] = $homeroomSections;
+            $d['homeroom_sections'] = Section::where('teacher_id', $uid)
+                ->with('my_class')->get();
         }
 
         return view('pages.support_team.attendance.index', $d);
     }
 
     /**
-     * Open an attendance session.
-     * Teachers can only open sessions for their own homeroom section.
-     * Admins can open for any class/section.
+     * Open an attendance session — teachers only (enforced at route level).
      */
     public function create(Request $req)
     {
@@ -69,20 +65,17 @@ class AttendanceController extends Controller
             'date'        => 'required|date',
         ]);
 
-        // Homeroom enforcement for teachers
-        if (!Qs::userIsTeamSA()) {
-            $isHomeroom = Section::where('id', $req->section_id)
-                ->where('teacher_id', $uid)
-                ->exists();
+        // Homeroom check — teacher must own this section
+        $isHomeroom = Section::where('id', $req->section_id)
+            ->where('teacher_id', $uid)
+            ->exists();
 
-            if (!$isHomeroom) {
-                return back()->with('pop_error',
-                    'You are not assigned to this class. Only the homeroom teacher can mark attendance for this section.'
-                );
-            }
+        if (!$isHomeroom) {
+            return back()->with('pop_error',
+                'You are not assigned to this class. Only the homeroom teacher can mark attendance for this section.'
+            );
         }
 
-        // Duplicate / future date / other rule checks
         $validation = RulesEngine::validateAttendanceSession(
             $req->my_class_id,
             $req->section_id,
@@ -104,24 +97,21 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Show the attendance marking form for a session.
-     * Teachers can only access sessions for their homeroom section.
+     * Show the attendance marking form — teachers only (enforced at route level).
      */
     public function manage($session_id)
     {
         $uid     = Auth::id();
         $session = AttendanceSession::with(['my_class', 'section'])->findOrFail($session_id);
 
-        // Homeroom enforcement for teachers
-        if (!Qs::userIsTeamSA()) {
-            $isHomeroom = Section::where('id', $session->section_id)
-                ->where('teacher_id', $uid)
-                ->exists();
+        // Teacher must own this section
+        $isHomeroom = Section::where('id', $session->section_id)
+            ->where('teacher_id', $uid)
+            ->exists();
 
-            if (!$isHomeroom) {
-                return redirect()->route('attendance.index')
-                    ->with('flash_danger', 'You are not assigned to this class. Only the homeroom teacher can mark attendance for this section.');
-            }
+        if (!$isHomeroom) {
+            return redirect()->route('attendance.index')
+                ->with('flash_danger', 'You are not assigned to this class.');
         }
 
         $students = $this->student->getRecord([
@@ -144,24 +134,21 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Save attendance records.
-     * Validates: homeroom restriction, non-empty submission.
+     * Save attendance records — teachers only (enforced at route level).
      */
     public function store(Request $req, $session_id)
     {
         $uid     = Auth::id();
         $session = AttendanceSession::with('my_class')->findOrFail($session_id);
 
-        // Homeroom enforcement for teachers
-        if (!Qs::userIsTeamSA()) {
-            $isHomeroom = Section::where('id', $session->section_id)
-                ->where('teacher_id', $uid)
-                ->exists();
+        // Teacher must own this section
+        $isHomeroom = Section::where('id', $session->section_id)
+            ->where('teacher_id', $uid)
+            ->exists();
 
-            if (!$isHomeroom) {
-                return redirect()->route('attendance.index')
-                    ->with('flash_danger', 'You are not assigned to this class.');
-            }
+        if (!$isHomeroom) {
+            return redirect()->route('attendance.index')
+                ->with('flash_danger', 'You are not assigned to this class.');
         }
 
         $students = $this->student->getRecord([
@@ -189,16 +176,13 @@ class AttendanceController extends Controller
             ->with('flash_success', 'Attendance saved successfully.');
     }
 
-    /**
-     * View attendance report for a student.
-     */
     public function report($student_id)
     {
         $year = Qs::getCurrentSession();
         $sr   = $this->student->getRecord(['user_id' => $student_id])->first();
         if (!$sr) return Qs::goWithDanger();
 
-        // Teachers can only view reports for students in their homeroom
+        // Admins can view any student's report; teachers only their homeroom
         if (!Qs::userIsTeamSA()) {
             $isHomeroom = Section::where('id', $sr->section_id)
                 ->where('teacher_id', Auth::id())
@@ -233,10 +217,6 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /**
-     * List all sessions.
-     * Teachers only see sessions for their homeroom sections.
-     */
     public function sessions()
     {
         $uid = Auth::id();
@@ -252,5 +232,21 @@ class AttendanceController extends Controller
         }
 
         return view('pages.support_team.attendance.sessions', ['sessions' => $sessions]);
+    }
+
+    /**
+     * Dropout early warning / risk analysis dashboard.
+     * Admin and super_admin only.
+     */
+    public function riskAnalysis(Request $req, AttendanceRiskService $service)
+    {
+        $classId  = $req->get('class_id') ? (int) $req->get('class_id') : null;
+        $summary  = $service->getSummaryStats($classId);
+        $students = $service->getStudentRiskAssessments($classId);
+        $classes  = MyClass::orderBy('name')->get();
+
+        return view('pages.support_team.attendance.risk_analysis', compact(
+            'summary', 'students', 'classes', 'classId'
+        ));
     }
 }

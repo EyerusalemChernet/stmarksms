@@ -1,101 +1,131 @@
 # St. Mark School Management System
 
-A production-level Primary School ERP built with Laravel 8.
-
-## Features
-
-- **Role-based access** — Super Admin, Admin, Teacher, HR Manager, Parent
-- **Student management** — admission, class assignment, promotion, graduation
-- **Academic module** — exams, marks, grades, tabulation, report cards, PIN-locked results
-- **Attendance** — homeroom-based student attendance with session tracking
-- **Library** — book catalog, borrow requests, return tracking
-- **Finance** — fee management, payments, receipts, PDF download (HR Manager only)
-- **HR module** — staff list, departments, staff attendance, teacher workload
-- **Parent portal** — child detail, attendance charts, fee status, Chapa online payment
-- **Communication** — announcements, internal messaging
-- **Reports** — students, attendance, academic, finance, library with PDF/CSV export
-- **Rules Engine** — configurable business rules (attendance blocks, class capacity, etc.)
-- **Audit Logs** — tracks all key system actions
-- **Chapa payment gateway** — Ethiopian online payment integration (sandbox ready)
-
-## Roles
-
-| Role | Access |
-|---|---|
-| `super_admin` | Full system access + settings + audit logs |
-| `admin` | Academic, students, timetable, library, reports |
-| `teacher` | Marks, attendance (homeroom only), library |
-| `hr_manager` | HR module, staff attendance, payments, finance reports |
-| `parent` | Child portal — read-only view of their children |
-
-## Default Login Credentials
-
-> Change all passwords before deploying to production.
-
-| Role | Username | Password |
-|---|---|---|
-| Super Admin | `emnet` | `cj` |
-| Admin | `admin` | `cj` |
-| Teacher | `teacher` | `cj` |
-| HR Manager | `hr` | `hr123` |
-| Parent | `parent` | `cj` |
+A production-level Primary School ERP built with Laravel 8 for Ethiopian schools.
 
 ## Requirements
 
 - PHP 8.0+
 - MySQL 8.0+
 - Composer 2.x
-- Laravel 8.x
+- Laragon (Windows) or any LAMP/LEMP stack
+- Ollama (optional — for AI features)
 
-## Installation
+## Quick Setup
 
 ```bash
-# 1. Clone the repository
+# 1. Clone
 git clone https://github.com/YOUR_USERNAME/stmarksms.git
 cd stmarksms
 
 # 2. Install dependencies
 composer install
 
-# 3. Copy environment file
+# 3. Environment
 cp .env.example .env
-
-# 4. Generate application key
 php artisan key:generate
 
-# 5. Configure your database in .env
+# 4. Configure database in .env
 # DB_DATABASE=stmarksms
 # DB_USERNAME=root
 # DB_PASSWORD=
 
-# 6. Run migrations and seed
+# 5. Migrate and seed
 php artisan migrate --seed
 
-# 7. Create storage symlink
+# 6. Storage link
 php artisan storage:link
 
-# 8. Start the server
+# 7. Start server
 php artisan serve
 ```
 
-## Chapa Payment (Optional)
+Open your browser at **http://127.0.0.1:8000**
 
-To enable online payments, add your Chapa keys to `.env`:
+## Default Login Credentials
 
+> **Change all passwords immediately after first login.**
+
+| Role | Username | Email | Password |
+|---|---|---|---|
+| Super Admin | `emnet` | `emnet@stmarksms.com` | `cj` |
+| Admin | `admin` | `admin@stmarksms.com` | `cj` |
+| Teacher | `teacher` | `teacher@stmarksms.com` | `cj` |
+| HR Manager | `hr` | `hr@stmarksms.com` | `hr123` |
+| Parent | `parent` | `parent@stmarksms.com` | `cj` |
+
+You can log in with either the **username** or the **email** — both work.
+
+## Roles & Access
+
+| Role | Access |
+|---|---|
+| `super_admin` | Full system — settings, audit logs, rules engine |
+| `admin` | Academic, students, timetable, library, reports |
+| `teacher` | Marks entry, homeroom attendance, library |
+| `hr_manager` | HR module, staff attendance, payments, finance reports |
+| `parent` | Child portal — attendance, results, fees, Chapa payment |
+
+## Key Features
+
+- **Students** — admission (auto-generated STM-YYYY-XXXX), promotion, graduation
+- **Academics** — exams (2 semesters), marks (Assessment 30 + Mid Exam 20 + Final 50), grades, tabulation
+- **Attendance** — homeroom-based, teacher-only write access, dropout early warning system
+- **Finance** — fee management, receipts, Chapa online payment (Ethiopia)
+- **HR** — staff list, departments, staff attendance, teacher workload
+- **Library** — book catalog, borrow/return, overdue tracking
+- **Reports** — students, attendance, academic, finance, library with PDF/CSV export
+- **AI Features** — report card comments, message summarization, performance analysis (requires Ollama)
+- **Rules Engine** — configurable business rules (attendance blocks, class capacity, etc.)
+- **Audit Logs** — all key actions tracked
+
+## Ethiopian Localisation
+
+- 13 Ethiopian regions + sub-cities/woredas
+- Ethiopian phone validation (09XXXXXXXX)
+- Religion field (Orthodox, Muslim, Protestant, Catholic, Traditional, Other)
+- 2-semester academic calendar
+- Age-appropriate grading: descriptive for Nursery/KG, letter grades for Primary/Upper Primary
+- Chapa payment gateway integration
+
+## AI Features (Optional)
+
+Requires [Ollama](https://ollama.com) running locally.
+
+```bash
+# Install and pull model
+ollama pull tinyllama
 ```
-CHAPA_SECRET_KEY=your_secret_key_here
-CHAPA_PUBLIC_KEY=your_public_key_here
+
+Add to `.env`:
+```
+OLLAMA_MODEL=tinyllama
+OLLAMA_URL=http://127.0.0.1:11434
 ```
 
-Get sandbox keys at [dashboard.chapa.co](https://dashboard.chapa.co).
+AI features:
+- **Report card comments** — evidence-based, pattern-aware (Enter Marks page)
+- **Parent message summarization** — inbox read view
+- **Performance Insights** — at-risk detection, top performers, most improved
+- **Dropout Early Warning** — attendance risk scoring aligned with MoE 75% requirement
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| 404 errors | `php artisan route:clear && php artisan cache:clear` |
+| Images not showing | `php artisan storage:link` |
+| Database errors | Check `.env` credentials |
+| AI not working | Ensure Ollama is running: `ollama serve` |
+| Blank page | Check `storage/logs/laravel.log` |
 
 ## Tech Stack
 
 - **Backend** — Laravel 8, PHP 8.x
 - **Frontend** — Bootstrap 4, Bootstrap Icons, jQuery, DataTables, Select2, SweetAlert
 - **PDF** — barryvdh/laravel-dompdf
+- **AI** — Ollama (TinyLlama) via Guzzle HTTP
+- **Payments** — Chapa API (Ethiopian payment gateway)
 - **Auth** — Laravel UI (username or email login)
-- **IDs** — hashids/hashids for URL obfuscation
 
 ## License
 

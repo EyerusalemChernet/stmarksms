@@ -11,6 +11,7 @@ use App\Repositories\ExamRepo;
 use App\Repositories\MyClassRepo;
 use App\Repositories\TimeTableRepo;
 use App\Http\Controllers\Controller;
+use App\Services\TimetableValidationService;
 use Illuminate\Http\Request;
 
 class TimeTableController extends Controller
@@ -252,5 +253,14 @@ class TimeTableController extends Controller
     {
         $this->tt->deleteRecord($ttr_id);
         return back()->with('flash_success', __('msg.delete_ok'));
+    }
+
+    /**
+     * Validate a timetable record for scheduling conflicts.
+     */
+    public function validateTimetable(int $ttrId, TimetableValidationService $service)
+    {
+        $validation = $service->validateTimetable($ttrId);
+        return view('pages.support_team.timetables.validation', compact('validation'));
     }
 }

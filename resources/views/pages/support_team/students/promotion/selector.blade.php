@@ -32,16 +32,14 @@
 
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="tc" class="col-form-label font-weight-bold">
-                                To Class:
-                                <span id="next-class-hint" class="text-success font-weight-normal font-size-xs ml-1"></span>
-                            </label>
+                            <label for="tc" class="col-form-label font-weight-bold">To Class:</label>
                             <select required onchange="getClassSections(this.value, '#ts')" id="tc" name="tc" class="form-control select">
                                 <option value="">Select Class</option>
                                 @foreach($my_classes as $c)
                                     <option {{ ($selected && $tc == $c->id) ? 'selected' : '' }} value="{{ $c->id }}">{{ $c->name }}</option>
                                 @endforeach
                             </select>
+                            <span id="next-class-hint" class="text-success small mt-1 d-block"></span>
                         </div>
                     </div>
 

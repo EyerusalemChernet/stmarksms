@@ -4,7 +4,7 @@
         {!! Qs::getPanelOptions() !!}
     </div>
 
-    <div class="card-body collapse">
+    <div class="card-body">
         <table id="time_slots_table" class="table datatable-button-html5-columns">
             <thead>
             <tr>

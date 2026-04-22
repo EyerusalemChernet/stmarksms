@@ -21,30 +21,31 @@ class UserRequest extends FormRequest
     public function rules()
     {
         $store =  [
-            'name' => 'required|string|min:6|max:150',
-            'password' => 'nullable|string|min:3|max:50',
+            'name'      => 'required|string|min:6|max:150',
+            'password'  => ['nullable', 'string', 'min:8', 'regex:/^(?=.*[A-Z])(?=.*\d).+$/'],
             'user_type' => 'required',
-            'gender' => 'required|string',
-            'phone' => 'sometimes|nullable|string|min:6|max:20',
-            'email' => 'sometimes|nullable|email|max:100|unique:users',
-            'username' => 'sometimes|nullable|alpha_dash|min:8|max:100|unique:users',
-            'photo' => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
-            'address' => 'required|string|min:6|max:120',
-            'state_id' => 'required',
-            'lga_id' => 'required',
-            'nal_id' => 'required',
+            'gender'    => 'required|string',
+            'phone'     => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
+            'phone2'    => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
+            'email'     => 'sometimes|nullable|email|max:100|unique:users',
+            'username'  => 'sometimes|nullable|alpha_dash|min:8|max:100|unique:users',
+            'photo'     => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
+            'address'   => 'required|string|min:6|max:120',
+            'state_id'  => 'required|exists:states,id',
+            'lga_id'    => 'required|exists:lgas,id',
+            'nal_id'    => 'required',
         ];
         $update =  [
-            'name' => 'required|string|min:6|max:150',
-            'gender' => 'required|string',
-            'phone' => 'sometimes|nullable|string|min:6|max:20',
-            'phone2' => 'sometimes|nullable|string|min:6|max:20',
-            'email' => 'sometimes|nullable|email|max:100|unique:users,email,'.$this->user,
-            'photo' => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
-            'address' => 'required|string|min:6|max:120',
-            'state_id' => 'required',
-            'lga_id' => 'required',
-            'nal_id' => 'required',
+            'name'     => 'required|string|min:6|max:150',
+            'gender'   => 'required|string',
+            'phone'    => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
+            'phone2'   => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
+            'email'    => 'sometimes|nullable|email|max:100|unique:users,email,'.$this->user,
+            'photo'    => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
+            'address'  => 'required|string|min:6|max:120',
+            'state_id' => 'required|exists:states,id',
+            'lga_id'   => 'required|exists:lgas,id',
+            'nal_id'   => 'required',
         ];
         return ($this->method() === 'POST') ? $store : $update;
     }
@@ -52,11 +53,22 @@ class UserRequest extends FormRequest
     public function attributes()
     {
         return  [
-            'nal_id' => 'Nationality',
-            'state_id' => 'State',
-            'lga_id' => 'LGA',
-            'user_type' => 'User',
-            'phone2' => 'Telephone',
+            'nal_id'    => 'Nationality',
+            'state_id'  => 'Region',
+            'lga_id'    => 'Sub-city / Woreda',
+            'user_type' => 'User Type',
+            'phone'     => 'Phone Number',
+            'phone2'    => 'Alternative Phone',
+            'password'  => 'Password',
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'password.regex' => 'Password must be at least 8 characters with at least 1 uppercase letter and 1 number.',
+            'phone.regex'    => 'Phone number must be 10 digits starting with 09 (e.g. 0911434321).',
+            'phone2.regex'   => 'Alternative phone must be 10 digits starting with 09 (e.g. 0911434321).',
         ];
     }
 

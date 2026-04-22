@@ -62,6 +62,7 @@ Route::group(['middleware' => 'auth'], function () {
                     Route::post('/', 'TimeTableController@store_record')->name('ttr.store');
                     Route::get('edit/{ttr}', 'TimeTableController@edit_record')->name('ttr.edit');
                     Route::put('/{ttr}', 'TimeTableController@update_record')->name('ttr.update');
+                    Route::get('validate/{ttr}', 'TimeTableController@validateTimetable')->name('ttr.validate');
                 });
 
                 Route::get('show/{ttr}', 'TimeTableController@show_record')->name('ttr.show');
@@ -96,6 +97,7 @@ Route::group(['middleware' => 'auth'], function () {
 
            // FOR teamSA
             Route::group(['middleware' => 'teamSA'], function(){
+                Route::get('insights', 'MarkController@insights')->name('marks.insights');
                 Route::get('batch_fix', 'MarkController@batch_fix')->name('marks.batch_fix');
                 Route::put('batch_update', 'MarkController@batch_update')->name('marks.batch_update');
                 Route::get('tabulation/{exam?}/{class?}/{sec_id?}', 'MarkController@tabulation')->name('marks.tabulation');
@@ -132,12 +134,16 @@ Route::group(['middleware' => 'auth'], function () {
 
         /*************** Attendance *****************/
         Route::group(['prefix' => 'attendance'], function(){
-            Route::get('/', 'AttendanceController@index')->name('attendance.index');
-            Route::post('/open', 'AttendanceController@create')->name('attendance.create');
-            Route::get('/manage/{session_id}', 'AttendanceController@manage')->name('attendance.manage');
-            Route::post('/save/{session_id}', 'AttendanceController@store')->name('attendance.store');
-            Route::get('/report/{student_id}', 'AttendanceController@report')->name('attendance.report');
-            Route::get('/sessions', 'AttendanceController@sessions')->name('attendance.sessions');
+            // Read-only: all staff (admin, super_admin, teacher)
+            Route::get('/', 'AttendanceController@index')->name('attendance.index')->middleware('teamSAT');
+            Route::get('/sessions', 'AttendanceController@sessions')->name('attendance.sessions')->middleware('teamSAT');
+            Route::get('/report/{student_id}', 'AttendanceController@report')->name('attendance.report')->middleware('teamSAT');
+            Route::get('/risk-analysis', 'AttendanceController@riskAnalysis')->name('attendance.risk')->middleware('teamSA');
+
+            // Write: teachers only
+            Route::post('/open', 'AttendanceController@create')->name('attendance.create')->middleware('teacher');
+            Route::get('/manage/{session_id}', 'AttendanceController@manage')->name('attendance.manage')->middleware('teacher');
+            Route::post('/save/{session_id}', 'AttendanceController@store')->name('attendance.store')->middleware('teacher');
         });
 
         /*************** Library *****************/
@@ -164,6 +170,10 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('get_class_sections/{class_id}', 'AjaxController@get_class_sections')->name('get_class_sections');
         Route::get('get_class_subjects/{class_id}', 'AjaxController@get_class_subjects')->name('get_class_subjects');
     });
+
+    /************************ AI ****************************/
+    Route::post('/ai/generate-comment', 'AICommentController@generate')->name('ai.generate_comment');
+    Route::post('/ai/summarize-message', 'AICommentController@summarize')->name('ai.summarize');
 
 });
 

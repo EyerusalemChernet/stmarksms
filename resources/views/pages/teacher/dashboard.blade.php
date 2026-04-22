@@ -51,7 +51,7 @@
                     <thead><tr><th>Exam</th><th>Term</th><th>Year</th></tr></thead>
                     <tbody>
                         @forelse($upcoming_exams ?? [] as $ex)
-                        <tr><td>{{ $ex->name }}</td><td><span class="badge badge-info">Term {{ $ex->term }}</span></td><td>{{ $ex->year }}</td></tr>
+                        <tr><td>{{ $ex->name }}</td><td><span class="badge badge-info">Semester {{ $ex->term }}</span></td><td>{{ $ex->year }}</td></tr>
                         @empty
                         <tr><td colspan="3" class="text-center text-muted py-3">No exams scheduled.</td></tr>
                         @endforelse

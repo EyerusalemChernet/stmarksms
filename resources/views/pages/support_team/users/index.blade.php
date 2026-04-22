@@ -31,7 +31,8 @@
                                 <div class="col-md-2">
                                     <div class="form-group">
                                         <label for="user_type"> Select User: <span class="text-danger">*</span></label>
-                                        <select required data-placeholder="Select User" class="form-control select" name="user_type" id="user_type">
+                                        <select required data-placeholder="Select User Type" class="form-control select" name="user_type" id="user_type">
+                                            <option value="" disabled selected>— Select User Type —</option>
                                 @foreach($user_types as $ut)
                                     <option value="{{ Qs::hash($ut->id) }}">{{ $ut->name }}</option>
                                 @endforeach
@@ -71,15 +72,19 @@
 
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label>Phone:</label>
-                                        <input value="{{ old('phone') }}" type="text" name="phone" class="form-control" placeholder="+2341234567" >
+                                        <label>Phone <small class="text-muted">(09XXXXXXXX)</small>:</label>
+                                        <input value="{{ old('phone') }}" type="text" name="phone"
+                                               class="form-control" placeholder="e.g. 0911434321"
+                                               pattern="09[0-9]{8}" title="10 digits starting with 09">
                                     </div>
                                 </div>
 
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label>Telephone:</label>
-                                        <input value="{{ old('phone2') }}" type="text" name="phone2" class="form-control" placeholder="+2341234567" >
+                                        <label>Alternative Phone <small class="text-muted">(Optional)</small>:</label>
+                                        <input value="{{ old('phone2') }}" type="text" name="phone2"
+                                               class="form-control" placeholder="e.g. 0922434321"
+                                               pattern="09[0-9]{8}" title="10 digits starting with 09">
                                     </div>
                                 </div>
 
@@ -97,7 +102,13 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="password">Password: </label>
-                                        <input id="password" type="password" name="password" class="form-control"  >
+                                        <input id="password" type="password" name="password"
+                                               class="form-control"
+                                               minlength="8"
+                                               pattern="^(?=.*[A-Z])(?=.*\d).{8,}$"
+                                               title="Min 8 characters, at least 1 uppercase letter and 1 number"
+                                               autocomplete="new-password">
+                                        <small class="text-muted">Min 8 chars · 1 uppercase · 1 number</small>
                                     </div>
                                 </div>
 
@@ -117,8 +128,9 @@
                                         <label for="nal_id">Nationality: <span class="text-danger">*</span></label>
                                         <select data-placeholder="Choose..." required name="nal_id" id="nal_id" class="select-search form-control">
                                             <option value=""></option>
-                                            @foreach($nationals as $nal)
-                                                <option {{ (old('nal_id') == $nal->id ? 'selected' : '') }} value="{{ $nal->id }}">{{ $nal->name }}</option>
+                                            @foreach($nationals->sortBy(fn($n) => $n->name === 'Ethiopian' ? 0 : 1) as $nal)
+                                                <option {{ (old('nal_id') == $nal->id || $nal->name === 'Ethiopian') ? 'selected' : '' }}
+                                                        value="{{ $nal->id }}">{{ $nal->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -126,22 +138,28 @@
                             </div>
 
                             <div class="row">
-                                {{--State--}}
+                                {{--Region--}}
                                 <div class="col-md-4">
-                                    <label for="state_id">State: <span class="text-danger">*</span></label>
-                                    <select onchange="getLGA(this.value)" required data-placeholder="Choose.." class="select-search form-control" name="state_id" id="state_id">
-                                        <option value=""></option>
-                                        @foreach($states as $st)
-                                            <option {{ (old('state_id') == $st->id ? 'selected' : '') }} value="{{ $st->id }}">{{ $st->name }}</option>
-                                        @endforeach
-                                    </select>
+                                    <div class="form-group">
+                                        <label for="state_id">Region: <span class="text-danger">*</span></label>
+                                        <select onchange="getLGA(this.value)" required data-placeholder="Choose.."
+                                                class="select-search form-control" name="state_id" id="state_id">
+                                            <option value=""></option>
+                                            @foreach($states as $st)
+                                                <option {{ (old('state_id') == $st->id ? 'selected' : '') }} value="{{ $st->id }}">{{ $st->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
-                                {{--LGA--}}
+                                {{--Sub-city / Woreda--}}
                                 <div class="col-md-4">
-                                    <label for="lga_id">LGA: <span class="text-danger">*</span></label>
-                                    <select required data-placeholder="Select State First" class="select-search form-control" name="lga_id" id="lga_id">
-                                        <option value=""></option>
-                                    </select>
+                                    <div class="form-group">
+                                        <label for="lga_id">Sub-city / Woreda: <span class="text-danger">*</span></label>
+                                        <select required data-placeholder="Select Region First"
+                                                class="select-search form-control" name="lga_id" id="lga_id">
+                                            <option value=""></option>
+                                        </select>
+                                    </div>
                                 </div>
                                 {{--BLOOD GROUP--}}
                                 <div class="col-md-4">
@@ -235,4 +253,46 @@
 
     {{--Student List Ends--}}
 
+@endsection
+
+@section('scripts')
+<script>
+$(function () {
+    // Hide the "Previous" button on the first step of the wizard
+    // jQuery Steps adds .actions ul li:first-child for the Prev button
+    $(document).on('stepChanged', function (e, currentIndex) {
+        if (currentIndex === 0) {
+            $('[class*="steps"] .actions a[href*="previous"]').closest('li').hide();
+        } else {
+            $('[class*="steps"] .actions a[href*="previous"]').closest('li').show();
+        }
+    });
+
+    // Also hide on initial load
+    setTimeout(function () {
+        $('[class*="steps"] .actions a[href*="previous"]').closest('li').hide();
+    }, 100);
+
+    // Password strength live feedback
+    $('#password').on('input', function () {
+        var val = $(this).val();
+        var $hint = $(this).siblings('small');
+        var hasUpper  = /[A-Z]/.test(val);
+        var hasNumber = /\d/.test(val);
+        var hasLength = val.length >= 8;
+
+        if (hasLength && hasUpper && hasNumber) {
+            $hint.removeClass('text-muted text-danger').addClass('text-success')
+                 .text('Strong password ✓');
+        } else {
+            var missing = [];
+            if (!hasLength) missing.push('8+ chars');
+            if (!hasUpper)  missing.push('1 uppercase');
+            if (!hasNumber) missing.push('1 number');
+            $hint.removeClass('text-muted text-success').addClass('text-danger')
+                 .text('Needs: ' + missing.join(', '));
+        }
+    });
+});
+</script>
 @endsection

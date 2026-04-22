@@ -64,8 +64,18 @@ class StudentRecordController extends Controller
         $data['code'] = strtoupper(Str::random(10));
         $data['password'] = Hash::make('student');
         $data['photo'] = Qs::getDefaultUserImage();
-        $adm_no = $req->adm_no;
-        $data['username'] = strtoupper(Qs::getAppCode().'/'.$ct.'/'.$sr['year_admitted'].'/'.($adm_no ?: mt_rand(1000, 99999)));
+
+        // Auto-generate admission number: STM-{YEAR}-{4-digit sequence}
+        $year = date('Y');
+        $lastStudent = \App\Models\StudentRecord::whereYear('created_at', $year)->latest()->first();
+        if ($lastStudent && $lastStudent->adm_no && preg_match('/STM-\d{4}-(\d{4})/', $lastStudent->adm_no, $m)) {
+            $sequence = intval($m[1]) + 1;
+        } else {
+            $sequence = 1;
+        }
+        $adm_no = 'STM-' . $year . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+        $data['username'] = $adm_no;
 
         if($req->hasFile('photo')) {
             $photo = $req->file('photo');
@@ -77,7 +87,7 @@ class StudentRecordController extends Controller
 
         $user = $this->user->create($data); // Create User
 
-        $sr['adm_no'] = $data['username'];
+        $sr['adm_no'] = $adm_no;
         $sr['user_id'] = $user->id;
         $sr['session'] = Qs::getSetting('current_session');
 

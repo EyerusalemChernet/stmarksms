@@ -11,8 +11,12 @@
     </div>
 
     <div class="d-md-none ml-auto d-flex" style="gap:6px;">
+        {{-- Mobile sidebar toggle --}}
+        <button id="mobile-sidebar-toggle" type="button"
+                style="border:none;background:rgba(255,255,255,.15);border-radius:6px;padding:6px 10px;color:#fff;display:inline-flex;align-items:center;">
+            <i class="bi bi-layout-sidebar" style="font-size:18px;"></i>
+        </button>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-mobile" style="border:none;background:rgba(255,255,255,.15);border-radius:6px;padding:6px 10px;color:#fff;"><i class="bi bi-three-dots-vertical"></i></button>
-        <button class="navbar-toggler sidebar-mobile-main-toggle" type="button" style="border:none;background:rgba(255,255,255,.15);border-radius:6px;padding:6px 10px;color:#fff;"><i class="bi bi-list" style="font-size:18px;"></i></button>
     </div>
 
     <div class="collapse navbar-collapse" id="navbar-mobile">

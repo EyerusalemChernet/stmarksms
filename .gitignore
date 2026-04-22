@@ -34,3 +34,15 @@ Thumbs.db
 # Uploaded files (user content — not source code)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# AI generated / temporary files
+/storage/ollama/
+/storage/ai-cache/
+/public/ai-outputs/
+
+# OCR temporary files
+/storage/ocr-temp/
+/public/uploads/ocr/
+
+# Kiro AI session history (internal dev notes — not for repo)
+KIRO_SESSION_HISTORY.md

@@ -1,24 +1,44 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
     $('.date-pick').datepicker();
 
-    // ── Sidebar hide/show toggle ─────────────────────────────────────────────
-    // Restore state from localStorage on every page load
-    if (localStorage.getItem('sidebar-state') === 'hidden') {
-        $('body').addClass('sidebar-hidden');
-        updateToggleIcon(true);
-    }
+    // ── Mobile sidebar toggle ────────────────────────────────────────────────
+    $('#mobile-sidebar-toggle').on('click', function () {
+        $('body').toggleClass('sidebar-mobile-open');
+    });
+
+    // Close sidebar when clicking the overlay (the ::after pseudo-element)
+    $(document).on('click', function (e) {
+        if ($('body').hasClass('sidebar-mobile-open')) {
+            var $sidebar = $('.sidebar.sidebar-dark');
+            var $toggle  = $('#mobile-sidebar-toggle');
+            if (!$sidebar.is(e.target) && $sidebar.has(e.target).length === 0
+                && !$toggle.is(e.target) && $toggle.has(e.target).length === 0) {
+                $('body').removeClass('sidebar-mobile-open');
+            }
+        }
+    });
+
+    // ── Sidebar hide/show — restore state on EVERY page load ────────────────
+    restoreSidebarState();
 
     // Intercept the sidebar-main-toggle click BEFORE app.js handles it
-    // app.js toggles sidebar-xs (icon-only); we want full hide instead
-    $(document).on('click', '.sidebar-main-toggle', function(e) {
+    $(document).on('click', '.sidebar-main-toggle', function (e) {
         e.preventDefault();
-        e.stopImmediatePropagation(); // prevent app.js from also firing
+        e.stopImmediatePropagation();
 
         var isHidden = $('body').toggleClass('sidebar-hidden').hasClass('sidebar-hidden');
         localStorage.setItem('sidebar-state', isHidden ? 'hidden' : 'visible');
         updateToggleIcon(isHidden);
     });
+
+    function restoreSidebarState() {
+        var state   = localStorage.getItem('sidebar-state');
+        var isHidden = (state === 'hidden');
+
+        $('body').toggleClass('sidebar-hidden', isHidden);
+        updateToggleIcon(isHidden);
+    }
 
     function updateToggleIcon(hidden) {
         var $icon = $('.sidebar-main-toggle i');

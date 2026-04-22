@@ -21,12 +21,11 @@
                         </div>
 
                         <div class="form-group row">
-                            <label for="term" class="col-lg-3 col-form-label font-weight-semibold">Term</label>
+                            <label for="term" class="col-lg-3 col-form-label font-weight-semibold">Semester</label>
                             <div class="col-lg-9">
-                                <select data-placeholder="Select Teacher" class="form-control select-search" name="term" id="term">
-                                    <option {{ $ex->term == 1 ? 'selected' : '' }} value="1">First Term</option>
-                                    <option {{ $ex->term == 2 ? 'selected' : '' }} value="2">Second Term</option>
-                                    <option {{ $ex->term == 3 ? 'selected' : '' }} value="3">Third Term</option>
+                                <select data-placeholder="Select Semester" class="form-control select-search" name="term" id="term">
+                                    <option {{ $ex->term == 1 ? 'selected' : '' }} value="1">Semester 1</option>
+                                    <option {{ $ex->term == 2 ? 'selected' : '' }} value="2">Semester 2</option>
                                 </select>
                             </div>
                         </div>

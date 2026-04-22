@@ -70,5 +70,6 @@ class Kernel extends HttpKernel
         'hr_manager' => \App\Http\Middleware\Custom\HRManager::class,
         'examIsLocked' => \App\Http\Middleware\Custom\ExamIsLocked::class,
         'my_parent' => \App\Http\Middleware\Custom\MyParent::class,
+        'teacher'   => \App\Http\Middleware\Custom\Teacher::class,
     ];
 }

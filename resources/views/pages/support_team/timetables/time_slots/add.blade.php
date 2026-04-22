@@ -12,7 +12,7 @@
                 {!! Qs::getPanelOptions() !!}
             </div>
 
-            <div class="card-body collapse">
+            <div class="card-body">
                 <div class="col-md-12">
                     <form data-reload="#time_slots_table" class="ajax-store" method="post" action="{{ route('ts.store') }}">
                         @csrf
@@ -114,7 +114,7 @@
                 {!! Qs::getPanelOptions() !!}
             </div>
 
-            <div class="card-body collapse">
+            <div class="card-body">
                 <div class="col-md-12">
                     <form method="post" action="{{ route('ts.use', $ttr->id) }}">
                         @csrf

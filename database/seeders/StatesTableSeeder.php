@@ -7,18 +7,28 @@ use Illuminate\Support\Facades\DB;
 
 class StatesTableSeeder extends Seeder
 {
-
     public function run()
     {
         DB::table('states')->delete();
 
-        $states = [
-            'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo', 'Jigawa','Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+        $regions = [
+            'Addis Ababa',
+            'Oromia',
+            'Amhara',
+            'Tigray',
+            'SNNPR (Southern Nations)',
+            'Somali',
+            'Afar',
+            'Benishangul-Gumuz',
+            'Gambela',
+            'Harari',
+            'Dire Dawa',
+            'Sidama',
+            'South West Ethiopia',
         ];
 
-        foreach ($states as $state) {
-            State::create(['name' => $state]);
+        foreach ($regions as $region) {
+            State::create(['name' => $region]);
         }
     }
-
 }

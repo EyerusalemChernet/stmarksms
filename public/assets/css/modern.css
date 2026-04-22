@@ -708,9 +708,75 @@ body.sidebar-hidden .sidebar-main {
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .sidebar.sidebar-dark { width: 100% !important; }
+  /* Sidebar: slide off-screen by default on mobile */
+  .sidebar.sidebar-dark {
+    position: fixed !important;
+    left: -260px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    z-index: 1050 !important;
+    width: 240px !important;
+    transition: left .25s ease !important;
+    overflow-y: auto !important;
+  }
+
+  /* Show sidebar when toggled */
+  body.sidebar-mobile-open .sidebar.sidebar-dark {
+    left: 0 !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,.4) !important;
+  }
+
+  /* Overlay behind open sidebar */
+  body.sidebar-mobile-open::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 1049;
+  }
+
+  /* Content always full-width on mobile */
+  .content-wrapper,
+  .page-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
   .content { padding: 12px !important; }
+
+  /* Stat cards: 2 per row on mobile */
   .stat-card .stat-value { font-size: 22px !important; }
+
+  /* Tables: horizontal scroll */
+  .table-responsive,
+  .card-body .table {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Cards: tighter margin */
+  .card { margin-bottom: 12px !important; }
+
+  /* Forms: full width */
+  .form-group { margin-bottom: 12px !important; }
+
+  /* Hide desktop sidebar toggle, show mobile one */
+  .sidebar-main-toggle.d-none.d-md-block { display: none !important; }
+  #mobile-sidebar-toggle { display: inline-flex !important; }
+
+  /* Navbar: tighter padding */
+  .navbar.navbar-dark { padding: 0 12px !important; }
+
+  /* Quick link cards: smaller on mobile */
+  .quick-link-card { padding: 14px 8px !important; }
+  .quick-link-card i { font-size: 20px !important; }
+}
+
+/* Desktop: hide mobile toggle */
+@media (min-width: 769px) {
+  #mobile-sidebar-toggle { display: none !important; }
 }
 
 /* ── Utility overrides ───────────────────────────────────────── */

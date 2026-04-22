@@ -5,7 +5,12 @@
     <div class="card">
         <div class="card-header header-elements-inline">
             <h6 class="card-title font-weight-bold">{{ $ttr->name.' ('.$my_class->name.')'.' '.$ttr->year }}</h6>
-            {!! Qs::getPanelOptions() !!}
+            <div class="header-elements">
+                <a href="{{ route('ttr.validate', $ttr->id) }}" class="btn btn-sm btn-outline-primary mr-2">
+                    <i class="bi bi-check2-circle mr-1"></i>Validate Timetable
+                </a>
+                {!! Qs::getPanelOptions() !!}
+            </div>
         </div>
 
         <div class="card-body">

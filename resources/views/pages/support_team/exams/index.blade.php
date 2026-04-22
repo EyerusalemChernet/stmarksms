@@ -21,7 +21,7 @@
                             <tr>
                                 <th>S/N</th>
                                 <th>Name</th>
-                                <th>Term</th>
+                                <th>Semester</th>
                                 <th>Session</th>
                                 <th>Action</th>
                             </tr>
@@ -31,7 +31,7 @@
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $ex->name }}</td>
-                                    <td>{{ 'Term '.$ex->term }}</td>
+                                    <td>{{ 'Semester '.$ex->term }}</td>
                                     <td>{{ $ex->year }}</td>
                                     <td class="text-center">
                                         <div class="list-icons">
@@ -83,12 +83,11 @@
                                 </div>
 
                                 <div class="form-group row">
-                                    <label for="term" class="col-lg-3 col-form-label font-weight-semibold">Term</label>
+                                    <label for="term" class="col-lg-3 col-form-label font-weight-semibold">Semester</label>
                                     <div class="col-lg-9">
-                                        <select data-placeholder="Select Teacher" class="form-control select-search" name="term" id="term">
-                                            <option {{ old('term') == 1 ? 'selected' : '' }} value="1">First Term</option>
-                                            <option {{ old('term') == 2 ? 'selected' : '' }} value="2">Second Term</option>
-                                            <option {{ old('term') == 3 ? 'selected' : '' }} value="3">Third Term</option>
+                                        <select data-placeholder="Select Semester" class="form-control select-search" name="term" id="term">
+                                            <option {{ old('term') == 1 ? 'selected' : '' }} value="1">Semester 1</option>
+                                            <option {{ old('term') == 2 ? 'selected' : '' }} value="2">Semester 2</option>
                                         </select>
                                     </div>
                                 </div>

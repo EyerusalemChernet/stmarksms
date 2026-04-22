@@ -106,7 +106,7 @@ class Qs
 
     public static function getStudentData($remove = [])
     {
-        $data = ['my_class_id', 'section_id', 'my_parent_id', 'year_admitted', 'house', 'age'];
+        $data = ['my_class_id', 'section_id', 'my_parent_id', 'year_admitted', 'religion', 'age'];
 
         return $remove ? array_values(array_diff($data, $remove)) : $data;
 

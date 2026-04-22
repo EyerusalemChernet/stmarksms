@@ -11,6 +11,7 @@ use App\Repositories\MarkRepo;
 use App\Repositories\MyClassRepo;
 use App\Http\Controllers\Controller;
 use App\Repositories\StudentRepo;
+use App\Services\PerformanceAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -39,6 +40,21 @@ class MarkController extends Controller
         $d['selected'] = false;
 
         return view('pages.support_team.marks.index', $d);
+    }
+
+    public function insights(PerformanceAnalysisService $service)
+    {
+        $summary        = $service->getSummaryStats();
+        $atRiskStudents = $service->getAtRiskStudents();
+        $classOverview  = $service->getClassOverview();
+        $subjectAlerts  = $service->getSubjectAlerts();
+        $topPerformers  = $service->getTopPerformers();
+        $mostImproved   = $service->getMostImproved();
+
+        return view('pages.support_team.marks.insights', compact(
+            'summary', 'atRiskStudents', 'classOverview',
+            'subjectAlerts', 'topPerformers', 'mostImproved'
+        ));
     }
 
     public function year_selector($student_id)
@@ -193,6 +209,20 @@ class MarkController extends Controller
 
         $mks = $req->all();
 
+        // Validate per-student mark inputs against Ethiopian St. Mark's format
+        foreach ($marks as $mk) {
+            $t1  = (int) ($mks['t1_'.$mk->id]  ?? 0);
+            $t2  = (int) ($mks['t2_'.$mk->id]  ?? 0);
+            $exm = (int) ($mks['exm_'.$mk->id] ?? 0);
+
+            if ($t1 > 30 || $t2 > 20 || $exm > 50) {
+                return Qs::json(
+                    "Invalid marks for {$mk->user->name}: Assessment max 30, Mid Exam max 20, Final Exam max 50.",
+                    false
+                );
+            }
+        }
+
         /** Test, Exam, Grade **/
         foreach($marks->sortBy('user.name') as $mk)
         {
@@ -288,7 +318,8 @@ class MarkController extends Controller
         foreach($marks as $mk){
 
             $total = $mk->$tex;
-            $d['grade_id'] = $this->mark->getGrade($total, $class_type->id);
+            $grade = $this->mark->getGrade($total, $class_type->id);
+            $d['grade_id'] = $grade ? $grade->id : null;
 
             /*      if($exam->term == 3){
                       $d['cum'] = $this->mark->getSubCumTotal($total, $mk->student_id, $mk->subject_id, $class_id, $this->year);

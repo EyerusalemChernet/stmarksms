@@ -44,7 +44,20 @@
         </div>
 
         {{-- Body --}}
-        <div style="font-size:14px;line-height:1.8;color:#1e293b;white-space:pre-wrap;padding:4px 0;">{{ $message->body }}</div>
+        <div id="message-body" style="font-size:14px;line-height:1.8;color:#1e293b;white-space:pre-wrap;padding:4px 0;">{{ $message->body }}</div>
+
+        {{-- AI Summarize — only for messages longer than 200 chars --}}
+        @if(strlen($message->body) > 200)
+        <div class="mt-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="summarize-btn">
+                <i class="bi bi-stars mr-1"></i>Summarize with AI
+            </button>
+            <div id="summary-result" class="alert alert-info mt-2 mb-0" style="display:none;">
+                <strong><i class="bi bi-stars mr-1"></i>AI Summary:</strong>
+                <p id="summary-text" class="mb-0 mt-1" style="font-size:13px;"></p>
+            </div>
+        </div>
+        @endif
 
         <hr style="border-color:#e2e8f0;margin:20px 0;">
 
@@ -56,4 +69,32 @@
         </a>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+@if(strlen($message->body) > 200)
+<script>
+$('#summarize-btn').on('click', function () {
+    var $btn  = $(this);
+    var body  = $('#message-body').text().trim();
+
+    $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split mr-1"></i>Summarizing...');
+
+    $.ajax({
+        url:    '{{ route("ai.summarize") }}',
+        method: 'POST',
+        data:   { _token: '{{ csrf_token() }}', message: body },
+        success: function (resp) {
+            $('#summary-text').text(resp.summary);
+            $('#summary-result').slideDown(200);
+            $btn.prop('disabled', false).html('<i class="bi bi-stars mr-1"></i>Summarize with AI');
+        },
+        error: function () {
+            flash({ msg: 'Could not generate summary. Ollama may be unreachable.', type: 'warning' });
+            $btn.prop('disabled', false).html('<i class="bi bi-stars mr-1"></i>Summarize with AI');
+        }
+    });
+});
+</script>
+@endif
 @endsection
