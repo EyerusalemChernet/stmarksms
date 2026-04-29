@@ -199,15 +199,46 @@
                     </ul>
                 </li>
 
-                <li class="sidebar-section-label">Finance</li>
-                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['payments.index','payments.create','payments.edit','payments.manage','payments.show','payments.invoice']) ? 'nav-item-expanded nav-item-open' : '' }}">
-                    <a href="#" class="nav-link"><i class="bi bi-cash-stack"></i><span>Payments</span></a>
+                <li class="sidebar-section-label">Finance Management System</li>
+                <li class="nav-item"><a href="{{ route('finance.dashboard') }}" class="nav-link {{ Route::is('finance.dashboard') ? 'active' : '' }}"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+
+                {{-- Student Fees --}}
+                @php $feesActive = str_starts_with(Route::currentRouteName() ?? '', 'fees.'); @endphp
+                <li class="nav-item nav-item-submenu {{ $feesActive ? 'nav-item-expanded nav-item-open' : '' }}">
+                    <a href="#" class="nav-link"><i class="bi bi-mortarboard"></i><span>Student Fees</span></a>
                     <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('payments.create') }}" class="nav-link {{ Route::is('payments.create') ? 'active' : '' }}">Create Payment</a></li>
-                        <li class="nav-item"><a href="{{ route('payments.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['payments.index','payments.edit','payments.show']) ? 'active' : '' }}">Manage Payments</a></li>
-                        <li class="nav-item"><a href="{{ route('payments.manage') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['payments.manage','payments.invoice','payments.receipts']) ? 'active' : '' }}">Student Payments</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.categories') }}" class="nav-link {{ Route::is('fees.categories') ? 'active' : '' }}">Fee Categories</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.structures') }}" class="nav-link {{ Route::is('fees.structures') ? 'active' : '' }}">Fee Structure</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.invoices') }}" class="nav-link {{ Route::is('fees.invoices') ? 'active' : '' }}">Invoices</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.payments') }}" class="nav-link {{ Route::is('fees.payments') ? 'active' : '' }}">Payments</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.pending') }}" class="nav-link {{ Route::is('fees.pending') ? 'active' : '' }}">Pending Fees</a></li>
                     </ul>
                 </li>
+
+                {{-- Payroll --}}
+                @php $payrollActive = str_starts_with(Route::currentRouteName() ?? '', 'finance.payroll'); @endphp
+                <li class="nav-item"><a href="{{ route('finance.payroll.index') }}" class="nav-link {{ $payrollActive ? 'active' : '' }}"><i class="bi bi-wallet2"></i><span>Payroll</span></a></li>
+
+                {{-- Expenses --}}
+                @php $expActive = str_starts_with(Route::currentRouteName() ?? '', 'finance.expenses'); @endphp
+                <li class="nav-item"><a href="{{ route('finance.expenses.index') }}" class="nav-link {{ $expActive ? 'active' : '' }}"><i class="bi bi-arrow-down-circle"></i><span>Expenses</span></a></li>
+
+                {{-- Other Income --}}
+                @php $incActive = str_starts_with(Route::currentRouteName() ?? '', 'finance.income'); @endphp
+                <li class="nav-item"><a href="{{ route('finance.income.index') }}" class="nav-link {{ $incActive ? 'active' : '' }}"><i class="bi bi-arrow-up-circle"></i><span>Other Income</span></a></li>
+
+                {{-- Reports --}}
+                <li class="nav-item"><a href="{{ route('finance.reports') }}" class="nav-link {{ Route::is('finance.reports') ? 'active' : '' }}"><i class="bi bi-bar-chart-line"></i><span>Reports</span></a></li>
+
+                {{-- Settings --}}
+                <li class="nav-item"><a href="{{ route('finance.settings.index') }}" class="nav-link {{ Route::is('finance.settings.index') ? 'active' : '' }}"><i class="bi bi-gear"></i><span>Settings</span></a></li>
+
+                {{-- Messages --}}
+                <li class="nav-item"><a href="{{ route('finance.messages.index') }}" class="nav-link {{ Route::is('finance.messages.index') ? 'active' : '' }}"><i class="bi bi-chat-dots"></i><span>Messages</span></a></li>
+
+                {{-- My Account --}}
+                <li class="nav-item"><a href="{{ route('my_account') }}" class="nav-link {{ Route::is('my_account') ? 'active' : '' }}"><i class="bi bi-person-circle"></i><span>My Account</span></a></li>
+
 
                 @php $reportsActive = str_starts_with(Route::currentRouteName() ?? '', 'reports.'); @endphp
                 <li class="sidebar-section-label">Analytics</li>

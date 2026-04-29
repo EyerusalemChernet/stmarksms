@@ -244,6 +244,89 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager'], funct
     });
 });
 
+/************************ FINANCE MODULE ****************************/
+Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' => 'finance'], function () {
+
+    // Transport Fees
+    Route::get('/transport', 'TransportController@index')->name('finance.transport.index');
+    Route::get('/transport/create', 'TransportController@create')->name('finance.transport.create');
+    Route::post('/transport', 'TransportController@store')->name('finance.transport.store');
+    Route::get('/transport/{id}/edit', 'TransportController@edit')->name('finance.transport.edit');
+    Route::put('/transport/{id}', 'TransportController@update')->name('finance.transport.update');
+    Route::delete('/transport/{id}', 'TransportController@destroy')->name('finance.transport.destroy');
+    Route::get('/transport/{id}/records', 'TransportController@records')->name('finance.transport.records');
+    Route::post('/transport/{id}/assign', 'TransportController@assignStudent')->name('finance.transport.assign');
+    Route::post('/transport/pay/{id}', 'TransportController@payNow')->name('finance.transport.pay');
+
+    // Payroll
+    Route::get('/payroll', 'PayrollController@index')->name('finance.payroll.index');
+    Route::get('/payroll/create', 'PayrollController@create')->name('finance.payroll.create');
+    Route::post('/payroll', 'PayrollController@store')->name('finance.payroll.store');
+    Route::get('/payroll/{id}/edit', 'PayrollController@edit')->name('finance.payroll.edit');
+    Route::put('/payroll/{id}', 'PayrollController@update')->name('finance.payroll.update');
+    Route::delete('/payroll/{id}', 'PayrollController@destroy')->name('finance.payroll.destroy');
+    Route::post('/payroll/{id}/mark-paid', 'PayrollController@markPaid')->name('finance.payroll.mark_paid');
+    Route::get('/payroll/{id}/payslip', 'PayrollController@payslip')->name('finance.payroll.payslip');
+
+
+    // Expenses
+    Route::get('/expenses', 'ExpenseController@index')->name('finance.expenses.index');
+    Route::get('/expenses/create', 'ExpenseController@create')->name('finance.expenses.create');
+    Route::post('/expenses', 'ExpenseController@store')->name('finance.expenses.store');
+    Route::get('/expenses/{id}/edit', 'ExpenseController@edit')->name('finance.expenses.edit');
+    Route::put('/expenses/{id}', 'ExpenseController@update')->name('finance.expenses.update');
+    Route::delete('/expenses/{id}', 'ExpenseController@destroy')->name('finance.expenses.destroy');
+
+    // Income
+    Route::get('/income', 'IncomeController@index')->name('finance.income.index');
+    Route::get('/income/create', 'IncomeController@create')->name('finance.income.create');
+    Route::post('/income', 'IncomeController@store')->name('finance.income.store');
+    Route::get('/income/{id}/edit', 'IncomeController@edit')->name('finance.income.edit');
+    Route::put('/income/{id}', 'IncomeController@update')->name('finance.income.update');
+    Route::delete('/income/{id}', 'IncomeController@destroy')->name('finance.income.destroy');
+
+    // Finance Dashboard
+    Route::get('/dashboard', 'FinanceDashboardController@index')->name('finance.dashboard');
+
+    // Finance Reports
+    Route::get('/reports', 'FinanceReportController@index')->name('finance.reports');
+
+    // Student Fee Management
+    Route::get('/fees/categories', 'StudentFeeController@categories')->name('fees.categories');
+    Route::post('/fees/categories', 'StudentFeeController@storeCategory')->name('fees.categories.store');
+    Route::put('/fees/categories/{id}', 'StudentFeeController@updateCategory')->name('fees.categories.update');
+    Route::delete('/fees/categories/{id}', 'StudentFeeController@destroyCategory')->name('fees.categories.destroy');
+
+    Route::get('/fees/structures', 'StudentFeeController@structures')->name('fees.structures');
+    Route::post('/fees/structures', 'StudentFeeController@storeStructure')->name('fees.structures.store');
+    Route::delete('/fees/structures/{id}', 'StudentFeeController@destroyStructure')->name('fees.structures.destroy');
+
+    Route::get('/fees/invoices', 'StudentFeeController@invoices')->name('fees.invoices');
+    Route::get('/fees/payments', 'StudentFeeController@payments')->name('fees.payments');
+    Route::post('/fees/assign', 'StudentFeeController@assignFee')->name('fees.assign');
+    Route::post('/fees/bulk-assign', 'StudentFeeController@bulkAssign')->name('fees.bulk_assign');
+    Route::get('/fees/invoice/{id}', 'StudentFeeController@invoiceDetail')->name('fees.invoice');
+    Route::post('/fees/invoice/{id}/pay', 'StudentFeeController@recordPayment')->name('fees.pay');
+    Route::post('/fees/invoice/{id}/discount', 'StudentFeeController@applyDiscount')->name('fees.discount');
+    Route::post('/fees/invoice/{id}/fine', 'StudentFeeController@applyFine')->name('fees.fine');
+    Route::get('/fees/receipt/{id}', 'StudentFeeController@receipt')->name('fees.receipt');
+    Route::get('/fees/pending', 'StudentFeeController@pendingList')->name('fees.pending');
+    Route::get('/fees/student/{id}/history', 'StudentFeeController@studentHistory')->name('fees.student_history');
+
+    // Finance Messages
+    Route::get('/messages', 'FinanceMessageController@index')->name('finance.messages.index');
+    Route::post('/messages/sms', 'FinanceMessageController@sendSms')->name('finance.messages.sms');
+    Route::post('/messages/email', 'FinanceMessageController@sendEmail')->name('finance.messages.email');
+    Route::post('/messages/notifications', 'FinanceMessageController@sendNotifications')->name('finance.messages.notifications');
+
+    // Finance Settings
+    Route::get('/settings', 'FinanceSettingController@index')->name('finance.settings.index');
+    Route::post('/settings/expense-category', 'FinanceSettingController@storeExpenseCategory')->name('finance.settings.expense_cat');
+    Route::delete('/settings/expense-category/{id}', 'FinanceSettingController@destroyExpenseCategory')->name('finance.settings.expense_cat_del');
+    Route::post('/settings/income-category', 'FinanceSettingController@storeIncomeCategory')->name('finance.settings.income_cat');
+    Route::delete('/settings/income-category/{id}', 'FinanceSettingController@destroyIncomeCategory')->name('finance.settings.income_cat_del');
+});
+
 /************************ CHAPA PAYMENT ****************************/
 Route::group(['namespace' => 'SupportTeam', 'middleware' => 'auth'], function(){
     Route::post('/chapa/initiate/{pr_id}', 'ChapaController@initiate')->name('chapa.initiate');
