@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class EthiopianGradingSystem extends Migration
 {
@@ -22,9 +23,9 @@ class EthiopianGradingSystem extends Migration
             ->update(['class_type_id' => $upId]);
 
         // ── 3. Wipe existing grades and seed correct Ethiopian scales ─────────
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        Schema::disableForeignKeyConstraints();
         DB::table('grades')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        Schema::enableForeignKeyConstraints();
 
         $nurseryId     = DB::table('class_types')->where('code', 'N')->value('id');   // 3
         $preNurseryId  = DB::table('class_types')->where('code', 'PN')->value('id');  // 2
