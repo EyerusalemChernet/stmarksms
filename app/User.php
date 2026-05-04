@@ -5,7 +5,13 @@ namespace App;
 use App\Models\BloodGroup;
 use App\Models\Lga;
 use App\Models\Nationality;
+use App\Models\Position;
+use App\Models\Shift;
+use App\Models\StaffPayroll;
+use App\Models\StaffPosition;
 use App\Models\StaffRecord;
+use App\Models\StaffSalary;
+use App\Models\StaffShift;
 use App\Models\State;
 use App\Models\StudentRecord;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -63,5 +69,45 @@ class User extends Authenticatable
     public function staff()
     {
         return $this->hasMany(StaffRecord::class);
+    }
+
+    // ── HR Enhancements ──────────────────────────────────────────────────────────
+
+    public function salaries()
+    {
+        return $this->hasMany(StaffSalary::class)->orderByDesc('start_date');
+    }
+
+    /** Current active salary (end_date is null) */
+    public function currentSalary()
+    {
+        return $this->hasOne(StaffSalary::class)->whereNull('end_date')->latestOfMany('start_date');
+    }
+
+    public function staffPositions()
+    {
+        return $this->hasMany(StaffPosition::class)->orderByDesc('start_date');
+    }
+
+    /** Current active position */
+    public function currentPosition()
+    {
+        return $this->hasOne(StaffPosition::class)->whereNull('end_date')->with('position')->latestOfMany('start_date');
+    }
+
+    public function staffShifts()
+    {
+        return $this->hasMany(StaffShift::class)->orderByDesc('start_date');
+    }
+
+    /** Current active shift */
+    public function currentShift()
+    {
+        return $this->hasOne(StaffShift::class)->whereNull('end_date')->with('shift')->latestOfMany('start_date');
+    }
+
+    public function payrolls()
+    {
+        return $this->hasMany(StaffPayroll::class)->orderByDesc('month');
     }
 }
