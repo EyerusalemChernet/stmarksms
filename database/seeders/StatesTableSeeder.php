@@ -9,7 +9,9 @@ class StatesTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('states')->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('states')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $regions = [
             'Addis Ababa',

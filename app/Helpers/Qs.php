@@ -81,7 +81,7 @@ class Qs
 
     public static function userIsHRManager()
     {
-        return Auth::user()->user_type === 'hr_manager';
+        return in_array(Auth::user()->user_type, ['hr_manager', 'admin', 'super_admin']);
     }
     public static function hash($id)
     {
