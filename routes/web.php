@@ -6,6 +6,9 @@ Auth::routes();
 Route::get('/privacy-policy', 'HomeController@privacy_policy')->name('privacy_policy');
 Route::get('/terms-of-use', 'HomeController@terms_of_use')->name('terms_of_use');
 
+// Public ICS feed ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â no auth so Google Calendar can subscribe to it
+Route::get('/calendar/ics', 'CalendarController@icsPublicFeed')->name('calendar.ics');
+
 
 Route::group(['middleware' => 'auth'], function () {
 
@@ -29,6 +32,10 @@ Route::group(['middleware' => 'auth'], function () {
             Route::put('not_graduated/{id}', 'StudentRecordController@not_graduated')->name('st.not_graduated');
             Route::get('list/{class_id}', 'StudentRecordController@listByClass')->name('students.list')->middleware('teamSAT');
 
+            /* Bulk import */
+            Route::get('bulk/template', 'StudentRecordController@bulkTemplate')->name('students.bulk.template')->middleware('teamSA');
+            Route::post('bulk/import', 'StudentRecordController@bulkImport')->name('students.bulk.import')->middleware('teamSA');
+
             /* Promotions */
             Route::post('promote_selector', 'PromotionController@selector')->name('students.promote_selector');
             Route::get('promotion/manage', 'PromotionController@manage')->name('students.promotion_manage');
@@ -42,6 +49,8 @@ Route::group(['middleware' => 'auth'], function () {
         /*************** Users *****************/
         Route::group(['prefix' => 'users'], function(){
             Route::get('reset_pass/{id}', 'UserController@reset_pass')->name('users.reset_pass');
+        Route::post('bulk-import', 'UserController@bulkImport')->name('users.bulk.import')->middleware('teamSA');
+        Route::get('bulk-template', 'UserController@bulkTemplate')->name('users.bulk.template')->middleware('teamSA');
         });
 
         /*************** TimeTables *****************/
@@ -201,6 +210,38 @@ Route::group(['middleware' => 'auth'], function(){
     Route::get('/compose', 'CommunicationController@compose')->name('compose');
     Route::post('/messages', 'CommunicationController@sendMessage')->name('messages.send');
     Route::get('/messages/{message}', 'CommunicationController@readMessage')->name('messages.read');
+
+    /************************ CALENDAR ****************************/
+    Route::get('/calendar', 'CalendarController@index')->name('calendar.index');
+    Route::get('/calendar/events', 'CalendarController@events')->name('calendar.events');
+    Route::post('/calendar/events', 'CalendarController@store')->name('calendar.store')->middleware('teamSA');
+    Route::post('/calendar/events/{rid}/update', 'CalendarController@update')->name('calendar.update')->middleware('teamSA');
+    Route::post('/calendar/events/{rid}/delete', 'CalendarController@destroy')->name('calendar.destroy')->middleware('teamSA');
+    // Keep PUT/DELETE for any direct API calls
+    Route::put('/calendar/events/{eid}', 'CalendarController@update')->middleware('teamSA');
+    Route::delete('/calendar/events/{eid}', 'CalendarController@destroy')->middleware('teamSA');
+
+    /************************ ACADEMIC CALENDAR GENERATOR ****************************/
+
+    // Calendar Rules ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â explicit prefix, defined BEFORE the academic-calendar/{id} wildcards
+    Route::prefix('academic-calendar/rules')->middleware('teamSA')->group(function () {
+        Route::get('/index',        'AcademicCalendarController@rulesIndex')->name('acal.rules');
+        Route::post('/',            'AcademicCalendarController@rulesStore')->name('acal.rules.store');
+        Route::post('/{rid}/update', 'AcademicCalendarController@rulesUpdate')->name('acal.rules.update');
+        Route::post('/{rid}/delete', 'AcademicCalendarController@rulesDestroy')->name('acal.rules.destroy');
+    });
+
+    Route::prefix('academic-calendar')->group(function () {
+        Route::get('/',                         'AcademicCalendarController@index')->name('acal.index');
+        Route::post('/generate',                'AcademicCalendarController@generate')->name('acal.generate')->middleware('teamSA');
+        Route::post('/{yid}/import-holidays',    'AcademicCalendarController@importHolidays')->name('acal.import_holidays')->middleware('teamSA');
+        Route::post('/{yid}/resolve-conflicts',  'AcademicCalendarController@resolveConflicts')->name('acal.resolve_conflicts')->middleware('teamSA');
+        Route::post('/{yid}/archive',             'AcademicCalendarController@archive')->name('acal.archive')->middleware('teamSA');
+        Route::post('/{yid}/activate',             'AcademicCalendarController@activate')->name('acal.activate')->middleware('teamSA');
+        Route::post('/{yid}/destroy',             'AcademicCalendarController@destroy')->name('acal.destroy')->middleware('teamSA');
+        // Wildcard show MUST be last
+        Route::get('/{yid}',                     'AcademicCalendarController@show')->name('acal.show');
+    });
 
     /************************ REPORTS ****************************/
     Route::group(['prefix' => 'reports'], function(){

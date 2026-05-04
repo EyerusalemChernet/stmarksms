@@ -51,6 +51,7 @@
                     <a href="#" class="nav-link"><i class="bi bi-people"></i><span>Students</span></a>
                     <ul class="nav nav-group-sub">
                         <li class="nav-item"><a href="{{ route('students.create') }}" class="nav-link {{ Route::is('students.create') ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Admit Student</a></li>
+                        <li class="nav-item"><a href="{{ route('students.create') }}#tab-bulk" class="nav-link"><i class="bi bi-people-fill mr-1"></i>Bulk Admission</a></li>
                         <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.list','students.edit','students.show']) ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link"><i class="bi bi-list-ul mr-1"></i>Student List</a>
                             <ul class="nav nav-group-sub">
@@ -72,6 +73,7 @@
 
                 {{-- Academics --}}
                 <li class="sidebar-section-label">Academics</li>
+                <li class="nav-item"><a href="{{ route('calendar.index') }}" class="nav-link {{ Route::is('calendar.index') || Route::is('acal.*') ? 'active' : '' }}"><i class="bi bi-calendar-range"></i><span>Academic Calendar</span></a></li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['exams.index','exams.edit','grades.index','grades.edit','marks.index','marks.manage','marks.bulk','marks.tabulation','marks.show','marks.batch_fix']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-journal-check"></i><span>Exams & Marks</span></a>
                     <ul class="nav nav-group-sub">
@@ -251,9 +253,7 @@
 
                 @endif {{-- end hr_manager --}}
 
-                {{-- ════════════════════════════════════════════════════════════
-                     COMMUNICATION — all roles
-                     ════════════════════════════════════════════════════════════ --}}
+                {{-- Communication — all roles --}}
                 <li class="sidebar-section-label">Communication</li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['announcements','inbox','compose','messages.read']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-chat-dots"></i><span>Messages</span></a>

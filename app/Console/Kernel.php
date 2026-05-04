@@ -13,7 +13,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        Commands\GenerateAcademicCalendar::class,
     ];
 
     /**
@@ -23,10 +23,15 @@ class Kernel extends ConsoleKernel
      * @return void
      */
     protected function schedule(Schedule $schedule)
-    {
-        // $schedule->command('inspire')
-        //          ->hourly();
-    }
+        {
+            // Auto-generate next academic year every September 1st at 06:00 AM
+            $schedule->command('calendar:generate', [date('Y')])
+                     ->yearlyOn(9, 1, '06:00')
+                     ->withoutOverlapping()
+                     ->runInBackground()
+                     ->appendOutputTo(storage_path('logs/calendar-generator.log'));
+        }
+
 
     /**
      * Register the commands for the application.

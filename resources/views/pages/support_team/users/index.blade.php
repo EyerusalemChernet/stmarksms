@@ -11,6 +11,7 @@
         <div class="card-body">
             <ul class="nav nav-tabs nav-tabs-highlight">
                 <li class="nav-item"><a href="#new-user" class="nav-link active" data-toggle="tab">Create New User</a></li>
+                <li class="nav-item"><a href="#bulk-user" class="nav-link" data-toggle="tab"><i class="bi bi-people-fill mr-1"></i>Bulk Import</a></li>
                 <li class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Manage Users</a>
                     <div class="dropdown-menu dropdown-menu-right">
@@ -194,6 +195,91 @@
                     </form>
                 </div>
 
+                {{-- ── BULK IMPORT TAB ─────────────────────────────────── --}}
+                <div class="tab-pane fade" id="bulk-user">
+                    <div class="pt-3">
+
+                        <div class="alert alert-info border-0 mb-4">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-info-circle-fill mr-3 mt-1" style="font-size:18px;"></i>
+                                <div>
+                                    <strong>Bulk User Import via CSV</strong><br>
+                                    Upload a CSV to create multiple users at once. Supported types: <code>teacher</code>, <code>parent</code>, <code>hr_manager</code>, <code>admin</code>.
+                                    Default password is the user type name unless specified.
+                                    <a href="{{ route('users.bulk.template') }}" class="ml-2 font-weight-bold">
+                                        <i class="bi bi-download mr-1"></i>Download CSV Template
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Column reference --}}
+                        <div class="table-responsive mb-4">
+                            <table class="table table-sm table-bordered" style="font-size:12px;">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Column</th><th>user_type</th><th>name</th><th>email</th>
+                                        <th>username</th><th>phone</th><th>gender</th>
+                                        <th>address</th><th>emp_date</th><th>password</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="font-weight-bold">Example</td>
+                                        <td>teacher</td><td>Abebe Kebede</td><td>abebe@email.com</td>
+                                        <td>abebe.kebede</td><td>0911234567</td><td>Male</td>
+                                        <td>Addis Ababa</td><td>{{ date('Y-m-d') }}</td><td>Teacher@123</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <form id="bulk-user-form" method="post" enctype="multipart/form-data" action="{{ route('users.bulk.import') }}">
+                            @csrf
+                            <div class="row align-items-end">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-semibold">Select CSV File <span class="text-danger">*</span></label>
+                                        <input type="file" name="csv_file" id="bulk-user-csv" accept=".csv,text/csv" class="form-control" required>
+                                        <small class="text-muted">Max 5MB. UTF-8 encoded CSV only.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <button type="button" id="bulk-user-preview-btn" class="btn btn-info btn-block">
+                                            <i class="bi bi-eye mr-1"></i>Preview CSV
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <button type="submit" id="bulk-user-submit-btn" class="btn btn-success btn-block" disabled>
+                                            <i class="bi bi-cloud-upload mr-1"></i>Import Users
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="bulk-user-preview-area" style="display:none;" class="mb-3">
+                                <h6 class="font-weight-semibold mb-2">
+                                    <i class="bi bi-table mr-1"></i>Preview
+                                    <span id="bulk-user-row-count" class="badge badge-primary ml-1"></span>
+                                </h6>
+                                <div class="table-responsive" style="max-height:320px;overflow-y:auto;">
+                                    <table class="table table-sm table-bordered table-hover">
+                                        <thead class="thead-dark" id="bulk-user-preview-head"></thead>
+                                        <tbody id="bulk-user-preview-body"></tbody>
+                                    </table>
+                                </div>
+                                <div id="bulk-user-validation-errors" class="mt-2"></div>
+                            </div>
+                        </form>
+
+                        <div id="bulk-user-result" class="mt-3" style="display:none;"></div>
+                    </div>
+                </div>
+                {{-- ── END BULK IMPORT TAB ──────────────────────────────── --}}
+
                 @foreach($user_types as $ut)
                     <div class="tab-pane fade" id="ut-{{Qs::hash($ut->id)}}">                         <table class="table datatable-button-html5-columns">
                             <thead>
@@ -292,6 +378,76 @@ $(function () {
             $hint.removeClass('text-muted text-success').addClass('text-danger')
                  .text('Needs: ' + missing.join(', '));
         }
+    });
+
+    // ── Bulk User Import ──────────────────────────────────────────────────────
+    var validUserTypes = ['teacher','parent','hr_manager','admin','super_admin','accountant'];
+
+    $('#bulk-user-csv').on('change', function () {
+        $('#bulk-user-preview-area').hide();
+        $('#bulk-user-submit-btn').prop('disabled', true);
+        $('#bulk-user-preview-head, #bulk-user-preview-body, #bulk-user-validation-errors').empty();
+    });
+
+    $('#bulk-user-preview-btn').on('click', function () {
+        var file = $('#bulk-user-csv')[0].files[0];
+        if (!file) { flash({ msg: 'Please select a CSV file first.', type: 'warning' }); return; }
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var lines = e.target.result.split(/\r?\n/).filter(function (l) { return l.trim(); });
+            if (lines.length < 2) { flash({ msg: 'CSV must have a header row and at least one data row.', type: 'warning' }); return; }
+            var headers = lines[0].split(',').map(function (h) { return h.trim(); });
+            var $head = $('<tr>');
+            headers.forEach(function (h) { $head.append($('<th>').text(h)); });
+            $head.append('<th>Status</th>');
+            $('#bulk-user-preview-head').html($head);
+            var $body = $('#bulk-user-preview-body').empty();
+            var errors = [], validRows = 0;
+            for (var i = 1; i < Math.min(lines.length, 51); i++) {
+                var cols = lines[i].split(',').map(function (c) { return c.trim(); });
+                var rowErrors = [];
+                var typeIdx = headers.indexOf('user_type'), nameIdx = headers.indexOf('name'), genderIdx = headers.indexOf('gender');
+                if (typeIdx >= 0 && !validUserTypes.includes((cols[typeIdx] || '').toLowerCase())) rowErrors.push('Invalid user_type');
+                if (nameIdx >= 0 && (!cols[nameIdx] || cols[nameIdx].length < 2)) rowErrors.push('Name too short');
+                if (genderIdx >= 0 && cols[genderIdx] && !['Male', 'Female'].includes(cols[genderIdx])) rowErrors.push('Gender must be Male/Female');
+                var statusCell = rowErrors.length
+                    ? '<td><span class="badge badge-danger">' + rowErrors.join(', ') + '</span></td>'
+                    : '<td><span class="badge badge-success">OK</span></td>';
+                if (rowErrors.length) errors.push('Row ' + i + ': ' + rowErrors.join(', '));
+                else validRows++;
+                var $tr = $('<tr>');
+                cols.forEach(function (c) { $tr.append($('<td>').text(c)); });
+                $tr.append(statusCell);
+                $body.append($tr);
+            }
+            if (lines.length > 51) $body.append('<tr><td colspan="' + (headers.length + 1) + '" class="text-center text-muted">... and ' + (lines.length - 51) + ' more rows</td></tr>');
+            $('#bulk-user-row-count').text((lines.length - 1) + ' rows');
+            $('#bulk-user-preview-area').show();
+            if (errors.length) {
+                $('#bulk-user-validation-errors').html('<div class="alert alert-warning border-0"><strong>' + errors.length + ' row(s) have issues:</strong><ul class="mb-0 mt-1">' + errors.map(function (e) { return '<li>' + e + '</li>'; }).join('') + '</ul></div>');
+            }
+            $('#bulk-user-submit-btn').prop('disabled', validRows === 0);
+        };
+        reader.readAsText(file);
+    });
+
+    $('#bulk-user-form').on('submit', function (e) {
+        e.preventDefault();
+        var $btn = $('#bulk-user-submit-btn').prop('disabled', true).html('<i class="bi bi-hourglass-split mr-1"></i>Importing...');
+        var fd = new FormData(this);
+        $.ajax({ url: $(this).attr('action'), type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json' })
+        .done(function (r) {
+            var cls = r.ok ? 'success' : 'danger';
+            var html = '<div class="alert alert-' + cls + ' border-0"><strong>' + (r.ok ? 'Import Complete' : 'Import Failed') + '</strong><br>' + r.msg + '</div>';
+            if (r.errors && r.errors.length) html += '<ul class="list-group mt-2">' + r.errors.map(function (e) { return '<li class="list-group-item list-group-item-danger py-1 small">' + e + '</li>'; }).join('') + '</ul>';
+            $('#bulk-user-result').html(html).show();
+            $btn.prop('disabled', false).html('<i class="bi bi-cloud-upload mr-1"></i>Import Users');
+            if (r.ok) setTimeout(function () { location.reload(); }, 2000);
+        })
+        .fail(function (xhr) {
+            $('#bulk-user-result').html('<div class="alert alert-danger border-0">Server error: ' + xhr.status + ' ' + xhr.statusText + '</div>').show();
+            $btn.prop('disabled', false).html('<i class="bi bi-cloud-upload mr-1"></i>Import Users');
+        });
     });
 });
 </script>
