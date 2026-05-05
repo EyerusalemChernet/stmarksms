@@ -1,8 +1,11 @@
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
 
     $('.date-pick').datepicker();
 
-    // ── Mobile sidebar toggle ────────────────────────────────────────────────
+
+    // Language toggle and restore handled entirely by i18n.js
+
+    // â”€â”€ Mobile sidebar toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     $('#mobile-sidebar-toggle').on('click', function () {
         $('body').toggleClass('sidebar-mobile-open');
     });
@@ -19,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // ── Sidebar hide/show — restore state on EVERY page load ────────────────
+    // â”€â”€ Sidebar hide/show â€” restore state on EVERY page load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     restoreSidebarState();
 
     // Intercept the sidebar-main-toggle click BEFORE app.js handles it

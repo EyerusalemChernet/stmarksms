@@ -40,6 +40,14 @@
                 <span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.85);">{{ Auth::user()->name }}</span>
             </li>
             <li class="nav-item"><a href="{{ route('my_account') }}" class="navbar-nav-link" title="Account Settings" style="color:rgba(255,255,255,.75);"><i class="bi bi-gear" style="font-size:16px;"></i></a></li>
+
+            {{-- Language toggle --}}
+            <li class="nav-item">
+                <button id="lang-toggle" title="Switch Language / ቋንቋ ቀይር"
+                        style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.3px;">
+                    <span id="lang-label">EN</span>
+                </button>
+            </li>
             <li class="nav-item">
                 <form action="{{ route('logout') }}" method="POST" style="display:inline;">
                     @csrf

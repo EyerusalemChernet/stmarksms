@@ -41,6 +41,8 @@
 
 <!-- /theme JS files -->
 
+{{-- i18n must load before custom.js --}}
+<script src="{{ asset('assets/js/i18n.js') }}"></script>
 <script src=" {{ asset('assets/js/custom.js') }} "></script>
 
 @include('partials.js.custom_js')
