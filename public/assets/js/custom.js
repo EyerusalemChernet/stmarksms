@@ -1,11 +1,13 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
+// Use jQuery ready to ensure $ is available throughout
+jQuery(function ($) {
 
-    $('.date-pick').datepicker();
-
+    if ($.fn.datepicker) {
+        $('.date-pick').datepicker();
+    }
 
     // Language toggle and restore handled entirely by i18n.js
 
-    // â”€â”€ Mobile sidebar toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Mobile sidebar toggle ────────────────────────────────────────────────
     $('#mobile-sidebar-toggle').on('click', function () {
         $('body').toggleClass('sidebar-mobile-open');
     });
@@ -22,7 +24,7 @@
         }
     });
 
-    // â”€â”€ Sidebar hide/show â€” restore state on EVERY page load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Sidebar hide/show — restore state on EVERY page load ────────────────
     restoreSidebarState();
 
     // Intercept the sidebar-main-toggle click BEFORE app.js handles it
@@ -36,9 +38,8 @@
     });
 
     function restoreSidebarState() {
-        var state   = localStorage.getItem('sidebar-state');
+        var state    = localStorage.getItem('sidebar-state');
         var isHidden = (state === 'hidden');
-
         $('body').toggleClass('sidebar-hidden', isHidden);
         updateToggleIcon(isHidden);
     }

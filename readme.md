@@ -8,7 +8,7 @@ A production-level Primary School ERP built with Laravel 8 for Ethiopian schools
 - MySQL 8.0+
 - Composer 2.x
 - Laragon (Windows) or any LAMP/LEMP stack
-- Ollama (optional — for AI features)
+- Ollama (required — for AI features)
 
 ## Quick Setup
 

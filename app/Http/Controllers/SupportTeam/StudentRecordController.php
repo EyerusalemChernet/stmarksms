@@ -13,6 +13,7 @@ use App\Repositories\StudentRepo;
 use App\Repositories\UserRepo;
 use App\Http\Controllers\Controller;
 use App\Services\RulesEngine;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -178,6 +179,110 @@ class StudentRecordController extends Controller
         Mk::deleteOldRecord($sr->user->id, $srec['my_class_id']);
 
         return Qs::jsonUpdateOk();
+    }
+
+    /**
+     * Download the CSV template for bulk student import.
+     */
+    public function bulkTemplate()
+    {
+        $headers = ['name','gender','email','phone','dob','address','class_name','section_name','year_admitted','religion'];
+        $example = ['Abebe Kebede','Male','abebe@email.com','0911234567','2010-05-12','Addis Ababa','Grade 1','A', date('Y'),'Ethiopian Orthodox'];
+
+        $csv = implode(',', $headers)."\n".implode(',', $example)."\n";
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="students_bulk_template.csv"',
+        ]);
+    }
+
+    /**
+     * Process bulk student import from CSV.
+     */
+    public function bulkImport(Request $req)
+    {
+        $req->validate(['csv_file' => 'required|file|mimes:csv,txt|max:5120']);
+
+        $file    = $req->file('csv_file');
+        $handle  = fopen($file->getRealPath(), 'r');
+        $headers = array_map('trim', fgetcsv($handle));
+
+        $imported = 0;
+        $errors   = [];
+        $row      = 1;
+
+        while (($line = fgetcsv($handle)) !== false) {
+            $row++;
+            $data = array_combine($headers, array_map('trim', $line));
+
+            // Resolve class
+            $class = \App\Models\MyClass::where('name', $data['class_name'] ?? '')->first();
+            if (!$class) { $errors[] = "Row {$row}: Class '{$data['class_name']}' not found."; continue; }
+
+            // Resolve section
+            $sectionName = $data['section_name'] ?? '';
+            $section = \App\Models\Section::where('my_class_id', $class->id)
+                ->where('name', $sectionName)->first();
+            if (!$section) {
+                // fallback to default_section_id if provided
+                $section = $req->default_section_id
+                    ? \App\Models\Section::find($req->default_section_id)
+                    : \App\Models\Section::where('my_class_id', $class->id)->first();
+            }
+            if (!$section) { $errors[] = "Row {$row}: Section not found for class '{$data['class_name']}'."; continue; }
+
+            // Skip duplicate email
+            if (!empty($data['email']) && \App\User::where('email', $data['email'])->exists()) {
+                $errors[] = "Row {$row}: Email '{$data['email']}' already exists — skipped."; continue;
+            }
+
+            // Auto-generate admission number
+            $year    = date('Y');
+            $last    = \App\Models\StudentRecord::whereYear('created_at', $year)->latest()->first();
+            $seq     = 1;
+            if ($last && $last->adm_no && preg_match('/STM-\d{4}-(\d{4})/', $last->adm_no, $m)) {
+                $seq = intval($m[1]) + 1;
+            }
+            $adm_no = 'STM-'.$year.'-'.str_pad($seq, 4, '0', STR_PAD_LEFT);
+
+            $code = strtoupper(Str::random(10));
+
+            $user = $this->user->create([
+                'name'       => ucwords($data['name'] ?? ''),
+                'email'      => $data['email'] ?: null,
+                'phone'      => $data['phone'] ?? null,
+                'dob'        => $data['dob'] ?? null,
+                'gender'     => $data['gender'] ?? 'Male',
+                'address'    => $data['address'] ?? 'N/A',
+                'user_type'  => 'student',
+                'code'       => $code,
+                'username'   => $adm_no,
+                'password'   => Hash::make('student'),
+                'photo'      => Qs::getDefaultUserImage(),
+            ]);
+
+            $this->student->createRecord([
+                'user_id'      => $user->id,
+                'my_class_id'  => $class->id,
+                'section_id'   => $section->id,
+                'adm_no'       => $adm_no,
+                'year_admitted'=> $data['year_admitted'] ?? date('Y'),
+                'religion'     => $data['religion'] ?? null,
+                'session'      => Qs::getSetting('current_session'),
+            ]);
+
+            $imported++;
+        }
+
+        fclose($handle);
+
+        AuditLog::log('bulk_import', 'students', "Bulk admitted {$imported} student(s).");
+
+        $msg = "{$imported} student(s) imported successfully.";
+        if ($errors) $msg .= ' '.count($errors).' row(s) skipped.';
+
+        return response()->json(['ok' => $imported > 0, 'msg' => $msg, 'errors' => $errors]);
     }
 
     public function destroy($st_id)
