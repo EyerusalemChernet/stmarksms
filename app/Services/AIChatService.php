@@ -28,44 +28,31 @@ class AIChatService
 
     /**
      * Send a chat message and return the AI response.
-     *
-     * @param  array  $history  [['role'=>'user','content'=>'...'], ['role'=>'assistant','content'=>'...']]
-     * @param  string $message  The new user message
+     * Uses /api/generate (compatible with all Ollama models including tinyllama).
      */
     public function chat(array $history, string $message): string
     {
         $user    = Auth::user();
         $context = $this->buildContext($user, $message);
-        $system  = $this->buildSystemPrompt($user, $context);
-
-        // Build messages array for Ollama chat API
-        $messages = [['role' => 'system', 'content' => $system]];
-
-        // Add conversation history (last 10 turns to keep context manageable)
-        foreach (array_slice($history, -10) as $turn) {
-            $messages[] = ['role' => $turn['role'], 'content' => $turn['content']];
-        }
-
-        // Add the new user message
-        $messages[] = ['role' => 'user', 'content' => $message];
+        $prompt  = $this->buildPrompt($user, $context, $history, $message);
 
         try {
-            $response = Http::timeout(12)->post("{$this->baseUrl}/api/chat", [
-                'model'    => $this->model,
-                'messages' => $messages,
-                'stream'   => false,
-                'options'  => [
+            $response = Http::timeout(12)->post("{$this->baseUrl}/api/generate", [
+                'model'   => $this->model,
+                'prompt'  => $prompt,
+                'stream'  => false,
+                'options' => [
                     'temperature' => 0.5,
-                    'num_predict' => 300,
+                    'num_predict' => 250,
                 ],
             ]);
 
             if ($response->successful()) {
-                $text = trim($response->json('message.content') ?? '');
+                $text = trim($response->json('response') ?? '');
                 return $text ?: $this->fallback($message);
             }
 
-            Log::warning('AI Chat: Ollama returned ' . $response->status());
+            Log::warning('AI Chat: Ollama returned ' . $response->status() . ' — ' . $response->body());
             return $this->fallback($message);
 
         } catch (\Throwable $e) {
@@ -97,9 +84,9 @@ class AIChatService
         // Student/class questions
         if (str_contains($msg, 'student') || str_contains($msg, 'class') || str_contains($msg, 'grade')) {
             $ctx['classes'] = MyClass::orderBy('name')
-                ->withCount(['sections'])
+                ->withCount(['section'])
                 ->get()
-                ->map(fn($c) => ['name' => $c->name, 'sections' => $c->sections_count])
+                ->map(fn($c) => ['name' => $c->name, 'sections' => $c->section_count])
                 ->toArray();
         }
 
@@ -161,33 +148,35 @@ class AIChatService
         return $ctx;
     }
 
-    // ── System prompt ─────────────────────────────────────────────────────────
+    // ── Prompt builder (for /api/generate — works with all models) ───────────
 
-    protected function buildSystemPrompt(User $user, array $ctx): string
+    protected function buildPrompt(User $user, array $ctx, array $history, string $message): string
     {
-        $role     = ucwords(str_replace('_', ' ', $user->user_type));
-        $ctxJson  = json_encode($ctx, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $role    = ucwords(str_replace('_', ' ', $user->user_type));
+        $ctxJson = json_encode($ctx, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        return <<<PROMPT
-You are the St. Mark School AI Assistant — a helpful, friendly, and professional school management assistant.
+        $prompt  = "You are the St. Mark School AI Assistant — helpful, friendly, and professional.\n\n";
+        $prompt .= "CURRENT USER: {$user->name} ({$role})\n\n";
+        $prompt .= "LIVE SCHOOL DATA:\n{$ctxJson}\n\n";
+        $prompt .= "RULES:\n";
+        $prompt .= "- Answer questions about the school using the data above.\n";
+        $prompt .= "- Be concise (2-4 sentences). Use the user's name occasionally.\n";
+        $prompt .= "- If data is not available, say so honestly.\n";
+        $prompt .= "- Never make up student names, grades, or data not in the context.\n\n";
 
-CURRENT USER:
-- Name: {$user->name}
-- Role: {$role}
+        // Include last 6 turns of history for context
+        $recent = array_slice($history, -6);
+        if (!empty($recent)) {
+            $prompt .= "CONVERSATION HISTORY:\n";
+            foreach ($recent as $turn) {
+                $label   = $turn['role'] === 'user' ? $user->name : 'Assistant';
+                $prompt .= "{$label}: {$turn['content']}\n";
+            }
+            $prompt .= "\n";
+        }
 
-LIVE SCHOOL DATA (use this to answer questions accurately):
-{$ctxJson}
-
-INSTRUCTIONS:
-- Answer questions about the school, students, events, calendar, and academic matters.
-- Use the live data above when relevant. If data is not available, say so honestly.
-- Keep responses concise (2-4 sentences unless more detail is needed).
-- Be warm and professional. Use the user's name occasionally.
-- For sensitive data (grades, fees, personal info), only share what's appropriate for the user's role.
-- If asked something outside school scope, politely redirect to school topics.
-- Respond in the same language the user writes in (English or Amharic).
-- Never make up student names, grades, or data not in the context above.
-PROMPT;
+        $prompt .= "{$user->name}: {$message}\nAssistant:";
+        return $prompt;
     }
 
     // ── Fallback when Ollama is unavailable ───────────────────────────────────
