@@ -207,6 +207,8 @@ Route::group(['middleware' => 'auth'], function () {
     /************************ AI ****************************/
     Route::post('/ai/generate-comment', 'AICommentController@generate')->name('ai.generate_comment');
     Route::post('/ai/summarize-message', 'AICommentController@summarize')->name('ai.summarize');
+    Route::post('/ai/chat', 'AIChatController@message')->name('ai.chat');
+    Route::get('/ai/chat/status', 'AIChatController@status')->name('ai.chat.status');
 
 });
 

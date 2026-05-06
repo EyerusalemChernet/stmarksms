@@ -47,5 +47,6 @@
 
 @include('partials.inc_bottom')
 @yield('scripts')
+@include('partials.ai_chat_widget')
 </body>
 </html>
