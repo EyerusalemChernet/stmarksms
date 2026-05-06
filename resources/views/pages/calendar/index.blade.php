@@ -275,7 +275,7 @@
         <div class="card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <h6 class="mb-0"><i class="bi bi-calendar-range mr-2"></i>Academic Years</h6>
-                <a href="#tab-rules" data-toggle="tab" class="btn btn-sm btn-outline-secondary"><i class="bi bi-sliders mr-1"></i>Manage Rules</a>
+                <a href="#tab-rules" class="btn btn-sm btn-outline-secondary"><i class="bi bi-sliders mr-1"></i>Manage Rules</a>
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">

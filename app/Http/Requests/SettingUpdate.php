@@ -20,13 +20,11 @@ class SettingUpdate extends FormRequest
     public function rules()
     {
         return [
-            'system_name' => 'required|string|min:10',
-            'current_session' => 'required|string',
-            'address' => 'required|string|min:15',
-            'system_email' => 'sometimes|nullable|email',
-            'lock_exam' => 'required',
-            'logo' => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
-
+            'system_name'    => 'required|string|min:3',
+            'current_session'=> 'required|string',
+            'address'        => 'required|string|min:5',
+            'system_email'   => 'sometimes|nullable|email',
+            'logo'           => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
         ];
     }
 
