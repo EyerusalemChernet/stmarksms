@@ -37,18 +37,24 @@ class AIChatService
         $prompt  = $this->buildPrompt($user, $context, $history, $message);
 
         try {
-            $response = Http::timeout(12)->post("{$this->baseUrl}/api/generate", [
+            $response = Http::timeout(25)->post("{$this->baseUrl}/api/generate", [
                 'model'   => $this->model,
                 'prompt'  => $prompt,
                 'stream'  => false,
                 'options' => [
-                    'temperature' => 0.5,
-                    'num_predict' => 250,
+                    'temperature' => 0.4,
+                    'num_predict' => 80,
+                    'stop'        => ["\nUser:", "\nAssistant:", "\n\n\n"],
                 ],
             ]);
 
             if ($response->successful()) {
                 $text = trim($response->json('response') ?? '');
+                // Strip any "Assistant:" prefix tinyllama sometimes adds
+                $text = preg_replace('/^(Assistant:\s*)+/i', '', $text);
+                // Stop at any "User:" continuation
+                $text = preg_split('/\n(User|Assistant):/i', $text)[0];
+                $text = trim($text);
                 return $text ?: $this->fallback($message);
             }
 
@@ -152,30 +158,55 @@ class AIChatService
 
     protected function buildPrompt(User $user, array $ctx, array $history, string $message): string
     {
-        $role    = ucwords(str_replace('_', ' ', $user->user_type));
-        $ctxJson = json_encode($ctx, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $role = ucwords(str_replace('_', ' ', $user->user_type));
 
-        $prompt  = "You are the St. Mark School AI Assistant — helpful, friendly, and professional.\n\n";
-        $prompt .= "CURRENT USER: {$user->name} ({$role})\n\n";
-        $prompt .= "LIVE SCHOOL DATA:\n{$ctxJson}\n\n";
-        $prompt .= "RULES:\n";
-        $prompt .= "- Answer questions about the school using the data above.\n";
-        $prompt .= "- Be concise (2-4 sentences). Use the user's name occasionally.\n";
-        $prompt .= "- If data is not available, say so honestly.\n";
-        $prompt .= "- Never make up student names, grades, or data not in the context.\n\n";
+        // Keep context small — tinyllama has a tiny context window
+        $ctxLines = [];
+        if (!empty($ctx['total_students']))  $ctxLines[] = "Total students: {$ctx['total_students']}";
+        if (!empty($ctx['total_teachers']))  $ctxLines[] = "Total teachers: {$ctx['total_teachers']}";
+        if (!empty($ctx['total_classes']))   $ctxLines[] = "Total classes: {$ctx['total_classes']}";
+        if (!empty($ctx['current_session'])) $ctxLines[] = "Current session: {$ctx['current_session']}";
+        if (!empty($ctx['today']))           $ctxLines[] = "Today: {$ctx['today']}";
 
-        // Include last 6 turns of history for context
-        $recent = array_slice($history, -6);
-        if (!empty($recent)) {
-            $prompt .= "CONVERSATION HISTORY:\n";
-            foreach ($recent as $turn) {
-                $label   = $turn['role'] === 'user' ? $user->name : 'Assistant';
-                $prompt .= "{$label}: {$turn['content']}\n";
-            }
-            $prompt .= "\n";
+        if (!empty($ctx['academic_year'])) {
+            $ay = $ctx['academic_year'];
+            $ctxLines[] = "Academic year: {$ay['name']} ({$ay['eth_name']}), {$ay['start_date']} to {$ay['end_date']}";
         }
 
-        $prompt .= "{$user->name}: {$message}\nAssistant:";
+        if (!empty($ctx['upcoming_events'])) {
+            $events = array_slice($ctx['upcoming_events'], 0, 5);
+            foreach ($events as $e) {
+                $ctxLines[] = "Event: {$e['title']} on {$e['date']} ({$e['type']})";
+            }
+        }
+
+        if (!empty($ctx['my_children'])) {
+            foreach ($ctx['my_children'] as $c) {
+                $ctxLines[] = "Child: {$c['name']}, Class: {$c['class']}";
+            }
+        }
+
+        if (!empty($ctx['my_subjects'])) {
+            foreach ($ctx['my_subjects'] as $s) {
+                $ctxLines[] = "Subject: {$s['subject']} in {$s['class']}";
+            }
+        }
+
+        $ctxText = implode("\n", $ctxLines);
+
+        // Last 4 turns of history
+        $histText = '';
+        foreach (array_slice($history, -4) as $turn) {
+            $label     = $turn['role'] === 'user' ? 'User' : 'Assistant';
+            $histText .= "{$label}: {$turn['content']}\n";
+        }
+
+        $prompt  = "You are a school assistant for St. Mark School. ";
+        $prompt .= "User: {$user->name} ({$role}).\n";
+        $prompt .= "School data:\n{$ctxText}\n\n";
+        if ($histText) $prompt .= "Previous conversation:\n{$histText}\n";
+        $prompt .= "User: {$message}\nAssistant:";
+
         return $prompt;
     }
 
