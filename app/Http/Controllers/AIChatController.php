@@ -28,15 +28,19 @@ class AIChatController extends Controller
             'history' => 'nullable|array|max:20',
         ]);
 
-        $history = $req->input('history', []);
-        $message = trim($req->input('message'));
+        try {
+            $history = $req->input('history', []);
+            $message = trim($req->input('message'));
+            $reply   = $this->chat->chat($history, $message);
 
-        $reply = $this->chat->chat($history, $message);
-
-        return response()->json([
-            'ok'    => true,
-            'reply' => $reply,
-        ]);
+            return response()->json(['ok' => true, 'reply' => $reply]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AI Chat controller error: ' . $e->getMessage());
+            return response()->json([
+                'ok'    => false,
+                'reply' => "I'm having trouble connecting right now. Please make sure Ollama is running (`ollama serve`) and try again.",
+            ]);
+        }
     }
 
     /**

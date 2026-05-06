@@ -50,7 +50,7 @@ class AIChatService
         $messages[] = ['role' => 'user', 'content' => $message];
 
         try {
-            $response = Http::timeout(30)->post("{$this->baseUrl}/api/chat", [
+            $response = Http::timeout(12)->post("{$this->baseUrl}/api/chat", [
                 'model'    => $this->model,
                 'messages' => $messages,
                 'stream'   => false,
