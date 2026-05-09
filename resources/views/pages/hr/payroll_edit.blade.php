@@ -107,13 +107,13 @@
             <div class="col-md-3">
                 <div class="card text-center p-2">
                     <h5 class="text-success mb-0">+{{ number_format($payroll->allowances, 2) }}</h5>
-                    <small class="text-muted">Allowances</small>
+                    <small class="text-muted">Manual Earnings</small>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card text-center p-2">
                     <h5 class="text-danger mb-0">-{{ number_format($payroll->deductions, 2) }}</h5>
-                    <small class="text-muted">Deductions</small>
+                    <small class="text-muted">Total Deductions</small>
                 </div>
             </div>
             <div class="col-md-3">
@@ -122,6 +122,13 @@
                     <small class="text-muted">Net Pay ({{ $payroll->currency }})</small>
                 </div>
             </div>
+        </div>
+        <div class="alert alert-light border py-2 mb-3 small">
+            <i class="bi bi-calculator mr-1"></i>
+            <strong>Formula:</strong>
+            Net Pay = (Base Salary {{ $payroll->allowances > 0 ? '+ Manual Earnings' : '' }})
+            − (Tax + Pension{{ $payroll->deductions - $payroll->income_tax - $payroll->employee_pension > 0 ? ' + Manual Deductions' : '' }})
+            = <strong>{{ $payroll->currency }} {{ number_format($payroll->net_pay, 2) }}</strong>
         </div>
 
         {{-- Statutory deductions breakdown --}}
@@ -147,10 +154,10 @@
         </div>
         @endif
 
-        {{-- Line items --}}
+        {{-- Line items — manual entries only --}}
         <div class="card mb-3">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="card-title mb-0"><i class="bi bi-list-ul mr-1"></i>Pay Items</h6>
+                <h6 class="card-title mb-0"><i class="bi bi-list-ul mr-1"></i>Pay Items <small class="text-muted font-weight-normal">(manual entries: bonuses, allowances, penalties)</small></h6>
             </div>
             <div class="card-body p-0">
                 <table class="table table-sm mb-0">
@@ -158,8 +165,13 @@
                         <tr><th>Type</th><th>Description</th><th>Note</th><th class="text-right">Amount</th><th></th></tr>
                     </thead>
                     <tbody>
-                        @forelse($payroll->items as $item)
-                        <tr class="{{ $item->isEarning() ? 'table-success' : 'table-danger' }}" style="--bs-table-bg:transparent;">
+                        @php
+                            // Filter out any legacy statutory items that may exist from old data
+                            $statutoryLabels = ['Basic Salary','Income Tax','Employee Pension (7%)','Employer Pension (11%)'];
+                            $manualItems = $payroll->items->filter(fn($i) => !in_array($i->label, $statutoryLabels));
+                        @endphp
+                        @forelse($manualItems as $item)
+                        <tr>
                             <td>
                                 <span class="badge badge-{{ $item->isEarning() ? 'success' : 'danger' }}">
                                     {{ ucfirst($item->type) }}
@@ -185,7 +197,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="5" class="text-center text-muted py-2">No items yet.</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted py-2">No manual items. Add bonuses, allowances, or deductions below.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -194,6 +206,7 @@
             {{-- Add item form (draft only) --}}
             @if($payroll->isDraft())
             <div class="card-footer bg-white">
+                <p class="small text-muted mb-2"><i class="bi bi-info-circle mr-1"></i>Add manual items only — base salary, tax, and pension are calculated automatically.</p>
                 <form action="{{ route('hr.payroll.item.add', $payroll->id) }}" method="POST" class="form-inline">
                     @csrf
                     <select name="type" class="form-control form-control-sm mr-2" style="width:110px;" required>
@@ -201,8 +214,8 @@
                         <option value="deduction">Deduction</option>
                     </select>
                     <input type="text" name="label" class="form-control form-control-sm mr-2"
-                           placeholder="Description" style="width:160px;" required>
-                    <input type="number" name="amount" step="0.01" min="0"
+                           placeholder="e.g. Transport Allowance" style="width:180px;" required>
+                    <input type="number" name="amount" step="0.01" min="0.01"
                            class="form-control form-control-sm mr-2"
                            placeholder="Amount" style="width:110px;" required>
                     <input type="text" name="note" class="form-control form-control-sm mr-2"

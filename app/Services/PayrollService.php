@@ -171,14 +171,13 @@ class PayrollService
                 'status'           => 'draft',
             ]);
 
-            // ── Create line items ────────────────────────────────────────────
-            // Earnings
-            PayrollItem::create([
-                'payroll_id' => $payroll->id,
-                'type'       => 'earning',
-                'label'      => 'Basic Salary',
-                'amount'     => $baseSalary,
-            ]);
+            // ── Create manual line items ONLY ────────────────────────────────
+            // Base salary, income tax, and pension are stored in dedicated
+            // columns on staff_payrolls — NOT as PayrollItems.
+            // PayrollItems are reserved for manual entries only:
+            //   - Overtime pay (auto-calculated but manual in nature)
+            //   - Absence deduction (auto-calculated but manual in nature)
+            //   - Bonuses, allowances, penalties added by HR later
 
             if ($overtimePay > 0) {
                 PayrollItem::create([
@@ -190,7 +189,6 @@ class PayrollService
                 ]);
             }
 
-            // Deductions
             if ($absenceDeduction > 0) {
                 PayrollItem::create([
                     'payroll_id' => $payroll->id,
@@ -198,24 +196,6 @@ class PayrollService
                     'label'      => 'Absence Deduction',
                     'amount'     => $absenceDeduction,
                     'note'       => "{$absentDays} day(s)",
-                ]);
-            }
-
-            if ($incomeTax > 0) {
-                PayrollItem::create([
-                    'payroll_id' => $payroll->id,
-                    'type'       => 'deduction',
-                    'label'      => 'Income Tax',
-                    'amount'     => $incomeTax,
-                ]);
-            }
-
-            if ($employeePension > 0) {
-                PayrollItem::create([
-                    'payroll_id' => $payroll->id,
-                    'type'       => 'deduction',
-                    'label'      => 'Employee Pension (7%)',
-                    'amount'     => $employeePension,
                 ]);
             }
 
@@ -293,24 +273,41 @@ class PayrollService
 
     /**
      * Recalculate payroll totals from its line items.
+     *
+     * Formula:
+     *   Earnings   = base_salary + sum(items where type=earning)
+     *   Deductions = income_tax + employee_pension + sum(items where type=deduction)
+     *   Net Pay    = Earnings - Deductions
+     *
+     * Base salary, income tax, and pension are stored in dedicated columns
+     * and are NOT in payroll_items — they must not be double-counted.
+     * When base_salary changes, tax and pension are recalculated automatically.
      */
     public function recalculateFromItems(StaffPayroll $payroll): void
     {
+        $payroll->refresh(); // ensure we have latest base_salary
         $items = $payroll->items()->get();
 
-        $totalEarnings   = $items->where('type', 'earning')->sum('amount');
-        $totalDeductions = $items->where('type', 'deduction')->sum('amount');
+        // Manual items only (no statutory items in this table)
+        $manualEarnings   = $items->where('type', 'earning')->sum('amount');
+        $manualDeductions = $items->where('type', 'deduction')->sum('amount');
 
-        // Separate statutory deductions for reporting
-        $incomeTax       = $items->where('label', 'Income Tax')->sum('amount');
-        $employeePension = $items->where('label', 'like', 'Employee Pension%')->sum('amount');
+        // Recalculate statutory deductions from current base_salary
+        $gross           = $payroll->base_salary + $manualEarnings;
+        $incomeTax       = $payroll->currency === 'ETB' ? $this->calculateIncomeTax($gross) : 0;
+        $employeePension = $payroll->currency === 'ETB' ? $this->calculateEmployeePension($gross) : 0;
+        $employerPension = $payroll->currency === 'ETB' ? $this->calculateEmployerPension($gross) : 0;
+
+        $totalDeductions = $incomeTax + $employeePension + $manualDeductions;
+        $netPay          = max(0, round($gross - $totalDeductions, 2));
 
         $payroll->update([
-            'allowances'       => $items->where('type', 'earning')->where('label', '!=', 'Basic Salary')->sum('amount'),
+            'allowances'       => $manualEarnings,
             'deductions'       => $totalDeductions,
             'income_tax'       => $incomeTax,
             'employee_pension' => $employeePension,
-            'net_pay'          => max(0, round($totalEarnings - $totalDeductions, 2)),
+            'employer_pension' => $employerPension,
+            'net_pay'          => $netPay,
         ]);
     }
 
