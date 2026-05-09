@@ -255,7 +255,8 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => ['auth', 'hr_manager
 
     /*************** HR *****************/
     Route::prefix('hr')->middleware(['auth', 'hr_manager'])->group(function(){
-        Route::get('/', 'HRController@index')->name('hr.index');
+        Route::get('/', 'HRController@dashboard')->name('hr.index');
+        Route::get('/staff', 'HRController@index')->name('hr.staff');
         Route::get('/staff/{hrId}', 'HRController@show')->name('hr.show');
 
         // Employee create

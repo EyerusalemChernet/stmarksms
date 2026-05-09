@@ -8,6 +8,8 @@ use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmploymentDetails;
+use App\Models\JobPosting;
+use App\Models\LeaveRequest;
 use App\Models\Position;
 use App\Models\Shift;
 use App\Models\StaffAttendance;
@@ -39,6 +41,104 @@ class HRController extends Controller
         $this->profileService    = $profileService;
         $this->attendanceService = $attendanceService;
         $this->payrollService    = $payrollService;
+    }
+
+    // ── HR DASHBOARD ─────────────────────────────────────────────────────────
+
+    public function dashboard()
+    {
+        $today = now()->toDateString();
+        $month = now()->format('Y-m');
+
+        // ── Headcount ────────────────────────────────────────────────────────
+        $totalActive     = Employee::where('status', 'active')->count();
+        $totalOnLeave    = Employee::where('status', 'on_leave')->count();
+        $totalSuspended  = Employee::where('status', 'suspended')->count();
+        $totalTerminated = Employee::where('status', 'terminated')->count();
+
+        // ── Today's attendance ───────────────────────────────────────────────
+        $todayPresent = StaffAttendance::where('date', $today)
+            ->whereIn('status', ['present', 'late'])
+            ->whereNotNull('employee_id')->count();
+        $todayAbsent  = StaffAttendance::where('date', $today)
+            ->where('status', 'absent')
+            ->whereNotNull('employee_id')->count();
+        $todayLate    = StaffAttendance::where('date', $today)
+            ->where('status', 'late')
+            ->whereNotNull('employee_id')->count();
+        $todayOnLeave = StaffAttendance::where('date', $today)
+            ->where('status', 'leave')
+            ->whereNotNull('employee_id')->count();
+
+        // Attendance rate today (out of active employees)
+        $attRate = $totalActive > 0
+            ? round(($todayPresent / $totalActive) * 100, 1)
+            : 0;
+
+        // ── Payroll this month ───────────────────────────────────────────────
+        $payrollCounts = StaffPayroll::where('month', $month)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $payrollDraft    = $payrollCounts->get('draft', 0);
+        $payrollApproved = $payrollCounts->get('approved', 0);
+        $payrollPaid     = $payrollCounts->get('paid', 0);
+        $totalNetPay     = StaffPayroll::where('month', $month)
+            ->where('status', 'paid')->sum('net_pay');
+
+        // ── Leave requests ───────────────────────────────────────────────────
+        $pendingLeave   = LeaveRequest::where('status', 'pending')->count();
+        $approvedLeave  = LeaveRequest::where('status', 'approved')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)->count();
+        $recentLeave    = LeaveRequest::with('employee')
+            ->where('status', 'pending')
+            ->orderByDesc('created_at')->take(5)->get();
+
+        // ── Recruitment ──────────────────────────────────────────────────────
+        $openPostings   = JobPosting::where('status', 'open')->count();
+        $newApplications = \App\Models\JobApplication::where('status', 'applied')
+            ->where('created_at', '>=', now()->subDays(7))->count();
+
+        // ── Department breakdown ─────────────────────────────────────────────
+        $deptBreakdown = Department::withCount(['employees as active_count' => function ($q) {
+            $q->where('status', 'active');
+        }])->orderByDesc('active_count')->take(6)->get();
+
+        // ── Recent hires (last 30 days) ──────────────────────────────────────
+        $recentHires = Employee::with('employmentDetails.department')
+            ->where('status', 'active')
+            ->whereHas('employmentDetails', fn($q) =>
+                $q->where('hire_date', '>=', now()->subDays(30))
+            )
+            ->orderByDesc('created_at')->take(5)->get();
+
+        // ── Monthly attendance trend (last 6 months) ─────────────────────────
+        $attendanceTrend = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $m   = now()->subMonths($i)->format('Y-m');
+            $lbl = now()->subMonths($i)->format('M Y');
+            $total   = StaffAttendance::where('date', 'like', $m . '%')
+                ->whereNotNull('employee_id')->count();
+            $present = StaffAttendance::where('date', 'like', $m . '%')
+                ->whereNotNull('employee_id')
+                ->whereIn('status', ['present', 'late'])->count();
+            $attendanceTrend->push([
+                'month'   => $lbl,
+                'rate'    => $total > 0 ? round(($present / $total) * 100, 1) : 0,
+                'present' => $present,
+                'total'   => $total,
+            ]);
+        }
+
+        return view('pages.hr.dashboard', compact(
+            'totalActive', 'totalOnLeave', 'totalSuspended', 'totalTerminated',
+            'todayPresent', 'todayAbsent', 'todayLate', 'todayOnLeave', 'attRate',
+            'payrollDraft', 'payrollApproved', 'payrollPaid', 'totalNetPay', 'month',
+            'pendingLeave', 'approvedLeave', 'recentLeave',
+            'openPostings', 'newApplications',
+            'deptBreakdown', 'recentHires', 'attendanceTrend', 'today'
+        ));
     }
 
     // ── EMPLOYEE LIST ────────────────────────────────────────────────────────
