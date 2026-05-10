@@ -19,6 +19,60 @@ use Illuminate\Support\Facades\DB;
 class EmployeeProfileService
 {
     /**
+     * Create an Employee record from an existing User account.
+     * Safe to call multiple times — skips if already linked.
+     *
+     * Used by:
+     *   - UserController::store() — auto-creates on new staff user
+     *   - hr:sync-employees command — backfills existing unlinked users
+     *   - HR link UI — manual linking
+     *
+     * @param  \App\User $user
+     * @return Employee|null  null if already linked
+     */
+    public static function createFromUser(\App\User $user): ?Employee
+    {
+        // Skip if already linked
+        if (Employee::where('user_id', $user->id)->exists()) {
+            return null;
+        }
+
+        $nameParts = explode(' ', trim($user->name), 2);
+        $firstName = $nameParts[0];
+        $lastName  = $nameParts[1] ?? '';
+
+        return DB::transaction(function () use ($user, $firstName, $lastName) {
+            $employee = Employee::create([
+                'user_id'       => $user->id,
+                'employee_code' => Employee::generateCode(),
+                'first_name'    => $firstName,
+                'last_name'     => $lastName,
+                'gender'        => $user->gender ?? null,
+                'date_of_birth' => $user->dob ?? null,
+                'phone'         => $user->phone ?? null,
+                'phone2'        => $user->phone2 ?? null,
+                'email'         => $user->email ?? null,
+                'address'       => $user->address ?? null,
+                'photo'         => $user->photo ?? null,
+                'status'        => 'active',
+            ]);
+
+            EmploymentDetails::create([
+                'employee_id'     => $employee->id,
+                'employment_type' => 'full_time',
+                'currency'        => 'ETB',
+                'salary'          => 0,
+            ]);
+
+            AuditLog::log('created', 'hr',
+                "Employee record auto-created for user #{$user->id} ({$user->name}) → {$employee->employee_code}"
+            );
+
+            return $employee;
+        });
+    }
+
+    /**
      * Create a new Employee record and its employment_details row.
      * Optionally links to an existing user account.
      *

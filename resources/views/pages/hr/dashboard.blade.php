@@ -16,6 +16,20 @@
     </div>
 </div>
 
+{{-- ── Unlinked users alert ─────────────────────────────────────────────────── --}}
+@if($unlinkedCount > 0)
+<div class="alert alert-warning d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <i class="bi bi-exclamation-triangle mr-2"></i>
+        <strong>{{ $unlinkedCount }} staff user(s)</strong> have no Employee record —
+        they cannot use the self-service portal (My Profile, My Payslips, My Leave).
+    </div>
+    <a href="{{ route('hr.employees.unlinked') }}" class="btn btn-sm btn-warning ml-3" style="white-space:nowrap;">
+        <i class="bi bi-link-45deg mr-1"></i>Fix Now
+    </a>
+</div>
+@endif
+
 {{-- ── Row 1: Headcount stat cards ─────────────────────────────────────────── --}}
 <div class="row mb-3">
     <div class="col-6 col-md-3 mb-2">

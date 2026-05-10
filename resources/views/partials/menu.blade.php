@@ -125,6 +125,7 @@
                         <li class="nav-item"><a href="{{ route('hr.index') }}" class="nav-link {{ Route::is('hr.index') ? 'active' : '' }}"><i class="bi bi-speedometer2 mr-1"></i>Dashboard</a></li>
                         <li class="nav-item"><a href="{{ route('hr.staff') }}" class="nav-link {{ Route::is('hr.staff') || Route::is('hr.show') ? 'active' : '' }}"><i class="bi bi-people mr-1"></i>Staff List</a></li>
                         <li class="nav-item"><a href="{{ route('hr.employees.create') }}" class="nav-link {{ Route::is('hr.employees.create') ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Add Employee</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.employees.unlinked') }}" class="nav-link {{ Route::is('hr.employees.unlinked') ? 'active' : '' }}"><i class="bi bi-link-45deg mr-1"></i>Link Users</a></li>
                         <li class="nav-item"><a href="{{ route('hr.departments') }}" class="nav-link {{ Route::is('hr.departments') ? 'active' : '' }}"><i class="bi bi-building mr-1"></i>Departments</a></li>
                         <li class="nav-item"><a href="{{ route('hr.positions') }}" class="nav-link {{ Route::is('hr.positions') ? 'active' : '' }}"><i class="bi bi-briefcase mr-1"></i>Positions</a></li>
                         <li class="nav-item"><a href="{{ route('hr.shifts') }}" class="nav-link {{ Route::is('hr.shifts') ? 'active' : '' }}"><i class="bi bi-clock mr-1"></i>Shifts</a></li>
@@ -266,6 +267,7 @@
                         <li class="nav-item"><a href="{{ route('hr.index') }}" class="nav-link {{ Route::is('hr.index') ? 'active' : '' }}"><i class="bi bi-speedometer2 mr-1"></i>Dashboard</a></li>
                         <li class="nav-item"><a href="{{ route('hr.staff') }}" class="nav-link {{ Route::is('hr.staff') || Route::is('hr.show') ? 'active' : '' }}"><i class="bi bi-people mr-1"></i>Staff List</a></li>
                         <li class="nav-item"><a href="{{ route('hr.employees.create') }}" class="nav-link {{ Route::is('hr.employees.create') ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Add Employee</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.employees.unlinked') }}" class="nav-link {{ Route::is('hr.employees.unlinked') ? 'active' : '' }}"><i class="bi bi-link-45deg mr-1"></i>Link Users</a></li>
                         <li class="nav-item"><a href="{{ route('hr.departments') }}" class="nav-link {{ Route::is('hr.departments') ? 'active' : '' }}"><i class="bi bi-building mr-1"></i>Departments</a></li>
                         <li class="nav-item"><a href="{{ route('hr.positions') }}" class="nav-link {{ Route::is('hr.positions') ? 'active' : '' }}"><i class="bi bi-briefcase mr-1"></i>Positions</a></li>
                         <li class="nav-item"><a href="{{ route('hr.shifts') }}" class="nav-link {{ Route::is('hr.shifts') ? 'active' : '' }}"><i class="bi bi-clock mr-1"></i>Shifts</a></li>

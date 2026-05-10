@@ -131,13 +131,20 @@ class HRController extends Controller
             ]);
         }
 
+        // ── Unlinked staff users (no Employee record) ───────────────────────
+        $staffTypes     = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        $linkedUserIds  = Employee::whereNotNull('user_id')->pluck('user_id');
+        $unlinkedCount  = User::whereIn('user_type', $staffTypes)
+            ->whereNotIn('id', $linkedUserIds)->count();
+
         return view('pages.hr.dashboard', compact(
             'totalActive', 'totalOnLeave', 'totalSuspended', 'totalTerminated',
             'todayPresent', 'todayAbsent', 'todayLate', 'todayOnLeave', 'attRate',
             'payrollDraft', 'payrollApproved', 'payrollPaid', 'totalNetPay', 'month',
             'pendingLeave', 'approvedLeave', 'recentLeave',
             'openPostings', 'newApplications',
-            'deptBreakdown', 'recentHires', 'attendanceTrend', 'today'
+            'deptBreakdown', 'recentHires', 'attendanceTrend', 'today',
+            'unlinkedCount'
         ));
     }
 
@@ -251,6 +258,99 @@ class HRController extends Controller
         AuditLog::log('created','hr',"Employee created: {$employee->employee_code}");
         return redirect()->route('hr.show', $employee->id)
             ->with('flash_success', "Employee {$employee->full_name} created.");
+    }
+
+    // ── USER ↔ EMPLOYEE LINKING ──────────────────────────────────────────────
+
+    /**
+     * Show staff users that have no linked Employee record.
+     */
+    public function unlinkedUsers()
+    {
+        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        $linkedUserIds = Employee::whereNotNull('user_id')->pluck('user_id');
+
+        $unlinked = User::whereIn('user_type', $staffTypes)
+            ->whereNotIn('id', $linkedUserIds)
+            ->orderBy('name')->get();
+
+        $employees = Employee::whereNull('user_id')
+            ->with('employmentDetails.department')
+            ->orderBy('first_name')->get();
+
+        return view('pages.hr.employees_unlinked', compact('unlinked', 'employees'));
+    }
+
+    /**
+     * Auto-create an Employee record from an existing unlinked User.
+     */
+    public function syncFromUser($userId)
+    {
+        $user = User::findOrFail($userId);
+
+        if (Employee::where('user_id', $userId)->exists()) {
+            return back()->with('flash_danger', "{$user->name} already has an Employee record.");
+        }
+
+        $employee = EmployeeProfileService::createFromUser($user);
+        AuditLog::log('created', 'hr', "Employee synced from user #{$userId} ({$user->name})");
+
+        return back()->with('flash_success',
+            "Employee record {$employee->employee_code} created for {$user->name}.");
+    }
+
+    /**
+     * Auto-create Employee records for ALL unlinked staff users at once.
+     */
+    public function syncAllUsers()
+    {
+        $staffTypes  = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        $linkedIds   = Employee::whereNotNull('user_id')->pluck('user_id');
+        $unlinked    = User::whereIn('user_type', $staffTypes)
+            ->whereNotIn('id', $linkedIds)->get();
+
+        $created = 0;
+        foreach ($unlinked as $user) {
+            if (EmployeeProfileService::createFromUser($user)) {
+                $created++;
+            }
+        }
+
+        AuditLog::log('created', 'hr', "Bulk employee sync: {$created} records created");
+        return back()->with('flash_success', "{$created} Employee record(s) created successfully.");
+    }
+
+    /**
+     * Link an existing Employee record to an existing User account.
+     */
+    public function linkUser(Request $req, $hrId)
+    {
+        $req->validate(['user_id' => 'required|exists:users,id']);
+        $employee = Employee::findOrFail($hrId);
+
+        if ($employee->user_id) {
+            return back()->with('flash_danger', 'This employee is already linked to a user account.');
+        }
+        if (Employee::where('user_id', $req->user_id)->exists()) {
+            return back()->with('flash_danger', 'That user account is already linked to another employee.');
+        }
+
+        $employee->update(['user_id' => $req->user_id]);
+        AuditLog::log('updated', 'hr', "Employee #{$hrId} linked to user #{$req->user_id}");
+
+        return back()->with('flash_success', 'User account linked to employee.');
+    }
+
+    /**
+     * Unlink a User account from an Employee record.
+     */
+    public function unlinkUser($hrId)
+    {
+        $employee = Employee::findOrFail($hrId);
+        $employee->update(['user_id' => null]);
+        AuditLog::log('updated', 'hr', "Employee #{$hrId} unlinked from user account");
+
+        return back()->with('flash_success', 'User account unlinked.');
     }
 
     // ── EMPLOYEE PROFILE — VIEW ──────────────────────────────────────────────

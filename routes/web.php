@@ -263,6 +263,13 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => ['auth', 'hr_manager
         Route::get('/employees/create', 'HRController@createEmployee')->name('hr.employees.create');
         Route::post('/employees', 'HRController@storeEmployee')->name('hr.employees.store');
 
+        // User ↔ Employee linking
+        Route::get('/employees/unlinked', 'HRController@unlinkedUsers')->name('hr.employees.unlinked');
+        Route::post('/employees/{hrId}/link-user', 'HRController@linkUser')->name('hr.employees.link_user');
+        Route::post('/employees/sync-from-user/{userId}', 'HRController@syncFromUser')->name('hr.employees.sync_user');
+        Route::post('/employees/sync-all', 'HRController@syncAllUsers')->name('hr.employees.sync_all');
+        Route::delete('/employees/{hrId}/unlink-user', 'HRController@unlinkUser')->name('hr.employees.unlink_user');
+
         // Employee profile
         Route::get('/employees/{hrId}/edit', 'HRController@editProfile')->name('hr.profile.edit');
         Route::put('/employees/{hrId}/profile', 'HRController@updateProfile')->name('hr.profile.update');

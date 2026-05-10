@@ -106,6 +106,11 @@ class UserController extends Controller
             $this->user->createStaffRecord($d2);
         }
 
+        /* AUTO-CREATE EMPLOYEE RECORD for HR self-service portal */
+        if ($user_is_staff) {
+            \App\Services\EmployeeProfileService::createFromUser($user);
+        }
+
         return Qs::jsonStoreOk();
     }
 
