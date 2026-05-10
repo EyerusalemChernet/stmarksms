@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmploymentDetails;
+use App\Models\EthiopianHoliday;
 use App\Models\JobPosting;
 use App\Models\LeaveRequest;
 use App\Models\Position;
@@ -20,6 +21,7 @@ use App\Models\StaffShift;
 use App\Models\Subject;
 use App\Services\AttendanceService;
 use App\Services\EmployeeProfileService;
+use App\Services\EthiopianHolidayService;
 use App\Services\PayrollService;
 use App\User;
 use Carbon\Carbon;
@@ -31,16 +33,19 @@ class HRController extends Controller
     protected EmployeeProfileService $profileService;
     protected AttendanceService $attendanceService;
     protected PayrollService $payrollService;
+    protected EthiopianHolidayService $holidayService;
 
     public function __construct(
         EmployeeProfileService $profileService,
         AttendanceService $attendanceService,
-        PayrollService $payrollService
+        PayrollService $payrollService,
+        EthiopianHolidayService $holidayService
     ) {
         $this->middleware('hr_manager');
         $this->profileService    = $profileService;
         $this->attendanceService = $attendanceService;
         $this->payrollService    = $payrollService;
+        $this->holidayService    = $holidayService;
     }
 
     // ── HR DASHBOARD ─────────────────────────────────────────────────────────
@@ -673,6 +678,12 @@ class HRController extends Controller
         $todayRecords   = StaffAttendance::where('date',$today)->whereNotNull('employee_id')->get()->keyBy('employee_id');
         $monthlySummary = $this->attendanceService->allEmployeesMonthlySummary($month);
 
+        // Holiday info for today and the selected month
+        $todayHoliday    = $this->holidayService->getHolidayName($today);
+        $monthHolidays   = EthiopianHoliday::where('year', substr($month, 0, 4))
+            ->where('date', 'like', $month . '%')
+            ->orderBy('date')->get();
+
         if ($req->get('export') === 'pdf') {
             $pdf = PDF::loadView('pages.hr.exports.attendance_summary_pdf', compact('employees','monthlySummary','month','search'));
             return $pdf->setPaper('a4','landscape')->download("attendance_summary_{$month}.pdf");
@@ -681,7 +692,7 @@ class HRController extends Controller
             return $this->exportAttendanceSummaryCsv($employees, $monthlySummary, $month);
         }
 
-        return view('pages.hr.attendance', compact('employees','today','todayRecords','month','monthlySummary','search'));
+        return view('pages.hr.attendance', compact('employees','today','todayRecords','month','monthlySummary','search','todayHoliday','monthHolidays'));
     }
 
     protected function exportAttendanceSummaryCsv($employees, $monthlySummary, $month)
@@ -899,5 +910,48 @@ class HRController extends Controller
             return $t;
         });
         return view('pages.hr.workload', compact('teachers'));
+    }
+
+    // ── ETHIOPIAN HOLIDAYS ────────────────────────────────────────────────────
+
+    public function holidays(Request $req)
+    {
+        $year     = (int) $req->get('year', now()->year);
+        $holidays = EthiopianHoliday::where('year', $year)->orderBy('date')->get();
+        $preview  = $this->holidayService->getHolidaysForYear($year);
+        return view('pages.hr.holidays', compact('holidays', 'year', 'preview'));
+    }
+
+    public function storeHoliday(Request $req)
+    {
+        $req->validate([
+            'date'  => 'required|date',
+            'name'  => 'required|string|max:150',
+            'type'  => 'required|in:public,religious,school',
+            'notes' => 'nullable|string|max:255',
+        ]);
+        $year = Carbon::parse($req->date)->year;
+        EthiopianHoliday::updateOrCreate(
+            ['date' => $req->date, 'name' => $req->name],
+            ['type' => $req->type, 'is_paid' => true, 'year' => $year, 'notes' => $req->notes]
+        );
+        AuditLog::log('created', 'hr', "Holiday added: {$req->name} on {$req->date}");
+        return back()->with('flash_success', "Holiday '{$req->name}' added.");
+    }
+
+    public function seedHolidays(Request $req)
+    {
+        $req->validate(['year' => 'required|integer|min:2020|max:2099']);
+        $count = $this->holidayService->seedYear((int) $req->year);
+        AuditLog::log('created', 'hr', "Ethiopian holidays seeded for {$req->year}: {$count} records");
+        return back()->with('flash_success', "{$count} holidays seeded for {$req->year}.");
+    }
+
+    public function destroyHoliday($hrId)
+    {
+        $holiday = EthiopianHoliday::findOrFail($hrId);
+        AuditLog::log('deleted', 'hr', "Holiday deleted: {$holiday->name} on {$holiday->date}");
+        $holiday->delete();
+        return back()->with('flash_success', 'Holiday removed.');
     }
 }

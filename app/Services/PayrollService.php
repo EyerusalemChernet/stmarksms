@@ -20,10 +20,16 @@ use Illuminate\Support\Facades\DB;
  *   - Employer pension: 11% of gross
  *
  * Overtime rate: 1.25× hourly rate (standard Ethiopian Labour Law)
- * Absence deduction: daily rate × absent days
+ * Absence deduction: daily rate × absent days (holidays excluded)
  */
 class PayrollService
 {
+    protected EthiopianHolidayService $holidays;
+
+    public function __construct(EthiopianHolidayService $holidays)
+    {
+        $this->holidays = $holidays;
+    }
     // ── Ethiopian income tax brackets (monthly gross in ETB) ────────────────
     // Source: Ethiopian Revenue and Customs Authority
     private const TAX_BRACKETS = [
@@ -112,8 +118,13 @@ class PayrollService
         $overtimeHrs = $attSummary['total_overtime_hours'];
 
         // ── Daily and hourly rates ───────────────────────────────────────────
-        $daysInMonth = Carbon::parse($month . '-01')->daysInMonth;
-        $dailyRate   = $daysInMonth > 0 ? $baseSalary / $daysInMonth : 0;
+        // Use actual working days in the month (excluding weekends AND holidays)
+        $periodStart    = Carbon::parse($month . '-01')->toDateString();
+        $periodEnd      = Carbon::parse($month . '-01')->endOfMonth()->toDateString();
+        $workingDaysInMonth = $this->holidays->workingDaysBetween($periodStart, $periodEnd);
+        $workingDaysInMonth = max(1, $workingDaysInMonth); // safety guard
+
+        $dailyRate   = $baseSalary / $workingDaysInMonth;
         $shift       = $employee->currentShift?->shift;
         $shiftHours  = $shift ? $shift->durationHours() : 8;
         $hourlyRate  = $shiftHours > 0 ? $dailyRate / $shiftHours : 0;
@@ -138,9 +149,7 @@ class PayrollService
         $netPay          = $baseSalary + $totalAllowances - $totalDeductions;
         $netPay          = max(0, round($netPay, 2));
 
-        // ── Period dates ─────────────────────────────────────────────────────
-        $periodStart = Carbon::parse($month . '-01')->toDateString();
-        $periodEnd   = Carbon::parse($month . '-01')->endOfMonth()->toDateString();
+        // ── Period dates (already calculated above) ─────────────────────────
 
         return DB::transaction(function () use (
             $employee, $month, $currency, $baseSalary,

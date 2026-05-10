@@ -132,6 +132,7 @@
                         <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
                         <li class="nav-item"><a href="{{ route('hr.payroll') }}" class="nav-link {{ Route::is('hr.payroll') || Route::is('hr.payroll.edit') ? 'active' : '' }}"><i class="bi bi-cash-stack mr-1"></i>Payroll</a></li>
                         <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
                         @php $leaveActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.leave.'); @endphp
                         <li class="nav-item nav-item-submenu {{ $leaveActive ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link {{ $leaveActive ? 'active' : '' }}"><i class="bi bi-calendar-x mr-1"></i>Leave Management</a>
@@ -274,6 +275,7 @@
                         <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
                         <li class="nav-item"><a href="{{ route('hr.payroll') }}" class="nav-link {{ Route::is('hr.payroll') || Route::is('hr.payroll.edit') ? 'active' : '' }}"><i class="bi bi-cash-stack mr-1"></i>Payroll</a></li>
                         <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
                         @php $leaveActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.leave.'); @endphp
                         <li class="nav-item nav-item-submenu {{ $leaveActive ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link {{ $leaveActive ? 'active' : '' }}">
