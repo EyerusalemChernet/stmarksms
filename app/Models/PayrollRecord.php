@@ -11,3 +11,5 @@ class PayrollRecord extends Model
         return $this->belongsTo(\App\User::class, 'staff_id');
     }
 }
+
+// hellooo
