@@ -1,66 +1,175 @@
 <?php
+
 namespace App\Http\Controllers\Finance;
 
 use App\Helpers\Qs;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Models\FeePayment;
-use App\Models\Income;
 use App\Models\MyClass;
-use App\Models\PayrollRecord;
 use App\Models\StudentFeeInvoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FinanceReportController extends Controller
 {
-    public function index(Request $req)
+    public function __construct()
     {
-        $session = $req->session_filter ?? Qs::getCurrentSession();
-        $year    = (int) explode('-', $session)[0];
+        $this->middleware('hr_manager');
+    }
 
-        $d['session']              = $session;
-        $d['total_fees_collected'] = FeePayment::whereYear('paid_at', $year)->sum('amount');
-        $d['total_pending']        = StudentFeeInvoice::where('session',$session)->whereIn('status',['unpaid','partial'])->sum('balance');
-        $d['total_expenses']       = Expense::where('year',$session)->sum('amount');
-        $d['total_income']         = Income::where('year',$session)->sum('amount');
-        $d['salary_paid']          = PayrollRecord::where('status','paid')->whereYear('created_at',$year)->sum('net_salary');
-        $d['net_balance']          = $d['total_fees_collected'] + $d['total_income'] - $d['total_expenses'] - $d['salary_paid'];
+    public function index()
+    {
+        return view('pages.finance.reports.index');
+    }
 
-        // Daily collection (last 30 days)
-        $d['daily_collection'] = FeePayment::selectRaw('DATE(paid_at) as day, SUM(amount) as total')
-            ->where('paid_at', '>=', now()->subDays(29))
-            ->groupBy('day')->orderBy('day')->get();
+    // ── INCOME REPORT ─────────────────────────────────────────────────────────
 
-        // Monthly summary
-        $monthly = array_fill(0, 12, ['fees'=>0,'expenses'=>0,'income'=>0]);
-        $mExprFee = DB::getDriverName() === 'sqlite' ? 'strftime("%m", paid_at) + 0' : 'MONTH(paid_at)';
-        $frows = FeePayment::selectRaw($mExprFee.' as m, SUM(amount) as t')->whereYear('paid_at',$year)->groupBy('m')->get();
-        foreach ($frows as $r) $monthly[$r->m-1]['fees'] = (float)$r->t;
-        $mExprExp = DB::getDriverName() === 'sqlite' ? 'strftime("%m", expense_date) + 0' : 'MONTH(expense_date)';
-        $erows = Expense::selectRaw($mExprExp.' as m, SUM(amount) as t')->whereYear('expense_date',$year)->groupBy('m')->get();
-        foreach ($erows as $r) $monthly[$r->m-1]['expenses'] = (float)$r->t;
-        $mExprInc = DB::getDriverName() === 'sqlite' ? 'strftime("%m", income_date) + 0' : 'MONTH(income_date)';
-        $irows = Income::selectRaw($mExprInc.' as m, SUM(amount) as t')->whereYear('income_date',$year)->groupBy('m')->get();
-        foreach ($irows as $r) $monthly[$r->m-1]['income'] = (float)$r->t;
-        $d['monthly'] = $monthly;
+    public function income(Request $req)
+    {
+        $date_from = $req->get('date_from', now()->startOfMonth()->toDateString());
+        $date_to   = $req->get('date_to', now()->toDateString());
 
-        // Payroll summary
-        $d['payroll_summary'] = PayrollRecord::with('staff')
-            ->selectRaw('staff_id, SUM(net_salary) as total, COUNT(*) as months, MAX(status) as status')
-            ->whereYear('created_at',$year)->groupBy('staff_id')->get();
+        $payments = FeePayment::with(['invoice.fee_structure.category'])
+            ->whereDate('paid_at', '>=', $date_from)
+            ->whereDate('paid_at', '<=', $date_to)
+            ->get();
 
-        // Expense breakdown by category
-        $d['expense_by_cat'] = Expense::with('category')->where('year',$session)
-            ->selectRaw('category_id, SUM(amount) as total')->groupBy('category_id')->get();
+        $total = $payments->sum('amount');
 
-        // Pending by class
-        $d['pending_by_class'] = StudentFeeInvoice::with('fee_structure.my_class')
-            ->where('session',$session)->whereIn('status',['unpaid','partial'])
-            ->selectRaw('fee_structure_id, SUM(balance) as total, COUNT(*) as cnt')
-            ->groupBy('fee_structure_id')->get();
+        $byCategory = $payments->groupBy(fn($p) => optional(optional($p->invoice->fee_structure)->category)->name ?? 'Unknown')
+            ->map(fn($g) => ['total' => $g->sum('amount'), 'count' => $g->count()]);
 
-        $d['classes'] = MyClass::orderBy('name')->get();
-        return view('pages.finance.reports', $d);
+        if ($req->get('export') === 'csv') {
+            return $this->streamCsv("income_{$date_from}_{$date_to}.csv",
+                ['Category', 'Transactions', 'Amount (ETB)'],
+                $byCategory->map(fn($r, $name) => [$name, $r['count'], $r['total']])->values()->toArray()
+            );
+        }
+
+        return view('pages.finance.reports.income', compact('payments', 'total', 'byCategory', 'date_from', 'date_to'));
+    }
+
+    // ── EXPENSE REPORT ────────────────────────────────────────────────────────
+
+    public function expenses(Request $req)
+    {
+        $date_from = $req->get('date_from', now()->startOfMonth()->toDateString());
+        $date_to   = $req->get('date_to', now()->toDateString());
+
+        $expenses = Expense::with('category')
+            ->whereDate('expense_date', '>=', $date_from)
+            ->whereDate('expense_date', '<=', $date_to)
+            ->get();
+
+        $total = $expenses->sum('amount');
+
+        $byCategory = $expenses->groupBy(fn($e) => optional($e->category)->name ?? 'Unknown')
+            ->map(fn($g) => ['total' => $g->sum('amount'), 'count' => $g->count()]);
+
+        if ($req->get('export') === 'csv') {
+            return $this->streamCsv("expenses_{$date_from}_{$date_to}.csv",
+                ['Category', 'Transactions', 'Amount (ETB)'],
+                $byCategory->map(fn($r, $name) => [$name, $r['count'], $r['total']])->values()->toArray()
+            );
+        }
+
+        return view('pages.finance.reports.expenses', compact('expenses', 'total', 'byCategory', 'date_from', 'date_to'));
+    }
+
+    // ── PROFIT / LOSS ─────────────────────────────────────────────────────────
+
+    public function profitLoss(Request $req)
+    {
+        $date_from = $req->get('date_from', now()->startOfYear()->toDateString());
+        $date_to   = $req->get('date_to', now()->toDateString());
+
+        $income   = FeePayment::whereDate('paid_at', '>=', $date_from)->whereDate('paid_at', '<=', $date_to)->sum('amount');
+        $expenses = Expense::whereDate('expense_date', '>=', $date_from)->whereDate('expense_date', '<=', $date_to)->sum('amount');
+        $profit   = $income - $expenses;
+
+        // Monthly breakdown
+        $monthly = [];
+        $isLite  = DB::connection()->getDriverName() === 'sqlite';
+        for ($m = 1; $m <= 12; $m++) {
+            $pad = str_pad($m, 2, '0', STR_PAD_LEFT);
+            $incQ = FeePayment::whereYear('paid_at', now()->year);
+            $expQ = Expense::whereYear('expense_date', now()->year);
+            if ($isLite) {
+                $incQ->whereRaw("strftime('%m', paid_at) = ?", [$pad]);
+                $expQ->whereRaw("strftime('%m', expense_date) = ?", [$pad]);
+            } else {
+                $incQ->whereMonth('paid_at', $m);
+                $expQ->whereMonth('expense_date', $m);
+            }
+            $monthly[$m] = [
+                'income'   => $incQ->sum('amount'),
+                'expenses' => $expQ->sum('amount'),
+            ];
+            $monthly[$m]['profit'] = $monthly[$m]['income'] - $monthly[$m]['expenses'];
+        }
+
+        if ($req->get('export') === 'csv') {
+            $months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return $this->streamCsv("profit_loss_" . now()->year . ".csv",
+                ['Month', 'Income (ETB)', 'Expenses (ETB)', 'Profit/Loss (ETB)'],
+                collect($monthly)->map(fn($r, $m) => [$months[$m], $r['income'], $r['expenses'], $r['profit']])->values()->toArray()
+            );
+        }
+
+        return view('pages.finance.reports.profit_loss', compact('income', 'expenses', 'profit', 'monthly', 'date_from', 'date_to'));
+    }
+
+    // ── OUTSTANDING FEES ──────────────────────────────────────────────────────
+
+    public function outstanding(Request $req)
+    {
+        $session  = $req->get('session', Qs::getCurrentSession());
+        $class_id = $req->get('class_id');
+        $classes  = MyClass::orderBy('name')->get();
+
+        $query = StudentFeeInvoice::with(['student', 'fee_structure.category', 'fee_structure.my_class'])
+            ->whereIn('status', ['unpaid', 'partial'])
+            ->where('session', $session);
+
+        if ($class_id) {
+            $query->whereHas('fee_structure', fn($q) => $q->where('my_class_id', $class_id));
+        }
+
+        $invoices      = $query->get();
+        $total_balance = $invoices->sum('balance');
+
+        if ($req->get('export') === 'csv') {
+            return $this->streamCsv("outstanding_fees_{$session}.csv",
+                ['Student', 'Class', 'Fee Type', 'Net (ETB)', 'Paid (ETB)', 'Balance (ETB)', 'Status', 'Due Date'],
+                $invoices->map(fn($inv) => [
+                    $inv->student->name ?? '-',
+                    optional($inv->fee_structure->my_class)->name ?? '-',
+                    optional($inv->fee_structure->category)->name ?? '-',
+                    $inv->net_amount,
+                    $inv->amount_paid,
+                    $inv->balance,
+                    strtoupper($inv->status),
+                    $inv->due_date ?? '-',
+                ])->toArray()
+            );
+        }
+
+        return view('pages.finance.reports.outstanding', compact('invoices', 'total_balance', 'classes', 'session', 'class_id'));
+    }
+
+
+    // ── HELPER ────────────────────────────────────────────────────────────────
+
+    protected function streamCsv(string $filename, array $headers, array $rows)
+    {
+        $httpHeaders = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename={$filename}"];
+        $callback    = function () use ($headers, $rows) {
+            $h = fopen('php://output', 'w');
+            fputcsv($h, $headers);
+            foreach ($rows as $row) fputcsv($h, $row);
+            fclose($h);
+        };
+        return response()->stream($callback, 200, $httpHeaders);
     }
 }

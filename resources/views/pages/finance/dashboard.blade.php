@@ -9,13 +9,12 @@
         ['label'=>'Fees Collected',  'value'=>$total_fees_collected, 'icon'=>'bi-cash-coin',       'color'=>'#22c55e', 'bg'=>'#f0fdf4'],
         ['label'=>'Pending Fees',    'value'=>$total_pending,        'icon'=>'bi-hourglass-split',  'color'=>'#f59e0b', 'bg'=>'#fffbeb'],
         ['label'=>'Total Expenses',  'value'=>$total_expenses,       'icon'=>'bi-arrow-down-circle','color'=>'#ef4444', 'bg'=>'#fef2f2'],
-        ['label'=>'Salary Paid',     'value'=>$salary_paid,          'icon'=>'bi-wallet2',          'color'=>'#8b5cf6', 'bg'=>'#f5f3ff'],
         ['label'=>'Other Income',    'value'=>$other_income,         'icon'=>'bi-arrow-up-circle',  'color'=>'#3b82f6', 'bg'=>'#eff6ff'],
         ['label'=>'Net Balance',     'value'=>$net_balance,          'icon'=>'bi-bar-chart-line',   'color'=>$net_balance>=0?'#22c55e':'#ef4444', 'bg'=>$net_balance>=0?'#f0fdf4':'#fef2f2'],
     ];
     @endphp
     @foreach($cards as $card)
-    <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="col-xl col-md-4 col-sm-6">
         <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
             <div class="card-body p-3">
                 <div class="d-flex align-items-center justify-content-between mb-2">
