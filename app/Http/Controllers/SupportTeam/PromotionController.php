@@ -94,6 +94,15 @@ class PromotionController extends Controller
                 $d['grad_date'] = $oy;
             }
 
+            // Auto-update age from DOB at time of promotion
+            if ($st->user && $st->user->dob) {
+                try {
+                    $d['age'] = \Carbon\Carbon::parse($st->user->dob)->age;
+                } catch (\Exception $e) {
+                    // keep existing age if DOB is invalid
+                }
+            }
+
             $this->student->updateRecord($st->id, $d);
 
 //            Insert New Promotion Data
