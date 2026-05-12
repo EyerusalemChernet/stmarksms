@@ -281,7 +281,87 @@ Route::group(['middleware' => 'auth'], function(){
 /************************ HR MODULE + FINANCE (hr_manager only) ****************************/
 Route::group(['namespace' => 'SupportTeam', 'middleware' => ['auth', 'hr_manager']], function(){
 
-    /*************** Payments *****************/
+/************************ FINANCE MODULE (hr_manager only) ****************************/
+Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' => 'finance'], function(){
+
+    // --- Student Fees ---
+    Route::group(['prefix' => 'fees'], function() {
+        Route::get('/categories', 'StudentFeeController@categories')->name('fees.categories');
+        Route::post('/categories', 'StudentFeeController@storeCategory')->name('fees.categories.store');
+        Route::put('/categories/{id}', 'StudentFeeController@updateCategory')->name('fees.categories.update');
+        Route::delete('/categories/{id}', 'StudentFeeController@destroyCategory')->name('fees.categories.destroy');
+
+        Route::get('/structures', 'StudentFeeController@structures')->name('fees.structures');
+        Route::post('/structures', 'StudentFeeController@storeStructure')->name('fees.structures.store');
+        Route::put('/structures/{id}', 'StudentFeeController@updateStructure')->name('fees.structures.update');
+        Route::delete('/structures/{id}', 'StudentFeeController@destroyStructure')->name('fees.structures.destroy');
+        Route::post('/bulk-assign', 'StudentFeeController@assignFee')->name('fees.bulk_assign');
+
+        Route::get('/invoices', 'StudentFeeController@invoices')->name('fees.invoices');
+        Route::get('/invoice/{id}', 'StudentFeeController@invoiceDetail')->name('fees.invoice');
+        Route::post('/pay/{id}', 'StudentFeeController@recordPayment')->name('fees.pay');
+        Route::post('/discount/{id}', 'StudentFeeController@applyDiscount')->name('fees.discount');
+        Route::post('/fine/{id}', 'StudentFeeController@applyFine')->name('fees.fine');
+
+        Route::get('/payments', 'StudentFeeController@payments')->name('fees.payments');
+        Route::get('/receipt/{id}', 'StudentFeeController@receipt')->name('fees.receipt');
+        Route::get('/pending', 'StudentFeeController@pendingList')->name('fees.pending');
+        Route::get('/report', 'StudentFeeController@report')->name('fees.report');
+    });
+
+    // --- Expenses ---
+    Route::group(['prefix' => 'expenses'], function() {
+        Route::get('/', 'ExpenseController@index')->name('expenses.index');
+        Route::get('/create', 'ExpenseController@create')->name('expenses.create');
+        Route::post('/', 'ExpenseController@store')->name('expenses.store');
+        Route::get('/{id}/edit', 'ExpenseController@edit')->name('expenses.edit');
+        Route::put('/{id}', 'ExpenseController@update')->name('expenses.update');
+        Route::delete('/{id}', 'ExpenseController@destroy')->name('expenses.destroy');
+        Route::get('/export/csv', 'ExpenseController@exportCsv')->name('expenses.csv');
+
+        Route::get('/categories', 'ExpenseController@categories')->name('expense_cats.index');
+        Route::post('/categories', 'ExpenseController@storeCategory')->name('expense_cats.store');
+        Route::put('/categories/{id}', 'ExpenseController@updateCategory')->name('expense_cats.update');
+        Route::delete('/categories/{id}', 'ExpenseController@destroyCategory')->name('expense_cats.destroy');
+    });
+
+    // --- Transport ---
+    Route::group(['prefix' => 'transport'], function() {
+        Route::get('/', 'TransportController@index')->name('transport.index');
+        Route::post('/', 'TransportController@store')->name('transport.store');
+        Route::put('/{id}', 'TransportController@update')->name('transport.update');
+        Route::delete('/{id}', 'TransportController@destroy')->name('transport.destroy');
+        Route::get('/payments', 'TransportController@payments')->name('transport.payments');
+        Route::post('/payments', 'TransportController@storePayment')->name('transport.pay');
+    });
+
+    // --- Financial Reports ---
+    Route::group(['prefix' => 'reports'], function() {
+        Route::get('/', 'FinanceReportController@index')->name('finance.reports');
+        Route::get('/income', 'FinanceReportController@income')->name('reports.income');
+        Route::get('/expenses', 'FinanceReportController@expenses')->name('reports.expenses');
+        Route::get('/profit-loss', 'FinanceReportController@profitLoss')->name('reports.profit_loss');
+        Route::get('/outstanding', 'FinanceReportController@outstanding')->name('reports.outstanding');
+    });
+
+});
+
+
+/************************ HR MODULE (hr_manager only) ****************************/
+Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefix' => 'hr'], function(){
+
+    Route::get('/', 'HRController@index')->name('hr.index');
+    Route::get('/staff/{id}', 'HRController@show')->name('hr.show');
+    Route::get('/departments', 'HRController@departments')->name('hr.departments');
+    Route::post('/departments', 'HRController@storeDepartment')->name('hr.departments.store');
+    Route::put('/departments/{id}', 'HRController@updateDepartment')->name('hr.departments.update');
+    Route::delete('/departments/{id}', 'HRController@destroyDepartment')->name('hr.departments.destroy');
+    Route::post('/assign-department/{user_id}', 'HRController@assignDepartment')->name('hr.assign_department');
+    Route::get('/attendance', 'HRController@attendance')->name('hr.attendance');
+    Route::post('/attendance', 'HRController@saveAttendance')->name('hr.attendance.save');
+    Route::get('/workload', 'HRController@workload')->name('hr.workload');
+
+    /*************** Payments (Legacy) *****************/
     Route::group(['prefix' => 'payments'], function(){
         Route::get('manage/{class_id?}', 'PaymentController@manage')->name('payments.manage');
         Route::get('invoice/{id}/{year?}', 'PaymentController@invoice')->name('payments.invoice');

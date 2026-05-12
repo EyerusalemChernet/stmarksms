@@ -30,21 +30,6 @@ class CreateFinanceModuleTables extends Migration
             $table->timestamps();
         });
 
-        // Payroll
-        Schema::create('payroll_records', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('staff_id');
-            $table->string('month'); // e.g. 2026-04
-            $table->decimal('basic_salary', 10, 2)->default(0);
-            $table->decimal('allowances', 10, 2)->default(0);
-            $table->decimal('deductions', 10, 2)->default(0);
-            $table->decimal('net_salary', 10, 2)->default(0);
-            $table->enum('status', ['pending', 'paid'])->default('pending');
-            $table->string('payment_method')->default('bank_transfer');
-            $table->text('notes')->nullable();
-            $table->timestamps();
-        });
-
         // Expenses
         Schema::create('expense_categories', function (Blueprint $table) {
             $table->id();
@@ -94,7 +79,6 @@ class CreateFinanceModuleTables extends Migration
         Schema::dropIfExists('income_categories');
         Schema::dropIfExists('expenses');
         Schema::dropIfExists('expense_categories');
-        Schema::dropIfExists('payroll_records');
         Schema::dropIfExists('transport_records');
         Schema::dropIfExists('transport_routes');
     }

@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Expense;
 use App\Models\FeePayment;
 use App\Models\Income;
-use App\Models\PayrollRecord;
 use App\Models\StudentFeeInvoice;
 use App\Models\TransportRecord;
 
@@ -21,9 +20,8 @@ class FinanceDashboardController extends Controller
         $d['total_fees_collected'] = FeePayment::whereYear('paid_at', $year)->sum('amount');
         $d['total_pending']        = StudentFeeInvoice::where('session', $session)->whereIn('status',['unpaid','partial'])->sum('balance');
         $d['total_expenses']       = Expense::where('year', $session)->sum('amount');
-        $d['salary_paid']          = PayrollRecord::where('status','paid')->whereYear('created_at', $year)->sum('net_salary');
         $d['other_income']         = Income::where('year', $session)->sum('amount');
-        $d['net_balance']          = $d['total_fees_collected'] + $d['other_income'] - $d['total_expenses'] - $d['salary_paid'];
+        $d['net_balance']          = $d['total_fees_collected'] + $d['other_income'] - $d['total_expenses'];
 
         // Monthly fee collection for chart (12 months)
         $monthly = array_fill(0, 12, 0);
