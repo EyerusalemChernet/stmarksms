@@ -8,6 +8,9 @@ use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmploymentDetails;
+use App\Models\EthiopianHoliday;
+use App\Models\JobPosting;
+use App\Models\LeaveRequest;
 use App\Models\Position;
 use App\Models\Shift;
 use App\Models\StaffAttendance;
@@ -18,6 +21,7 @@ use App\Models\StaffShift;
 use App\Models\Subject;
 use App\Services\AttendanceService;
 use App\Services\EmployeeProfileService;
+use App\Services\EthiopianHolidayService;
 use App\Services\PayrollService;
 use App\User;
 use Carbon\Carbon;
@@ -29,16 +33,124 @@ class HRController extends Controller
     protected EmployeeProfileService $profileService;
     protected AttendanceService $attendanceService;
     protected PayrollService $payrollService;
+    protected EthiopianHolidayService $holidayService;
 
     public function __construct(
         EmployeeProfileService $profileService,
         AttendanceService $attendanceService,
-        PayrollService $payrollService
+        PayrollService $payrollService,
+        EthiopianHolidayService $holidayService
     ) {
         $this->middleware('hr_manager');
         $this->profileService    = $profileService;
         $this->attendanceService = $attendanceService;
         $this->payrollService    = $payrollService;
+        $this->holidayService    = $holidayService;
+    }
+
+    // ── HR DASHBOARD ─────────────────────────────────────────────────────────
+
+    public function dashboard()
+    {
+        $today = now()->toDateString();
+        $month = now()->format('Y-m');
+
+        // ── Headcount ────────────────────────────────────────────────────────
+        $totalActive     = Employee::where('status', 'active')->count();
+        $totalOnLeave    = Employee::where('status', 'on_leave')->count();
+        $totalSuspended  = Employee::where('status', 'suspended')->count();
+        $totalTerminated = Employee::where('status', 'terminated')->count();
+
+        // ── Today's attendance ───────────────────────────────────────────────
+        $todayPresent = StaffAttendance::where('date', $today)
+            ->whereIn('status', ['present', 'late'])
+            ->whereNotNull('employee_id')->count();
+        $todayAbsent  = StaffAttendance::where('date', $today)
+            ->where('status', 'absent')
+            ->whereNotNull('employee_id')->count();
+        $todayLate    = StaffAttendance::where('date', $today)
+            ->where('status', 'late')
+            ->whereNotNull('employee_id')->count();
+        $todayOnLeave = StaffAttendance::where('date', $today)
+            ->where('status', 'leave')
+            ->whereNotNull('employee_id')->count();
+
+        // Attendance rate today (out of active employees)
+        $attRate = $totalActive > 0
+            ? round(($todayPresent / $totalActive) * 100, 1)
+            : 0;
+
+        // ── Payroll this month ───────────────────────────────────────────────
+        $payrollCounts = StaffPayroll::where('month', $month)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $payrollDraft    = $payrollCounts->get('draft', 0);
+        $payrollApproved = $payrollCounts->get('approved', 0);
+        $payrollPaid     = $payrollCounts->get('paid', 0);
+        $totalNetPay     = StaffPayroll::where('month', $month)
+            ->where('status', 'paid')->sum('net_pay');
+
+        // ── Leave requests ───────────────────────────────────────────────────
+        $pendingLeave   = LeaveRequest::where('status', 'pending')->count();
+        $approvedLeave  = LeaveRequest::where('status', 'approved')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)->count();
+        $recentLeave    = LeaveRequest::with('employee')
+            ->where('status', 'pending')
+            ->orderByDesc('created_at')->take(5)->get();
+
+        // ── Recruitment ──────────────────────────────────────────────────────
+        $openPostings   = JobPosting::where('status', 'open')->count();
+        $newApplications = \App\Models\JobApplication::where('status', 'applied')
+            ->where('created_at', '>=', now()->subDays(7))->count();
+
+        // ── Department breakdown ─────────────────────────────────────────────
+        $deptBreakdown = Department::withCount(['employees as active_count' => function ($q) {
+            $q->where('status', 'active');
+        }])->orderByDesc('active_count')->take(6)->get();
+
+        // ── Recent hires (last 30 days) ──────────────────────────────────────
+        $recentHires = Employee::with('employmentDetails.department')
+            ->where('status', 'active')
+            ->whereHas('employmentDetails', fn($q) =>
+                $q->where('hire_date', '>=', now()->subDays(30))
+            )
+            ->orderByDesc('created_at')->take(5)->get();
+
+        // ── Monthly attendance trend (last 6 months) ─────────────────────────
+        $attendanceTrend = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $m   = now()->subMonths($i)->format('Y-m');
+            $lbl = now()->subMonths($i)->format('M Y');
+            $total   = StaffAttendance::where('date', 'like', $m . '%')
+                ->whereNotNull('employee_id')->count();
+            $present = StaffAttendance::where('date', 'like', $m . '%')
+                ->whereNotNull('employee_id')
+                ->whereIn('status', ['present', 'late'])->count();
+            $attendanceTrend->push([
+                'month'   => $lbl,
+                'rate'    => $total > 0 ? round(($present / $total) * 100, 1) : 0,
+                'present' => $present,
+                'total'   => $total,
+            ]);
+        }
+
+        // ── Unlinked staff users (no Employee record) ───────────────────────
+        $staffTypes     = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        $linkedUserIds  = Employee::whereNotNull('user_id')->pluck('user_id');
+        $unlinkedCount  = User::whereIn('user_type', $staffTypes)
+            ->whereNotIn('id', $linkedUserIds)->count();
+
+        return view('pages.hr.dashboard', compact(
+            'totalActive', 'totalOnLeave', 'totalSuspended', 'totalTerminated',
+            'todayPresent', 'todayAbsent', 'todayLate', 'todayOnLeave', 'attRate',
+            'payrollDraft', 'payrollApproved', 'payrollPaid', 'totalNetPay', 'month',
+            'pendingLeave', 'approvedLeave', 'recentLeave',
+            'openPostings', 'newApplications',
+            'deptBreakdown', 'recentHires', 'attendanceTrend', 'today',
+            'unlinkedCount'
+        ));
     }
 
     // ── EMPLOYEE LIST ────────────────────────────────────────────────────────
@@ -151,6 +263,99 @@ class HRController extends Controller
         AuditLog::log('created','hr',"Employee created: {$employee->employee_code}");
         return redirect()->route('hr.show', $employee->id)
             ->with('flash_success', "Employee {$employee->full_name} created.");
+    }
+
+    // ── USER ↔ EMPLOYEE LINKING ──────────────────────────────────────────────
+
+    /**
+     * Show staff users that have no linked Employee record.
+     */
+    public function unlinkedUsers()
+    {
+        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        $linkedUserIds = Employee::whereNotNull('user_id')->pluck('user_id');
+
+        $unlinked = User::whereIn('user_type', $staffTypes)
+            ->whereNotIn('id', $linkedUserIds)
+            ->orderBy('name')->get();
+
+        $employees = Employee::whereNull('user_id')
+            ->with('employmentDetails.department')
+            ->orderBy('first_name')->get();
+
+        return view('pages.hr.employees_unlinked', compact('unlinked', 'employees'));
+    }
+
+    /**
+     * Auto-create an Employee record from an existing unlinked User.
+     */
+    public function syncFromUser($userId)
+    {
+        $user = User::findOrFail($userId);
+
+        if (Employee::where('user_id', $userId)->exists()) {
+            return back()->with('flash_danger', "{$user->name} already has an Employee record.");
+        }
+
+        $employee = EmployeeProfileService::createFromUser($user);
+        AuditLog::log('created', 'hr', "Employee synced from user #{$userId} ({$user->name})");
+
+        return back()->with('flash_success',
+            "Employee record {$employee->employee_code} created for {$user->name}.");
+    }
+
+    /**
+     * Auto-create Employee records for ALL unlinked staff users at once.
+     */
+    public function syncAllUsers()
+    {
+        $staffTypes  = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        $linkedIds   = Employee::whereNotNull('user_id')->pluck('user_id');
+        $unlinked    = User::whereIn('user_type', $staffTypes)
+            ->whereNotIn('id', $linkedIds)->get();
+
+        $created = 0;
+        foreach ($unlinked as $user) {
+            if (EmployeeProfileService::createFromUser($user)) {
+                $created++;
+            }
+        }
+
+        AuditLog::log('created', 'hr', "Bulk employee sync: {$created} records created");
+        return back()->with('flash_success', "{$created} Employee record(s) created successfully.");
+    }
+
+    /**
+     * Link an existing Employee record to an existing User account.
+     */
+    public function linkUser(Request $req, $hrId)
+    {
+        $req->validate(['user_id' => 'required|exists:users,id']);
+        $employee = Employee::findOrFail($hrId);
+
+        if ($employee->user_id) {
+            return back()->with('flash_danger', 'This employee is already linked to a user account.');
+        }
+        if (Employee::where('user_id', $req->user_id)->exists()) {
+            return back()->with('flash_danger', 'That user account is already linked to another employee.');
+        }
+
+        $employee->update(['user_id' => $req->user_id]);
+        AuditLog::log('updated', 'hr', "Employee #{$hrId} linked to user #{$req->user_id}");
+
+        return back()->with('flash_success', 'User account linked to employee.');
+    }
+
+    /**
+     * Unlink a User account from an Employee record.
+     */
+    public function unlinkUser($hrId)
+    {
+        $employee = Employee::findOrFail($hrId);
+        $employee->update(['user_id' => null]);
+        AuditLog::log('updated', 'hr', "Employee #{$hrId} unlinked from user account");
+
+        return back()->with('flash_success', 'User account unlinked.');
     }
 
     // ── EMPLOYEE PROFILE — VIEW ──────────────────────────────────────────────
@@ -473,6 +678,12 @@ class HRController extends Controller
         $todayRecords   = StaffAttendance::where('date',$today)->whereNotNull('employee_id')->get()->keyBy('employee_id');
         $monthlySummary = $this->attendanceService->allEmployeesMonthlySummary($month);
 
+        // Holiday info for today and the selected month
+        $todayHoliday    = $this->holidayService->getHolidayName($today);
+        $monthHolidays   = EthiopianHoliday::where('year', substr($month, 0, 4))
+            ->where('date', 'like', $month . '%')
+            ->orderBy('date')->get();
+
         if ($req->get('export') === 'pdf') {
             $pdf = PDF::loadView('pages.hr.exports.attendance_summary_pdf', compact('employees','monthlySummary','month','search'));
             return $pdf->setPaper('a4','landscape')->download("attendance_summary_{$month}.pdf");
@@ -481,7 +692,7 @@ class HRController extends Controller
             return $this->exportAttendanceSummaryCsv($employees, $monthlySummary, $month);
         }
 
-        return view('pages.hr.attendance', compact('employees','today','todayRecords','month','monthlySummary','search'));
+        return view('pages.hr.attendance', compact('employees','today','todayRecords','month','monthlySummary','search','todayHoliday','monthHolidays'));
     }
 
     protected function exportAttendanceSummaryCsv($employees, $monthlySummary, $month)
@@ -699,5 +910,48 @@ class HRController extends Controller
             return $t;
         });
         return view('pages.hr.workload', compact('teachers'));
+    }
+
+    // ── ETHIOPIAN HOLIDAYS ────────────────────────────────────────────────────
+
+    public function holidays(Request $req)
+    {
+        $year     = (int) $req->get('year', now()->year);
+        $holidays = EthiopianHoliday::where('year', $year)->orderBy('date')->get();
+        $preview  = $this->holidayService->getHolidaysForYear($year);
+        return view('pages.hr.holidays', compact('holidays', 'year', 'preview'));
+    }
+
+    public function storeHoliday(Request $req)
+    {
+        $req->validate([
+            'date'  => 'required|date',
+            'name'  => 'required|string|max:150',
+            'type'  => 'required|in:public,religious,school',
+            'notes' => 'nullable|string|max:255',
+        ]);
+        $year = Carbon::parse($req->date)->year;
+        EthiopianHoliday::updateOrCreate(
+            ['date' => $req->date, 'name' => $req->name],
+            ['type' => $req->type, 'is_paid' => true, 'year' => $year, 'notes' => $req->notes]
+        );
+        AuditLog::log('created', 'hr', "Holiday added: {$req->name} on {$req->date}");
+        return back()->with('flash_success', "Holiday '{$req->name}' added.");
+    }
+
+    public function seedHolidays(Request $req)
+    {
+        $req->validate(['year' => 'required|integer|min:2020|max:2099']);
+        $count = $this->holidayService->seedYear((int) $req->year);
+        AuditLog::log('created', 'hr', "Ethiopian holidays seeded for {$req->year}: {$count} records");
+        return back()->with('flash_success', "{$count} holidays seeded for {$req->year}.");
+    }
+
+    public function destroyHoliday($hrId)
+    {
+        $holiday = EthiopianHoliday::findOrFail($hrId);
+        AuditLog::log('deleted', 'hr', "Holiday deleted: {$holiday->name} on {$holiday->date}");
+        $holiday->delete();
+        return back()->with('flash_success', 'Holiday removed.');
     }
 }

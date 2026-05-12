@@ -9,6 +9,29 @@
     </a>
 </div>
 
+{{-- Holiday alert for today --}}
+@if(isset($todayHoliday) && $todayHoliday)
+<div class="alert alert-warning d-flex align-items-center mb-3">
+    <i class="bi bi-calendar-event mr-2" style="font-size:1.2rem;"></i>
+    <div>
+        <strong>Today is a public holiday:</strong> {{ $todayHoliday }}.
+        Attendance marked today will still be recorded, but this day is excluded from payroll working-day calculations.
+    </div>
+</div>
+@endif
+
+{{-- Holidays in selected month --}}
+@if(isset($monthHolidays) && $monthHolidays->count() > 0)
+<div class="alert alert-info py-2 mb-3 small">
+    <i class="bi bi-info-circle mr-1"></i>
+    <strong>{{ $monthHolidays->count() }} public holiday(s) in {{ $month }}:</strong>
+    @foreach($monthHolidays as $h)
+        <span class="badge badge-light border ml-1">{{ $h->date->format('d M') }} — {{ $h->name }}</span>
+    @endforeach
+    — these days are excluded from payroll working-day calculations.
+</div>
+@endif
+
 {{-- Month summary tab --}}
 <div class="card mb-3">
     <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">

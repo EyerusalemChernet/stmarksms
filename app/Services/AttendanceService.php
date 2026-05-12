@@ -22,6 +22,30 @@ class AttendanceService
      */
     private const LATE_GRACE_MINUTES = 15;
 
+    protected EthiopianHolidayService $holidays;
+
+    public function __construct(EthiopianHolidayService $holidays)
+    {
+        $this->holidays = $holidays;
+    }
+
+    /**
+     * Check if a given date is an Ethiopian public holiday.
+     */
+    public function isHoliday(string $date): bool
+    {
+        return $this->holidays->isHoliday($date);
+    }
+
+    /**
+     * Check if a given date is a working day (not weekend, not holiday).
+     */
+    public function isWorkingDay(string $date): bool
+    {
+        $carbon = Carbon::parse($date);
+        return !$carbon->isWeekend() && !$this->isHoliday($date);
+    }
+
     // ── Core save ────────────────────────────────────────────────────────────
 
     /**
