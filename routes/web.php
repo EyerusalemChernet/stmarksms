@@ -184,6 +184,8 @@ Route::group(['middleware' => 'auth'], function () {
             Route::get('/', 'LibraryController@index')->name('library.index');
             Route::get('/create', 'LibraryController@create')->name('library.create');
             Route::post('/', 'LibraryController@store')->name('library.store');
+            Route::get('/bulk-template', 'LibraryController@bulkTemplate')->name('library.bulk.template');
+            Route::post('/bulk-import', 'LibraryController@bulkImport')->name('library.bulk.import');
             Route::get('/edit/{id}', 'LibraryController@edit')->name('library.edit');
             Route::put('/{id}', 'LibraryController@update')->name('library.update');
             Route::delete('/{id}', 'LibraryController@destroy')->name('library.destroy');

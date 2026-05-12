@@ -18,6 +18,12 @@ class StudentRecordCreate extends FormRequest
             'name'          => 'required|string|min:6|max:150',
             'gender'        => 'required|string',
             'year_admitted' => 'required|string',
+            // Date of birth: student must be at least 3 and at most 25 years old
+            'dob'           => [
+                'sometimes', 'nullable', 'date',
+                'before:' . now()->subYears(3)->format('Y-m-d'),
+                'after:'  . now()->subYears(25)->format('Y-m-d'),
+            ],
             // Ethiopian mobile: 10 digits starting with 09
             'phone'         => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
             // Alternative phone (Guardian 2) — optional, same format
@@ -48,6 +54,7 @@ class StudentRecordCreate extends FormRequest
             'my_parent_id' => 'Parent',
             'phone'        => 'Phone Number',
             'phone2'       => 'Alternative Phone',
+            'dob'          => 'Date of Birth',
         ];
     }
 
@@ -56,6 +63,8 @@ class StudentRecordCreate extends FormRequest
         return [
             'phone.regex'  => 'Phone number must be 10 digits starting with 09 (e.g., 0911434321).',
             'phone2.regex' => 'Alternative phone must be 10 digits starting with 09 (e.g., 0911434321).',
+            'dob.before'   => 'Student must be at least 3 years old.',
+            'dob.after'    => 'Student age cannot exceed 25 years. Please verify the date of birth.',
         ];
     }
 

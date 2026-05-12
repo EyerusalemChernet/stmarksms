@@ -92,6 +92,13 @@ class StudentRecordController extends Controller
         $sr['user_id'] = $user->id;
         $sr['session'] = Qs::getSetting('current_session');
 
+        // Auto-calculate age from DOB
+        if (!empty($data['dob'])) {
+            try {
+                $sr['age'] = \Carbon\Carbon::parse($data['dob'])->age;
+            } catch (\Exception $e) {}
+        }
+
         $this->student->createRecord($sr); // Create Student
         AuditLog::log('created', 'students', "Student '{$data['name']}' admitted (Adm: {$data['username']})");
         return Qs::jsonStoreOk();
@@ -172,6 +179,13 @@ class StudentRecordController extends Controller
         $this->user->update($sr->user->id, $d); // Update User Details
 
         $srec = $req->only(Qs::getStudentData());
+
+        // Auto-recalculate age from updated DOB
+        if (!empty($d['dob'])) {
+            try {
+                $srec['age'] = \Carbon\Carbon::parse($d['dob'])->age;
+            } catch (\Exception $e) {}
+        }
 
         $this->student->updateRecord($sr_id, $srec); // Update St Rec
 
