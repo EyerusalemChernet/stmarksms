@@ -200,6 +200,51 @@
                 </li>
 
                 <li class="sidebar-section-label">Finance</li>
+                @php $feesActive = str_starts_with(Route::currentRouteName() ?? '', 'fees.'); @endphp
+                @php $expActive = str_starts_with(Route::currentRouteName() ?? '', 'expense'); @endphp
+                @php $payActive = str_starts_with(Route::currentRouteName() ?? '', 'payroll') || str_starts_with(Route::currentRouteName() ?? '', 'salary'); @endphp
+                @php $repActive = str_starts_with(Route::currentRouteName() ?? '', 'reports.') || Route::is('finance.reports'); @endphp
+
+                <li class="nav-item nav-item-submenu {{ $feesActive ? 'nav-item-expanded nav-item-open' : '' }}">
+                    <a href="#" class="nav-link"><i class="bi bi-cash-coin"></i><span>Fee Management</span></a>
+                    <ul class="nav nav-group-sub">
+                        <li class="nav-item"><a href="{{ route('fees.categories') }}" class="nav-link {{ Route::is('fees.categories') ? 'active' : '' }}">Fee Categories</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.structures') }}" class="nav-link {{ Route::is('fees.structures') ? 'active' : '' }}">Fee Structures</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.invoices') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['fees.invoices','fees.invoice']) ? 'active' : '' }}">Invoices</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.pending') }}" class="nav-link {{ Route::is('fees.pending') ? 'active' : '' }}">Pending Balances</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.report') }}" class="nav-link {{ Route::is('fees.report') ? 'active' : '' }}">Fee Report</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item nav-item-submenu {{ $expActive ? 'nav-item-expanded nav-item-open' : '' }}">
+                    <a href="#" class="nav-link"><i class="bi bi-receipt-cutoff"></i><span>Expenses</span></a>
+                    <ul class="nav nav-group-sub">
+                        <li class="nav-item"><a href="{{ route('expenses.index') }}" class="nav-link {{ Route::is('expenses.index') ? 'active' : '' }}">All Expenses</a></li>
+                        <li class="nav-item"><a href="{{ route('expenses.create') }}" class="nav-link {{ Route::is('expenses.create') ? 'active' : '' }}">Add Expense</a></li>
+                        <li class="nav-item"><a href="{{ route('expense_cats.index') }}" class="nav-link {{ Route::is('expense_cats.index') ? 'active' : '' }}">Categories</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item nav-item-submenu {{ $payActive ? 'nav-item-expanded nav-item-open' : '' }}">
+                    <a href="#" class="nav-link"><i class="bi bi-people"></i><span>Payroll</span></a>
+                    <ul class="nav nav-group-sub">
+                        <li class="nav-item"><a href="{{ route('payroll.index') }}" class="nav-link {{ Route::is('payroll.index') ? 'active' : '' }}">Payroll Records</a></li>
+                        <li class="nav-item"><a href="{{ route('payroll.create') }}" class="nav-link {{ Route::is('payroll.create') ? 'active' : '' }}">Process Payroll</a></li>
+                        <li class="nav-item"><a href="{{ route('salary.index') }}" class="nav-link {{ Route::is('salary.index') ? 'active' : '' }}">Salary Structures</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item nav-item-submenu {{ $repActive ? 'nav-item-expanded nav-item-open' : '' }}">
+                    <a href="#" class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Financial Reports</span></a>
+                    <ul class="nav nav-group-sub">
+                        <li class="nav-item"><a href="{{ route('finance.reports') }}" class="nav-link {{ Route::is('finance.reports') ? 'active' : '' }}">Overview</a></li>
+                        <li class="nav-item"><a href="{{ route('reports.income') }}" class="nav-link {{ Route::is('reports.income') ? 'active' : '' }}">Income</a></li>
+                        <li class="nav-item"><a href="{{ route('reports.expenses') }}" class="nav-link {{ Route::is('reports.expenses') ? 'active' : '' }}">Expenses</a></li>
+                        <li class="nav-item"><a href="{{ route('reports.profit_loss') }}" class="nav-link {{ Route::is('reports.profit_loss') ? 'active' : '' }}">Profit / Loss</a></li>
+                        <li class="nav-item"><a href="{{ route('reports.outstanding') }}" class="nav-link {{ Route::is('reports.outstanding') ? 'active' : '' }}">Outstanding Fees</a></li>
+                        <li class="nav-item"><a href="{{ route('reports.salary') }}" class="nav-link {{ Route::is('reports.salary') ? 'active' : '' }}">Salary Report</a></li>
+                    </ul>
+                </li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['payments.index','payments.create','payments.edit','payments.manage','payments.show','payments.invoice']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-cash-stack"></i><span>Payments</span></a>
                     <ul class="nav nav-group-sub">

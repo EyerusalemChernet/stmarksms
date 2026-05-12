@@ -1,4 +1,4 @@
-@extends('layouts.master')
+~@extends('layouts.master')
 @section('page_title', 'Finance Reports')
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">

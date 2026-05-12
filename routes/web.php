@@ -213,6 +213,75 @@ Route::group(['middleware' => 'auth'], function(){
     });
 });
 
+/************************ FEE MANAGEMENT (hr_manager only) ****************************/
+Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' => 'fees'], function(){
+
+    // Categories
+    Route::get('/categories', 'StudentFeeController@categories')->name('fees.categories');
+    Route::post('/categories', 'StudentFeeController@storeCategory')->name('fees.categories.store');
+    Route::put('/categories/{id}', 'StudentFeeController@updateCategory')->name('fees.categories.update');
+    Route::delete('/categories/{id}', 'StudentFeeController@destroyCategory')->name('fees.categories.destroy');
+
+    // Structures
+    Route::get('/structures', 'StudentFeeController@structures')->name('fees.structures');
+    Route::post('/structures', 'StudentFeeController@storeStructure')->name('fees.structures.store');
+    Route::put('/structures/{id}', 'StudentFeeController@updateStructure')->name('fees.structures.update');
+    Route::delete('/structures/{id}', 'StudentFeeController@destroyStructure')->name('fees.structures.destroy');
+    Route::post('/bulk-assign', 'StudentFeeController@assignFee')->name('fees.bulk_assign');
+
+    // Invoices
+    Route::get('/invoices', 'StudentFeeController@invoices')->name('fees.invoices');
+    Route::get('/invoice/{id}', 'StudentFeeController@invoiceDetail')->name('fees.invoice');
+    Route::post('/pay/{id}', 'StudentFeeController@recordPayment')->name('fees.pay');
+    Route::post('/discount/{id}', 'StudentFeeController@applyDiscount')->name('fees.discount');
+    Route::post('/fine/{id}', 'StudentFeeController@applyFine')->name('fees.fine');
+
+    // Payments & Reports
+    Route::get('/payments', 'StudentFeeController@payments')->name('fees.payments');
+    Route::get('/receipt/{id}', 'StudentFeeController@receipt')->name('fees.receipt');
+    Route::get('/pending', 'StudentFeeController@pendingList')->name('fees.pending');
+    Route::get('/report', 'StudentFeeController@report')->name('fees.report');
+});
+
+/************************ EXPENSE MANAGEMENT (hr_manager only) ****************************/
+Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' => 'finance'], function(){
+
+    // Expense Categories
+    Route::get('/expense-categories', 'ExpenseController@categories')->name('expense_cats.index');
+    Route::post('/expense-categories', 'ExpenseController@storeCategory')->name('expense_cats.store');
+    Route::put('/expense-categories/{id}', 'ExpenseController@updateCategory')->name('expense_cats.update');
+    Route::delete('/expense-categories/{id}', 'ExpenseController@destroyCategory')->name('expense_cats.destroy');
+
+    // Expenses
+    Route::get('/expenses', 'ExpenseController@index')->name('expenses.index');
+    Route::get('/expenses/create', 'ExpenseController@create')->name('expenses.create');
+    Route::post('/expenses', 'ExpenseController@store')->name('expenses.store');
+    Route::get('/expenses/{id}/edit', 'ExpenseController@edit')->name('expenses.edit');
+    Route::put('/expenses/{id}', 'ExpenseController@update')->name('expenses.update');
+    Route::delete('/expenses/{id}', 'ExpenseController@destroy')->name('expenses.destroy');
+    Route::get('/expenses/export/csv', 'ExpenseController@exportCsv')->name('expenses.csv');
+
+    // Payroll
+    Route::get('/payroll', 'PayrollController@index')->name('payroll.index');
+    Route::get('/payroll/create', 'PayrollController@create')->name('payroll.create');
+    Route::post('/payroll', 'PayrollController@store')->name('payroll.store');
+    Route::get('/payroll/{id}', 'PayrollController@show')->name('payroll.show');
+    Route::post('/payroll/{id}/void', 'PayrollController@void')->name('payroll.void');
+    Route::get('/payroll/export/csv', 'PayrollController@exportCsv')->name('payroll.csv');
+
+    // Salary Structures
+    Route::get('/salary-structures', 'PayrollController@salaryStructures')->name('salary.index');
+    Route::post('/salary-structures', 'PayrollController@storeSalaryStructure')->name('salary.store');
+
+    // Financial Reports
+    Route::get('/reports', 'FinanceReportController@index')->name('finance.reports');
+    Route::get('/reports/income', 'FinanceReportController@income')->name('reports.income');
+    Route::get('/reports/expenses', 'FinanceReportController@expenses')->name('reports.expenses');
+    Route::get('/reports/profit-loss', 'FinanceReportController@profitLoss')->name('reports.profit_loss');
+    Route::get('/reports/outstanding', 'FinanceReportController@outstanding')->name('reports.outstanding');
+    Route::get('/reports/salary', 'FinanceReportController@salary')->name('reports.salary');
+});
+
 /************************ HR MODULE + FINANCE (hr_manager only) ****************************/
 Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager'], function(){
 
