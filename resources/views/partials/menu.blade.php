@@ -300,6 +300,21 @@
                 </li>
 
 
+                {{-- Payroll --}}
+                @php $payrollActive = Route::is('hr.payroll') || Route::is('hr.payroll.edit'); @endphp
+                <li class="nav-item">
+                    <a href="{{ route('hr.payroll') }}" class="nav-link {{ $payrollActive ? 'active' : '' }}">
+                        <i class="bi bi-cash-stack"></i><span>Payroll</span>
+                    </a>
+                </li>
+
+                {{-- My Leave self-service --}}
+                <li class="nav-item">
+                    <a href="{{ route('my.leave.index') }}" class="nav-link {{ Route::is('my.leave.*') ? 'active' : '' }}">
+                        <i class="bi bi-calendar-heart"></i><span>My Leave</span>
+                    </a>
+                </li>
+
                 <li class="sidebar-section-label">Finance Management System</li>
                 <li class="nav-item"><a href="{{ route('finance.dashboard') }}" class="nav-link {{ Route::is('finance.dashboard') ? 'active' : '' }}"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
 

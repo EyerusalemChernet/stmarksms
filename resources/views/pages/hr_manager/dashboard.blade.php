@@ -96,6 +96,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-4 mb-3"><a href="{{ route('hr.attendance') }}" class="quick-link-card"><i class="bi bi-clipboard-check"></i><small data-i18n="staff_att">Staff Att.</small></a></div>
+                    <div class="col-4 mb-3"><a href="{{ route('hr.payroll') }}" class="quick-link-card"><i class="bi bi-cash-stack"></i><small>Payroll</small></a></div>
                     <div class="col-4 mb-3"><a href="{{ route('payments.manage') }}" class="quick-link-card"><i class="bi bi-cash-coin"></i><small data-i18n="payments">Payments</small></a></div>
                     <div class="col-4 mb-3"><a href="{{ route('hr.index') }}" class="quick-link-card"><i class="bi bi-people"></i><small data-i18n="staff_list">Staff List</small></a></div>
                     <div class="col-4 mb-3"><a href="{{ route('reports.finance') }}" class="quick-link-card"><i class="bi bi-bar-chart-line"></i><small data-i18n="finance_rpt">Finance Rpt</small></a></div>
