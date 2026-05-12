@@ -31,23 +31,28 @@ class SettingController extends Controller
     public function update(SettingUpdate $req)
     {
         $sets = $req->except('_token', '_method', 'logo');
-        $sets['lock_exam'] = $sets['lock_exam'] == 1 ? 1 : 0;
-        $keys = array_keys($sets);
+        $keys   = array_keys($sets);
         $values = array_values($sets);
-        for($i=0; $i<count($sets); $i++){
+        for ($i = 0; $i < count($sets); $i++) {
             $this->setting->update($keys[$i], $values[$i]);
         }
 
-        if($req->hasFile('logo')) {
+        // Also sync current_session to match the active academic year name
+        $activeYear = \App\Models\AcademicYear::where('is_current', true)->first();
+        if ($activeYear && $req->current_session !== $activeYear->name) {
+            // If user manually picked a different session, update the academic year to match
+            \App\Models\AcademicYear::where('is_current', true)
+                ->update(['name' => $req->current_session]);
+        }
+
+        if ($req->hasFile('logo')) {
             $logo = $req->file('logo');
             $f = Qs::getFileMetaData($logo);
             $f['name'] = 'logo.' . $f['ext'];
             $f['path'] = $logo->storeAs(Qs::getPublicUploadPath(), $f['name']);
-            $logo_path = asset('storage/' . $f['path']);
-            $this->setting->update('logo', $logo_path);
+            $this->setting->update('logo', asset('storage/' . $f['path']));
         }
 
         return back()->with('flash_success', __('msg.update_ok'));
-
     }
 }

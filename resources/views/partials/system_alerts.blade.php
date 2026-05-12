@@ -46,7 +46,7 @@ $userType = Qs::getUserType();
 @if(Qs::userIsTeamSA())
     @php
         $overdueCount = BookRequest::where('status', 'approved')
-            ->where('issued_at', '<', now()->subDays(14))->count();
+            ->where('start_date', '<', now()->subDays(14)->toDateString())->count();
     @endphp
     @if($overdueCount > 0)
     <div class="alert alert-warning alert-dismissible border-0 mb-2 py-2">

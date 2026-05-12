@@ -170,6 +170,104 @@ class UserController extends Controller
         return view('pages.support_team.users.show', $data);
     }
 
+    public function bulkTemplate()
+    {
+        $headers = ['user_type','name','email','username','phone','gender','address','emp_date','password'];
+        $example = ['teacher','Abebe Kebede','abebe@email.com','abebe.kebede','0911234567','Male','Addis Ababa',date('Y-m-d'),'Teacher@123'];
+        $csv = implode(',', $headers) . "\n" . implode(',', $example) . "\n";
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="users_bulk_template.csv"',
+        ]);
+    }
+
+    public function bulkImport(\Illuminate\Http\Request $req)
+    {
+        $req->validate(['csv_file' => 'required|file|mimes:csv,txt|max:5120']);
+
+        $file    = $req->file('csv_file');
+        $handle  = fopen($file->getRealPath(), 'r');
+        $headers = array_map('trim', fgetcsv($handle));
+
+        $imported = 0;
+        $errors   = [];
+        $row      = 1;
+
+        // Build a map of user type name → UserType model
+        $typeMap = \App\Models\UserType::all()->keyBy(fn($t) => strtolower($t->title));
+
+        while (($line = fgetcsv($handle)) !== false) {
+            $row++;
+            if (count($line) < count($headers)) {
+                $errors[] = "Row {$row}: Not enough columns — skipped.";
+                continue;
+            }
+            $data = array_combine($headers, array_map('trim', $line));
+
+            // Resolve user type
+            $typeKey  = strtolower($data['user_type'] ?? '');
+            $userType = $typeMap[$typeKey] ?? null;
+            if (!$userType) {
+                $errors[] = "Row {$row}: Unknown user type '{$data['user_type']}' — skipped.";
+                continue;
+            }
+
+            // Skip duplicate email
+            if (!empty($data['email']) && \App\User::where('email', $data['email'])->exists()) {
+                $errors[] = "Row {$row}: Email '{$data['email']}' already exists — skipped.";
+                continue;
+            }
+
+            // Skip duplicate username
+            if (!empty($data['username']) && \App\User::where('username', $data['username'])->exists()) {
+                $errors[] = "Row {$row}: Username '{$data['username']}' already exists — skipped.";
+                continue;
+            }
+
+            $userTypeTitle = $userType->title;
+            $userIsStaff   = in_array($userTypeTitle, Qs::getStaff());
+            $userIsTeamSA  = in_array($userTypeTitle, Qs::getTeamSA());
+
+            $empDate  = !empty($data['emp_date']) ? $data['emp_date'] : date('Y-m-d');
+            $staffId  = Qs::getAppCode() . '/STAFF/' . date('Y/m', strtotime($empDate)) . '/' . mt_rand(1000, 9999);
+            $username = $userIsTeamSA ? ($data['username'] ?: $staffId) : $staffId;
+            $pass     = !empty($data['password']) ? $data['password'] : $userTypeTitle;
+            $code     = strtoupper(Str::random(10));
+
+            $user = $this->user->create([
+                'name'      => ucwords($data['name'] ?? ''),
+                'email'     => !empty($data['email']) ? $data['email'] : null,
+                'username'  => $username,
+                'phone'     => $data['phone'] ?? null,
+                'gender'    => $data['gender'] ?? 'Male',
+                'address'   => $data['address'] ?? 'N/A',
+                'user_type' => $userTypeTitle,
+                'code'      => $code,
+                'password'  => Hash::make($pass),
+                'photo'     => Qs::getDefaultUserImage(),
+            ]);
+
+            if ($userIsStaff) {
+                $this->user->createStaffRecord([
+                    'user_id'  => $user->id,
+                    'code'     => $staffId,
+                    'emp_date' => $empDate,
+                ]);
+            }
+
+            $imported++;
+        }
+
+        fclose($handle);
+
+        \App\Models\AuditLog::log('bulk_import', 'users', "Bulk created {$imported} user(s).");
+
+        $msg = "{$imported} user(s) imported successfully.";
+        if ($errors) $msg .= ' ' . count($errors) . ' row(s) skipped.';
+
+        return response()->json(['ok' => $imported > 0, 'msg' => $msg, 'errors' => $errors]);
+    }
+
     public function destroy($id)
     {
         $id = Qs::decodeHash($id);

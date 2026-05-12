@@ -9,7 +9,9 @@ class LgasTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('lgas')->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('lgas')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // Addis Ababa sub-cities (state_id = 1)
         $addisSubcities = [

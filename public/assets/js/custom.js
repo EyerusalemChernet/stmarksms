@@ -1,6 +1,11 @@
-document.addEventListener('DOMContentLoaded', function () {
+// Use jQuery ready to ensure $ is available throughout
+jQuery(function ($) {
 
-    $('.date-pick').datepicker();
+    if ($.fn.datepicker) {
+        $('.date-pick').datepicker();
+    }
+
+    // Language toggle and restore handled entirely by i18n.js
 
     // ── Mobile sidebar toggle ────────────────────────────────────────────────
     $('#mobile-sidebar-toggle').on('click', function () {
@@ -33,9 +38,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function restoreSidebarState() {
-        var state   = localStorage.getItem('sidebar-state');
+        var state    = localStorage.getItem('sidebar-state');
         var isHidden = (state === 'hidden');
-
         $('body').toggleClass('sidebar-hidden', isHidden);
         updateToggleIcon(isHidden);
     }
