@@ -156,19 +156,47 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="field-label">Phone <small style="font-weight:400;color:#9ca3af;">(09XXXXXXXX)</small></label>
-                                <input type="text" name="phone" value="{{ old('phone') }}"
-                                       class="form-input" placeholder="e.g. 0911434321"
-                                       pattern="09[0-9]{8}" title="10 digits starting with 09">
-                                <div class="error-msg" id="err-phone">Must be 10 digits starting with 09.</div>
+                                <label class="field-label">Phone</label>
+                                <div class="d-flex" style="gap:4px;">
+                                    <select id="phone-country" class="form-input" style="width:90px;flex-shrink:0;padding:8px 4px;font-size:12px;">
+                                        <option value="+251" data-pattern="09[0-9]{8}" data-placeholder="0911434321" selected>🇪🇹 +251</option>
+                                        <option value="+1"   data-pattern="[0-9]{10}"  data-placeholder="2025551234">🇺🇸 +1</option>
+                                        <option value="+44"  data-pattern="07[0-9]{9}" data-placeholder="07911123456">🇬🇧 +44</option>
+                                        <option value="+254" data-pattern="07[0-9]{8}" data-placeholder="0712345678">🇰🇪 +254</option>
+                                        <option value="+256" data-pattern="07[0-9]{8}" data-placeholder="0712345678">🇺🇬 +256</option>
+                                        <option value="+255" data-pattern="07[0-9]{8}" data-placeholder="0712345678">🇹🇿 +255</option>
+                                        <option value="+27"  data-pattern="0[6-8][0-9]{8}" data-placeholder="0821234567">🇿🇦 +27</option>
+                                        <option value="+971" data-pattern="05[0-9]{8}" data-placeholder="0501234567">🇦🇪 +971</option>
+                                        <option value="+966" data-pattern="05[0-9]{8}" data-placeholder="0501234567">🇸🇦 +966</option>
+                                        <option value="+other" data-pattern="[0-9]+" data-placeholder="Phone number">🌍 Other</option>
+                                    </select>
+                                    <input type="text" name="phone" id="f-phone" value="{{ old('phone') }}"
+                                           class="form-input" placeholder="0911434321"
+                                           pattern="09[0-9]{8}" title="10 digits starting with 09">
+                                </div>
+                                <div class="error-msg" id="err-phone">Invalid phone number format.</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="field-label">Alternative Phone</label>
-                                <input type="text" name="phone2" value="{{ old('phone2') }}"
-                                       class="form-input" placeholder="e.g. 0922434321"
-                                       pattern="09[0-9]{8}" title="10 digits starting with 09">
+                                <div class="d-flex" style="gap:4px;">
+                                    <select id="phone2-country" class="form-input" style="width:90px;flex-shrink:0;padding:8px 4px;font-size:12px;">
+                                        <option value="+251" data-pattern="09[0-9]{8}" data-placeholder="0911434321" selected>🇪🇹 +251</option>
+                                        <option value="+1"   data-pattern="[0-9]{10}"  data-placeholder="2025551234">🇺🇸 +1</option>
+                                        <option value="+44"  data-pattern="07[0-9]{9}" data-placeholder="07911123456">🇬🇧 +44</option>
+                                        <option value="+254" data-pattern="07[0-9]{8}" data-placeholder="0712345678">🇰🇪 +254</option>
+                                        <option value="+256" data-pattern="07[0-9]{8}" data-placeholder="0712345678">🇺🇬 +256</option>
+                                        <option value="+255" data-pattern="07[0-9]{8}" data-placeholder="0712345678">🇹🇿 +255</option>
+                                        <option value="+27"  data-pattern="0[6-8][0-9]{8}" data-placeholder="0821234567">🇿🇦 +27</option>
+                                        <option value="+971" data-pattern="05[0-9]{8}" data-placeholder="0501234567">🇦🇪 +971</option>
+                                        <option value="+966" data-pattern="05[0-9]{8}" data-placeholder="0501234567">🇸🇦 +966</option>
+                                        <option value="+other" data-pattern="[0-9]+" data-placeholder="Phone number">🌍 Other</option>
+                                    </select>
+                                    <input type="text" name="phone2" id="f-phone2" value="{{ old('phone2') }}"
+                                           class="form-input" placeholder="0922434321"
+                                           pattern="09[0-9]{8}" title="10 digits starting with 09">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -177,7 +205,13 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="field-label">Date of Birth</label>
-                                <input type="date" name="dob" id="f-dob" value="{{ old('dob') }}" class="form-input">
+                                <input type="date" name="dob" id="f-dob"
+                                       value="{{ old('dob') }}"
+                                       class="form-input"
+                                       max="{{ now()->subYears(3)->format('Y-m-d') }}"
+                                       min="{{ now()->subYears(25)->format('Y-m-d') }}"
+                                       title="Student must be between 3 and 25 years old">
+                                <small style="font-size:11px;color:#9ca3af;">Age must be between 3 and 25 years</small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -484,13 +518,22 @@ function validateStep1() {
     check('state_id',  'err-state',   !document.getElementById('state_id').value);
     check('lga_id',    'err-lga',     !document.getElementById('lga_id').value);
 
-    // Phone pattern check
-    var phone = document.querySelector('input[name="phone"]');
-    if (phone.value && !/^09[0-9]{8}$/.test(phone.value)) {
-        phone.classList.add('error');
-        document.getElementById('err-phone').classList.add('show');
-        ok = false;
-    } else {
+    // Phone pattern check — uses the selected country's pattern
+    var phone = document.getElementById('f-phone');
+    var phoneCountry = document.getElementById('phone-country');
+    var selectedOpt = phoneCountry ? phoneCountry.options[phoneCountry.selectedIndex] : null;
+    var phonePattern = selectedOpt ? selectedOpt.getAttribute('data-pattern') : '09[0-9]{8}';
+    if (phone && phone.value && phonePattern) {
+        var re = new RegExp('^' + phonePattern + '$');
+        if (!re.test(phone.value)) {
+            phone.classList.add('error');
+            document.getElementById('err-phone').classList.add('show');
+            ok = false;
+        } else {
+            phone.classList.remove('error');
+            document.getElementById('err-phone').classList.remove('show');
+        }
+    } else if (phone) {
         phone.classList.remove('error');
         document.getElementById('err-phone').classList.remove('show');
     }
@@ -714,6 +757,26 @@ function resetBulkForm() {
     document.getElementById('bulk-preview-body').innerHTML = '';
     document.getElementById('bulk-validation-errors').innerHTML = '';
 }
+
+// ── Country code selector — updates phone pattern & placeholder ───────────────
+(function() {
+    function setupCountrySelector(selectId, inputId) {
+        var sel = document.getElementById(selectId);
+        var inp = document.getElementById(inputId);
+        if (!sel || !inp) return;
+        sel.addEventListener('change', function() {
+            var opt = sel.options[sel.selectedIndex];
+            var pattern = opt.getAttribute('data-pattern') || '[0-9]+';
+            var placeholder = opt.getAttribute('data-placeholder') || 'Phone number';
+            inp.setAttribute('pattern', pattern);
+            inp.setAttribute('placeholder', placeholder);
+            inp.setAttribute('title', 'Format: ' + placeholder);
+            inp.value = '';
+        });
+    }
+    setupCountrySelector('phone-country',  'f-phone');
+    setupCountrySelector('phone2-country', 'f-phone2');
+})();
 
 //  Open bulk tab if URL has #tab-bulk 
 if (window.location.hash === '#tab-bulk') {
