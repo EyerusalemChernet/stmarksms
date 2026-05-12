@@ -8,7 +8,6 @@
     ['route'=>'reports.expenses',    'icon'=>'bi-graph-down-arrow',  'color'=>'danger',  'title'=>'Expense Report',      'desc'=>'School expenses by category and date range'],
     ['route'=>'reports.profit_loss', 'icon'=>'bi-bar-chart-line',    'color'=>'primary', 'title'=>'Profit / Loss',       'desc'=>'Income vs expenses summary with monthly breakdown'],
     ['route'=>'reports.outstanding', 'icon'=>'bi-exclamation-circle','color'=>'warning', 'title'=>'Outstanding Fees',    'desc'=>'Unpaid and partial invoices by class and session'],
-    ['route'=>'reports.salary',      'icon'=>'bi-people',            'color'=>'info',    'title'=>'Salary Report',       'desc'=>'Monthly payroll cost breakdown per staff member'],
   ];
   @endphp
   @foreach($reports as $r)

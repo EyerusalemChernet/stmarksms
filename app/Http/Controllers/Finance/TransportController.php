@@ -7,9 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Transport;
 use App\Models\TransportPayment;
 use App\Models\MyClass;
-use App\Models\StudentRecord;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class TransportController extends Controller
 {

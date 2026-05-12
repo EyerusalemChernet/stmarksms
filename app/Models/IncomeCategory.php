@@ -2,12 +2,12 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
-class ExpenseCategory extends Model
+class IncomeCategory extends Model
 {
     protected $fillable = ['name', 'description'];
 
-    public function expenses()
+    public function incomes()
     {
-        return $this->hasMany(Expense::class, 'expense_category_id');
+        return $this->hasMany(Income::class, 'category_id');
     }
 }

@@ -17,10 +17,10 @@ class EthiopianizeStudentRecords extends Migration
         }
 
         // 2. Replace Nigerian states with Ethiopian regions
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        Schema::disableForeignKeyConstraints();
         DB::table('lgas')->truncate();
         DB::table('states')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        Schema::enableForeignKeyConstraints();
         $regions = [
             'Addis Ababa', 'Oromia', 'Amhara', 'Tigray',
             'SNNPR (Southern Nations)', 'Somali', 'Afar',

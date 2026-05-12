@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Models\FeePayment;
 use App\Models\MyClass;
-use App\Models\Payroll;
 use App\Models\StudentFeeInvoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +23,7 @@ class FinanceReportController extends Controller
         return view('pages.finance.reports.index');
     }
 
-    // â”€â”€ INCOME REPORT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── INCOME REPORT ─────────────────────────────────────────────────────────
 
     public function income(Request $req)
     {
@@ -51,7 +50,7 @@ class FinanceReportController extends Controller
         return view('pages.finance.reports.income', compact('payments', 'total', 'byCategory', 'date_from', 'date_to'));
     }
 
-    // â”€â”€ EXPENSE REPORT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── EXPENSE REPORT ────────────────────────────────────────────────────────
 
     public function expenses(Request $req)
     {
@@ -78,7 +77,7 @@ class FinanceReportController extends Controller
         return view('pages.finance.reports.expenses', compact('expenses', 'total', 'byCategory', 'date_from', 'date_to'));
     }
 
-    // â”€â”€ PROFIT / LOSS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── PROFIT / LOSS ─────────────────────────────────────────────────────────
 
     public function profitLoss(Request $req)
     {
@@ -121,7 +120,7 @@ class FinanceReportController extends Controller
         return view('pages.finance.reports.profit_loss', compact('income', 'expenses', 'profit', 'monthly', 'date_from', 'date_to'));
     }
 
-    // â”€â”€ OUTSTANDING FEES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── OUTSTANDING FEES ──────────────────────────────────────────────────────
 
     public function outstanding(Request $req)
     {
@@ -159,41 +158,8 @@ class FinanceReportController extends Controller
         return view('pages.finance.reports.outstanding', compact('invoices', 'total_balance', 'classes', 'session', 'class_id'));
     }
 
-    // â”€â”€ SALARY REPORT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    public function salary(Request $req)
-    {
-        $year  = $req->get('year', now()->year);
-        $month = $req->get('month');
-
-        $query = Payroll::with('staff')->where('voided', false)->where('year', $year);
-        if ($month) $query->where('month', $month);
-
-        $payrolls    = $query->orderBy('month')->get();
-        $total_gross = $payrolls->sum('gross_salary');
-        $total_net   = $payrolls->sum('net_salary');
-        $total_ded   = $payrolls->sum('total_deductions');
-
-        $months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-        if ($req->get('export') === 'csv') {
-            return $this->streamCsv("salary_report_{$year}.csv",
-                ['Staff', 'Month', 'Year', 'Gross (ETB)', 'Deductions (ETB)', 'Net (ETB)'],
-                $payrolls->map(fn($p) => [
-                    $p->staff->name ?? '-',
-                    $months[$p->month],
-                    $p->year,
-                    $p->gross_salary,
-                    $p->total_deductions,
-                    $p->net_salary,
-                ])->toArray()
-            );
-        }
-
-        return view('pages.finance.reports.salary', compact('payrolls', 'total_gross', 'total_net', 'total_ded', 'year', 'month', 'months'));
-    }
-
-    // â”€â”€ HELPER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── HELPER ────────────────────────────────────────────────────────────────
 
     protected function streamCsv(string $filename, array $headers, array $rows)
     {

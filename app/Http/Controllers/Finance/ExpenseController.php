@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Helpers\Qs;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ExpenseController extends Controller
@@ -94,6 +96,7 @@ class ExpenseController extends Controller
 
         $data = $req->only('expense_category_id', 'title', 'amount', 'expense_date', 'description', 'recurring', 'recurrence_interval');
         $data['recurring'] = $req->boolean('recurring');
+        $data['created_by'] = Auth::id();
 
         if ($req->hasFile('receipt_file')) {
             $data['receipt_file'] = $req->file('receipt_file')->store('expenses/receipts', 'public');

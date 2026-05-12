@@ -36,58 +36,10 @@ class CreateFinanceModulesTables extends Migration
                     ->references('id')->on('expense_categories')->onDelete('restrict');
             });
         }
-
-        // Salary Structures
-        if (!Schema::hasTable('salary_structures')) {
-            Schema::create('salary_structures', function (Blueprint $table) {
-                $table->id();
-                $table->unsignedBigInteger('user_id');
-                $table->decimal('basic_salary', 10, 2)->default(0);
-                $table->decimal('housing_allowance', 10, 2)->default(0);
-                $table->decimal('transport_allowance', 10, 2)->default(0);
-                $table->decimal('other_allowances', 10, 2)->default(0);
-                $table->decimal('income_tax_pct', 5, 2)->default(0);
-                $table->decimal('loan_repayment', 10, 2)->default(0);
-                $table->decimal('absence_deduction_rate', 10, 2)->default(0);
-                $table->boolean('active')->default(true);
-                $table->timestamps();
-
-                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            });
-        }
-
-        // Payrolls
-        if (!Schema::hasTable('payrolls')) {
-            Schema::create('payrolls', function (Blueprint $table) {
-                $table->id();
-                $table->unsignedBigInteger('user_id');
-                $table->tinyInteger('month');
-                $table->smallInteger('year');
-                $table->decimal('basic_salary', 10, 2)->default(0);
-                $table->decimal('housing_allowance', 10, 2)->default(0);
-                $table->decimal('transport_allowance', 10, 2)->default(0);
-                $table->decimal('other_allowances', 10, 2)->default(0);
-                $table->decimal('bonus', 10, 2)->default(0);
-                $table->decimal('gross_salary', 10, 2)->default(0);
-                $table->decimal('income_tax', 10, 2)->default(0);
-                $table->decimal('loan_repayment', 10, 2)->default(0);
-                $table->decimal('absence_deduction', 10, 2)->default(0);
-                $table->decimal('total_deductions', 10, 2)->default(0);
-                $table->decimal('net_salary', 10, 2)->default(0);
-                $table->tinyInteger('absence_days')->default(0);
-                $table->boolean('voided')->default(false);
-                $table->timestamp('processed_at')->nullable();
-                $table->timestamps();
-
-                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            });
-        }
     }
 
     public function down()
     {
-        Schema::dropIfExists('payrolls');
-        Schema::dropIfExists('salary_structures');
         Schema::dropIfExists('expenses');
         Schema::dropIfExists('expense_categories');
     }

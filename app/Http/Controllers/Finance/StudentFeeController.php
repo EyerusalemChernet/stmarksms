@@ -1,5 +1,6 @@
 <?php
 namespace App\Http\Controllers\Finance;
+
 use App\Helpers\Qs;
 use App\Http\Controllers\Controller;
 use App\Models\FeeCategory;
@@ -87,11 +88,13 @@ class StudentFeeController extends Controller
         StudentFeeInvoice::create(['invoice_no'=>'INV-'.strtoupper(substr(md5(uniqid()),0,8)),'student_id'=>$sid,'fee_structure_id'=>$s->id,'session'=>$s->session,'original_amount'=>$s->amount,'net_amount'=>$s->amount,'balance'=>$s->amount,'status'=>'unpaid','due_date'=>now()->addDays(30)]);
     }
     public function invoiceDetail($id) {
+        $id = Qs::decodeHash($id);
         $invoice = StudentFeeInvoice::with(['student','fee_structure.category','fee_structure.my_class','payments.collector'])->findOrFail($id);
         $installment_no = $invoice->payments()->count() + 1;
         return view('pages.finance.fees.invoice_detail', compact('invoice','installment_no'));
     }
     public function recordPayment(Request $req, $id) {
+        $id = Qs::decodeHash($id);
         $inv = StudentFeeInvoice::findOrFail($id);
         $req->validate(['amount'=>'required|numeric|min:0.01|max:'.$inv->balance,'payment_method'=>'required|string','transaction_ref'=>'nullable|string','notes'=>'nullable|string']);
         DB::transaction(function() use ($inv,$req) {
@@ -128,6 +131,7 @@ class StudentFeeController extends Controller
         return view('pages.finance.fees.payments', compact('payments','total_today','total_month'));
     }
     public function receipt($id) {
+        $id = Qs::decodeHash($id);
         $payment = FeePayment::with(['student','invoice.fee_structure.category','invoice.fee_structure.my_class','collector'])->findOrFail($id);
         $settings = \App\Models\Setting::pluck('description','type')->toArray();
         return view('pages.finance.fees.receipt', compact('payment','settings'));
