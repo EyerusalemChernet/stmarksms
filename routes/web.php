@@ -148,6 +148,11 @@ Route::group(['middleware' => 'auth'], function () {
                 Route::post('selector', 'MarkController@selector')->name('marks.selector');
                 Route::get('bulk/{class?}/{section?}', 'MarkController@bulk')->name('marks.bulk');
                 Route::post('bulk', 'MarkController@bulk_select')->name('marks.bulk_select');
+
+                // Assessment components (configure the 30-mark breakdown)
+                Route::get('components/{exam}/{class}/{subject}',    'MarkController@getComponents')->name('marks.components.get');
+                Route::post('components/{exam}/{class}/{subject}',   'MarkController@saveComponents')->name('marks.components.save');
+                Route::delete('components/{exam}/{class}/{subject}', 'MarkController@clearComponents')->name('marks.components.clear');
             });
 
             Route::get('select_year/{id}', 'MarkController@year_selector')->name('marks.year_selector');
