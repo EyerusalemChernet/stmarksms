@@ -25,9 +25,9 @@ class StudentRecordCreate extends FormRequest
                 'after:'  . now()->subYears(25)->format('Y-m-d'),
             ],
             // Ethiopian mobile: 10 digits starting with 09
-            'phone'         => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
-            // Alternative phone (Guardian 2) — optional, same format
-            'phone2'        => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
+            'phone'         => ['sometimes', 'nullable', 'string', 'min:7', 'max:20'],
+            // Alternative phone — optional
+            'phone2'        => ['sometimes', 'nullable', 'string', 'min:7', 'max:20'],
             'email'         => 'sometimes|nullable|email|max:100|unique:users',
             'photo'         => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
             'address'       => 'required|string|min:6|max:120',
@@ -61,8 +61,6 @@ class StudentRecordCreate extends FormRequest
     public function messages()
     {
         return [
-            'phone.regex'  => 'Phone number must be 10 digits starting with 09 (e.g., 0911434321).',
-            'phone2.regex' => 'Alternative phone must be 10 digits starting with 09 (e.g., 0911434321).',
             'dob.before'   => 'Student must be at least 3 years old.',
             'dob.after'    => 'Student age cannot exceed 25 years. Please verify the date of birth.',
         ];
