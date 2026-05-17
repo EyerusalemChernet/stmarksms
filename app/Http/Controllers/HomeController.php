@@ -107,7 +107,7 @@ class HomeController extends Controller
 
         // ── Teacher dashboard ──────────────────────────────────────────────────
         if (Qs::userIsTeacher()) {
-            $d['my_subjects'] = Subject::where('teacher_id', $uid)->with('my_class')->get();
+            $d['my_subjects'] = Subject::forTeacher($uid)->with('my_class', 'department')->get();
 
             $myClassIds = $d['my_subjects']->pluck('my_class_id')->unique();
             $d['today_sessions'] = AttendanceSession::whereIn('my_class_id', $myClassIds)

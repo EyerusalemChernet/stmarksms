@@ -85,10 +85,13 @@
                         <li class="nav-item"><a href="{{ route('marks.bulk') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['marks.bulk','marks.show']) ? 'active' : '' }}">Marksheet</a></li>
                     </ul>
                 </li>
-                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['tt.index','ttr.edit','ttr.show','ttr.manage']) ? 'nav-item-expanded nav-item-open' : '' }}">
+                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['tt.index','ttr.edit','ttr.show','ttr.manage']) || Route::is('auto_timetable.*') ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-calendar-week"></i><span>Timetable</span></a>
                     <ul class="nav nav-group-sub">
                         <li class="nav-item"><a href="{{ route('tt.index') }}" class="nav-link {{ Route::is('tt.index') ? 'active' : '' }}">View Timetables</a></li>
+                        @if(Qs::userIsSuperAdmin())
+                        <li class="nav-item"><a href="{{ route('auto_timetable.index') }}" class="nav-link {{ Route::is('auto_timetable.*') ? 'active' : '' }}">Auto Timetable</a></li>
+                        @endif
                     </ul>
                 </li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['attendance.index','attendance.manage','attendance.sessions','attendance.report']) ? 'nav-item-expanded nav-item-open' : '' }}">
@@ -105,6 +108,9 @@
                 <li class="nav-item"><a href="{{ route('classes.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['classes.index','classes.edit']) ? 'active' : '' }}"><i class="bi bi-grid-3x3-gap"></i><span>Classes</span></a></li>
                 <li class="nav-item"><a href="{{ route('sections.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['sections.index','sections.edit']) ? 'active' : '' }}"><i class="bi bi-diagram-3"></i><span>Sections</span></a></li>
                 <li class="nav-item"><a href="{{ route('subjects.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['subjects.index','subjects.edit']) ? 'active' : '' }}"><i class="bi bi-book"></i><span>Subjects</span></a></li>
+                @if(Qs::userIsSuperAdmin())
+                <li class="nav-item"><a href="{{ route('departments.index') }}" class="nav-link {{ Route::is('departments.*') ? 'active' : '' }}"><i class="bi bi-building"></i><span>Departments</span></a></li>
+                @endif
 
                 {{-- Library --}}
                 <li class="sidebar-section-label">Library</li>

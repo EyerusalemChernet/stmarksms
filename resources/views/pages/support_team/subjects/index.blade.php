@@ -11,6 +11,7 @@
         <div class="card-body">
             <ul class="nav nav-tabs nav-tabs-highlight">
                 <li class="nav-item"><a href="#new-subject" class="nav-link active" data-toggle="tab">Add Subject</a></li>
+                <li class="nav-item"><a href="#bulk-subject" class="nav-link" data-toggle="tab">Add to Multiple Classes</a></li>
                 <li class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Manage Subjects</a>
                     <div class="dropdown-menu dropdown-menu-right">
@@ -54,19 +55,72 @@
                                 </div>
 
                                 <div class="form-group row">
-                                    <label for="teacher_id" class="col-lg-3 col-form-label font-weight-semibold">Teacher <span class="text-danger">*</span></label>
+                                    <label for="department_id" class="col-lg-3 col-form-label font-weight-semibold">Department <span class="text-danger">*</span></label>
                                     <div class="col-lg-9">
-                                        <select required data-placeholder="Select Teacher" class="form-control select-search" name="teacher_id" id="teacher_id">
+                                        <select required data-placeholder="Select Department" class="form-control select-search" name="department_id" id="department_id">
                                             <option value=""></option>
-                                            @foreach($teachers as $t)
-                                                <option {{ old('teacher_id') == Qs::hash($t->id) ? 'selected' : '' }} value="{{ Qs::hash($t->id) }}">{{ $t->name }}</option>
+                                            @foreach($departments as $dept)
+                                                <option {{ old('department_id') == $dept->id ? 'selected' : '' }} value="{{ $dept->id }}">{{ $dept->name }}</option>
                                             @endforeach
                                         </select>
+                                        @if($departments->isEmpty())
+                                            <small class="form-text text-warning">No departments yet. Super Admin can add them under Settings → Departments.</small>
+                                        @endif
                                     </div>
                                 </div>
 
                                 <div class="text-right">
                                     <button type="submit" class="btn btn-primary">Submit form <i class="icon-paperplane ml-2"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="bulk-subject">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <form class="ajax-store" method="post" action="{{ route('subjects.store_bulk') }}">
+                                @csrf
+                                <div class="alert alert-info">
+                                    Create the same subject in several classes at once. Each class gets its own record with the same name, short name, and department.
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-lg-3 col-form-label font-weight-semibold">Name <span class="text-danger">*</span></label>
+                                    <div class="col-lg-9">
+                                        <input name="name" required type="text" class="form-control" placeholder="e.g. Mathematics">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-lg-3 col-form-label font-weight-semibold">Short Name <span class="text-danger">*</span></label>
+                                    <div class="col-lg-9">
+                                        <input required name="slug" type="text" class="form-control" placeholder="e.g. Math">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-lg-3 col-form-label font-weight-semibold">Department <span class="text-danger">*</span></label>
+                                    <div class="col-lg-9">
+                                        <select required data-placeholder="Select Department" class="form-control select-search" name="department_id">
+                                            <option value=""></option>
+                                            @foreach($departments as $dept)
+                                                <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-lg-3 col-form-label font-weight-semibold">Classes <span class="text-danger">*</span></label>
+                                    <div class="col-lg-9">
+                                        <select required name="my_class_ids[]" class="form-control select" multiple data-placeholder="Select one or more classes">
+                                            @foreach($my_classes as $c)
+                                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <small class="form-text text-muted">Select all classes that should offer this subject.</small>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <button type="submit" class="btn btn-primary">Add to selected classes <i class="icon-paperplane ml-2"></i></button>
                                 </div>
                             </form>
                         </div>
@@ -81,7 +135,7 @@
                                 <th>Name</th>
                                 <th>Short Name</th>
                                 <th>Class</th>
-                                <th>Teacher</th>
+                                <th>Department</th>
                                 <th>Action</th>
                             </tr>
                             </thead>
@@ -92,7 +146,7 @@
                                     <td>{{ $s->name }} </td>
                                     <td>{{ $s->slug }} </td>
                                     <td>{{ $s->my_class->name }}</td>
-                                    <td>{{ $s->teacher->name }}</td>
+                                    <td>{{ $s->assignedLabel() }}</td>
                                     <td class="text-center">
                                         <div class="list-icons">
                                             <div class="dropdown">

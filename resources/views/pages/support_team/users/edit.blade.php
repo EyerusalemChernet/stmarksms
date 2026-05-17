@@ -73,6 +73,21 @@
                             </div>
                         @endif
 
+                        @if($user->user_type === 'teacher')
+                            @php $currentDeptId = $user->staff->first()->department_id ?? null; @endphp
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="department_id">Department</label>
+                                    <select class="form-control select-search" name="department_id" id="department_id" data-placeholder="Select department">
+                                        <option value=""></option>
+                                        @foreach($departments as $dept)
+                                            <option value="{{ $dept->id }}" {{ (old('department_id', $currentDeptId) == $dept->id) ? 'selected' : '' }}>{{ $dept->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="gender">Gender: <span class="text-danger">*</span></label>

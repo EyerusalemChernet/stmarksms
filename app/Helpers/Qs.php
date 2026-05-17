@@ -99,7 +99,7 @@ class Qs
 
     public static function getStaffRecord($remove = [])
     {
-        $data = ['emp_date',];
+        $data = ['emp_date', 'department_id'];
 
         return $remove ? array_values(array_diff($data, $remove)) : $data;
     }
@@ -291,7 +291,7 @@ class Qs
 
     public static function findTeacherSubjects($teacher_id)
     {
-        return Subject::where('teacher_id', $teacher_id)->with('my_class')->get();
+        return Subject::forTeacher($teacher_id)->with(['my_class', 'department'])->get();
     }
 
     public static function findStudentRecord($user_id)

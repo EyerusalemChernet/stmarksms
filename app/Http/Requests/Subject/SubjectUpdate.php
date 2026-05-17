@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Subject;
 
-use App\Helpers\Qs;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SubjectUpdate extends FormRequest
@@ -13,17 +12,12 @@ class SubjectUpdate extends FormRequest
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
     public function rules()
     {
         return [
             'name' => 'required|string|min:3',
             'my_class_id' => 'required',
-            'teacher_id' => 'sometimes|nullable|exists:users,id',
+            'department_id' => 'required|exists:departments,id',
             'slug' => 'nullable|string|min:3',
         ];
     }
@@ -32,19 +26,8 @@ class SubjectUpdate extends FormRequest
     {
         return  [
             'my_class_id' => 'Class',
-            'teacher_id' => 'Teacher',
+            'department_id' => 'Department',
             'slug' => 'Short Name',
         ];
-    }
-
-    protected function getValidatorInstance()
-    {
-        $input = $this->all();
-
-        $input['teacher_id'] = $input['teacher_id'] ? Qs::decodeHash($input['teacher_id']) : NULL;
-
-        $this->getInputSource()->replace($input);
-
-        return parent::getValidatorInstance();
     }
 }

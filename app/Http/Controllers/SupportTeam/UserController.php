@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SupportTeam;
 
 use App\Helpers\Qs;
 use App\Http\Requests\UserRequest;
+use App\Models\Department;
 use App\Repositories\LocationRepo;
 use App\Repositories\MyClassRepo;
 use App\Repositories\UserRepo;
@@ -38,6 +39,9 @@ class UserController extends Controller
         $d['users'] = $this->user->getPTAUsers();
         $d['nationals'] = $this->loc->getAllNationals();
         $d['blood_groups'] = $this->user->getBloodGroups();
+        $d['departments'] = Department::orderBy('name')->get();
+        $teacherType = $ut->firstWhere('title', 'teacher');
+        $d['teacher_type_hash'] = $teacherType ? Qs::hash($teacherType->id) : '';
         return view('pages.support_team.users.index', $d);
     }
 
@@ -49,6 +53,7 @@ class UserController extends Controller
         $d['users'] = $this->user->getPTAUsers();
         $d['blood_groups'] = $this->user->getBloodGroups();
         $d['nationals'] = $this->loc->getAllNationals();
+        $d['departments'] = Department::orderBy('name')->get();
         return view('pages.support_team.users.edit', $d);
     }
 

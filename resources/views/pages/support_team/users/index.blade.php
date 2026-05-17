@@ -177,6 +177,8 @@
 
                             </div>
 
+                            @include('pages.support_team.users.partials.teacher_department_fields')
+
                             <div class="row">
                                 {{--PASSPORT--}}
                                 <div class="col-md-6">
@@ -344,6 +346,20 @@
 @section('scripts')
 <script>
 $(function () {
+    var teacherTypeHash = @json($teacher_type_hash);
+
+    function toggleTeacherDepartment() {
+        var isTeacher = $('#user_type').val() === teacherTypeHash;
+        $('#teacher-department-section').toggle(isTeacher);
+        $('#department_id').prop('required', isTeacher);
+        if (!isTeacher) {
+            $('#department_id').val('').trigger('change');
+        }
+    }
+
+    $('#user_type').on('change', toggleTeacherDepartment);
+    toggleTeacherDepartment();
+
     // Hide the "Previous" button on the first step of the wizard
     // jQuery Steps adds .actions ul li:first-child for the Prev button
     $(document).on('stepChanged', function (e, currentIndex) {

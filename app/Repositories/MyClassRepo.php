@@ -111,7 +111,7 @@ class MyClassRepo
 
     public function findSubjectByTeacher($teacher_id, $order_by = 'name')
     {
-        return $this->getSubject(['teacher_id'=> $teacher_id])->orderBy($order_by)->get();
+        return Subject::forTeacher($teacher_id)->orderBy($order_by);
     }
 
     public function getSubject($data)
@@ -136,7 +136,7 @@ class MyClassRepo
 
     public function getAllSubjects()
     {
-        return Subject::orderBy('name', 'asc')->with(['my_class', 'teacher'])->get();
+        return Subject::orderBy('name', 'asc')->with(['my_class', 'department', 'teacher'])->get();
     }
 
 }
