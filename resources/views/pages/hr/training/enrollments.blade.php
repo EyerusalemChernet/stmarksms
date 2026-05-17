@@ -4,9 +4,14 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0"><i class="bi bi-people mr-2"></i>Training Enrollments</h5>
-    <a href="{{ route('hr.training.programs') }}" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-mortarboard mr-1"></i>Programs
-    </a>
+    <div style="gap:6px;" class="d-flex">
+        <a href="{{ route('hr.training.programs') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-mortarboard mr-1"></i>Programs
+        </a>
+        <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#quickEnrollModal">
+            <i class="bi bi-person-plus mr-1"></i>Enroll Employee
+        </button>
+    </div>
 </div>
 
 {{-- Status tabs --}}
@@ -138,6 +143,61 @@
             </tbody>
         </table>
         <div class="p-3">{{ $enrollments->links() }}</div>
+    </div>
+</div>
+
+{{-- Quick Enroll Modal --}}
+<div class="modal fade" id="quickEnrollModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('hr.training.enroll') }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-plus mr-1"></i>Enroll Employee in Training</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="font-weight-bold">Employee <span class="text-danger">*</span></label>
+                        <select name="employee_id" class="form-control" required>
+                            <option value="">— Select Employee —</option>
+                            @foreach(\App\Models\Employee::where('status','active')->orderBy('first_name')->get() as $emp)
+                                <option value="{{ $emp->id }}">{{ $emp->full_name }} ({{ $emp->employee_code }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Training Program <span class="text-danger">*</span></label>
+                        <select name="training_program_id" class="form-control" required>
+                            <option value="">— Select Program —</option>
+                            @foreach($programs as $p)
+                                <option value="{{ $p->id }}">{{ $p->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">Start Date</label>
+                            <input type="date" name="start_date" class="form-control">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">End Date</label>
+                            <input type="date" name="end_date" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Optional"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle mr-1"></i>Enroll
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 

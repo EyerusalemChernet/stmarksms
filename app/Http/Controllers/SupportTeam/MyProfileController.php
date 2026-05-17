@@ -145,7 +145,8 @@ class MyProfileController extends Controller
     // ── MY TRAINING ──────────────────────────────────────────────────────────
 
     /**
-     * Show the employee's own training & development history.
+     * Show the employee's own training & development history
+     * plus available programs they haven't been enrolled in.
      */
     public function training()
     {
@@ -157,6 +158,17 @@ class MyProfileController extends Controller
             ->orderByDesc('start_date')
             ->get();
 
+        // Programs this employee is NOT currently enrolled in (active or completed)
+        $enrolledProgramIds = $trainings
+            ->whereNotIn('status', ['cancelled'])
+            ->pluck('training_program_id');
+
+        $availablePrograms = \App\Models\TrainingProgram::where('is_active', true)
+            ->whereNotIn('id', $enrolledProgramIds)
+            ->orderBy('is_mandatory', 'desc')
+            ->orderBy('title')
+            ->get();
+
         $stats = [
             'total'     => $trainings->count(),
             'completed' => $trainings->where('status', 'completed')->count(),
@@ -165,7 +177,7 @@ class MyProfileController extends Controller
                 ->sum(fn($t) => $t->program->duration_hours ?? 0),
         ];
 
-        return view('pages.hr.self_service.training', compact('employee', 'trainings', 'stats'));
+        return view('pages.hr.self_service.training', compact('employee', 'trainings', 'stats', 'availablePrograms'));
     }
 
     // ── JOB BOARD ────────────────────────────────────────────────────────────

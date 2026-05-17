@@ -115,6 +115,12 @@
                            class="btn btn-xs btn-info" title="View Enrollments">
                             <i class="bi bi-people"></i>
                         </a>
+                        <button type="button" class="btn btn-xs btn-success enroll-btn"
+                                data-id="{{ $p->id }}"
+                                data-title="{{ $p->title }}"
+                                title="Enroll Employee">
+                            <i class="bi bi-person-plus"></i>
+                        </button>
                         <a href="{{ route('hr.training.programs.edit', $p->id) }}"
                            class="btn btn-xs btn-primary" title="Edit">
                             <i class="bi bi-pencil"></i>
@@ -198,4 +204,72 @@
         </div>
     </div>
 </div>
+{{-- Enroll Employee Modal --}}
+<div class="modal fade" id="enrollModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('hr.training.enroll') }}" method="POST">
+                @csrf
+                <input type="hidden" name="training_program_id" id="enroll-program-id">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-plus mr-1"></i>Enroll Employee
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Program: <strong id="enroll-program-title"></strong>
+                    </p>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Employee <span class="text-danger">*</span></label>
+                        <select name="employee_id" class="form-control" required>
+                            <option value="">— Select Employee —</option>
+                            @foreach(\App\Models\Employee::where('status','active')->orderBy('first_name')->get() as $emp)
+                                <option value="{{ $emp->id }}">
+                                    {{ $emp->full_name }} ({{ $emp->employee_code }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">Start Date</label>
+                            <input type="date" name="start_date" class="form-control">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">End Date</label>
+                            <input type="date" name="end_date" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"
+                                  placeholder="Optional notes"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle mr-1"></i>Enroll
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@section('scripts')
+<script>
+// Enroll Employee button — populate modal with program id and title
+$(document).on('click', '.enroll-btn', function() {
+    var id    = $(this).data('id');
+    var title = $(this).data('title');
+    $('#enroll-program-id').val(id);
+    $('#enroll-program-title').text(title);
+    $('#enrollModal').modal('show');
+});
+</script>
 @endsection
