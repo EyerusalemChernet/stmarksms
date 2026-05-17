@@ -136,15 +136,79 @@
                         <div style="font-weight:600;font-size:13px;color:#1e293b;">{{ $ex->name }}</div>
                         <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ $ex->year }}</div>
                     </div>
-                    <span style="background:#fce7f3;color:#9d174d;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;">
-                        Semester {{ $ex->term }}
-                    </span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="background:#fce7f3;color:#9d174d;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;">
+                            Semester {{ $ex->term }}
+                        </span>
+                        <a href="{{ route('marks.progress', $ex->id) }}"
+                           style="background:#ede9fe;border:1px solid #c4b5fd;color:#4f46e5;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:600;text-decoration:none;">
+                            <i class="bi bi-bar-chart-steps mr-1"></i>Progress
+                        </a>
+                    </div>
                 </div>
                 @empty
                 <div style="padding:24px 20px;text-align:center;color:#94a3b8;font-size:13px;">No exams scheduled.</div>
                 @endforelse
             </div>
         </div>
+
+        {{-- My Pending Marks ──────────────────────────────────────────────── --}}
+        @php
+            $session = \App\Helpers\Qs::getCurrentSession();
+            $currentExams = \App\Models\Exam::where('year', $session)->orderBy('term')->get();
+            $mySubjectIds = isset($my_subjects) ? $my_subjects->pluck('id')->toArray() : [];
+            $pendingItems = [];
+            foreach($currentExams as $ex) {
+                $tex = 'tex'.$ex->term;
+                foreach($my_subjects ?? [] as $sub) {
+                    $sections = \App\Models\Section::where('my_class_id', $sub->my_class_id)->get();
+                    foreach($sections as $sec) {
+                        $studentCount = \App\Models\StudentRecord::where(['my_class_id'=>$sub->my_class_id,'section_id'=>$sec->id,'grad'=>0])->count();
+                        if($studentCount === 0) continue;
+                        $entered = \App\Models\Mark::where(['exam_id'=>$ex->id,'my_class_id'=>$sub->my_class_id,'section_id'=>$sec->id,'subject_id'=>$sub->id,'year'=>$session])->where($tex,'>',0)->count();
+                        if($entered < $studentCount) {
+                            $pendingItems[] = ['exam'=>$ex,'subject'=>$sub,'section'=>$sec,'entered'=>$entered,'total'=>$studentCount];
+                        }
+                    }
+                }
+            }
+        @endphp
+        @if(!empty($pendingItems))
+        <div style="background:#fff;border:1.5px solid #fde68a;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:20px;">
+            <div style="padding:14px 20px;border-bottom:1px solid #fef3c7;background:#fffbeb;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="background:#fef3c7;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:14px;"></i>
+                    </div>
+                    <span style="font-weight:700;font-size:14px;color:#92400e;">Pending Marks</span>
+                    <span style="background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">{{ count($pendingItems) }}</span>
+                </div>
+                <span style="font-size:11px;color:#a16207;">Action required</span>
+            </div>
+            @foreach(array_slice($pendingItems, 0, 5) as $item)
+            <div style="padding:10px 20px;border-bottom:1px solid #fef9c3;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:13px;color:#1e293b;">{{ $item['subject']->name }}</div>
+                    <div style="font-size:11px;color:#64748b;margin-top:2px;">
+                        {{ $item['exam']->name }} · {{ $item['subject']->my_class->name ?? '' }} Sec.{{ $item['section']->name }}
+                        · <span style="color:#f59e0b;font-weight:600;">{{ $item['entered'] }}/{{ $item['total'] }} entered</span>
+                    </div>
+                </div>
+                <a href="{{ route('marks.manage', [$item['exam']->id, $item['subject']->my_class_id, $item['section']->id, $item['subject']->id]) }}"
+                   style="background:#f59e0b;color:#fff;border-radius:7px;padding:5px 12px;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;">
+                    <i class="bi bi-pencil mr-1"></i>Enter
+                </a>
+            </div>
+            @endforeach
+            @if(count($pendingItems) > 5)
+            <div style="padding:10px 20px;text-align:center;">
+                <a href="{{ route('marks.index') }}" style="font-size:12px;color:#f59e0b;font-weight:600;text-decoration:none;">
+                    +{{ count($pendingItems) - 5 }} more pending → View all
+                </a>
+            </div>
+            @endif
+        </div>
+        @endif
 
         {{-- Announcements --}}
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;">

@@ -2,6 +2,15 @@
 @section('page_title', 'Manage Marks')
 @section('content')
 
+    {{-- Breadcrumb / Navigation --}}
+    <div style="margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <a href="{{ route('marks.index') }}" style="color:#4f46e5;font-size:13px;text-decoration:none;font-weight:600;">
+            <i class="bi bi-arrow-left mr-1"></i>Back to Marks
+        </a>
+        <span style="color:#cbd5e1;">|</span>
+        <span style="font-size:13px;color:#64748b;">Session: <strong style="color:#1e293b;">{{ \App\Helpers\Qs::getCurrentSession() }}</strong></span>
+    </div>
+
     <div class="card">
         <div class="card-header header-elements-inline">
             <h6 class="card-title font-weight-bold">Fill The Form To Manage Marks</h6>

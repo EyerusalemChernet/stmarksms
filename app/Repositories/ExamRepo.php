@@ -117,7 +117,7 @@ class ExamRepo
 
     public function getMark($data)
     {
-        return Mark::where($data)->with('grade')->get();
+        return Mark::where($data)->with(['grade', 'user', 'user.student_record', 'subject', 'my_class', 'section', 'exam'])->get();
     }
 
     /*********** Skills ***************/

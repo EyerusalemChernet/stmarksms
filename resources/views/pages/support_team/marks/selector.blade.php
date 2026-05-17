@@ -9,8 +9,9 @@
                             <div class="form-group">
                                 <label for="exam_id" class="col-form-label font-weight-bold">Exam:</label>
                                 <select required id="exam_id" name="exam_id" data-placeholder="Select Exam" class="form-control select">
+                                    <option value="">Select Exam</option>
                                     @foreach($exams as $ex)
-                                        <option {{ $selected && $exam_id == $ex->id ? 'selected' : '' }} value="{{ $ex->id }}">{{ $ex->name }}</option>
+                                        <option {{ (isset($selected) && $selected && isset($exam_id) && $exam_id == $ex->id) ? 'selected' : '' }} value="{{ $ex->id }}">{{ $ex->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -22,7 +23,7 @@
                                 <select required onchange="getClassSubjects(this.value)" id="my_class_id" name="my_class_id" class="form-control select">
                                     <option value="">Select Class</option>
                                     @foreach($my_classes as $c)
-                                        <option {{ ($selected && $my_class_id == $c->id) ? 'selected' : '' }} value="{{ $c->id }}">{{ $c->name }}</option>
+                                        <option {{ (isset($selected) && $selected && isset($my_class_id) && $my_class_id == $c->id) ? 'selected' : '' }} value="{{ $c->id }}">{{ $c->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -32,9 +33,10 @@
                             <div class="form-group">
                                 <label for="section_id" class="col-form-label font-weight-bold">Section:</label>
                                 <select required id="section_id" name="section_id" data-placeholder="Select Class First" class="form-control select">
-                                   @if($selected)
+                                    <option value="">Select Class First</option>
+                                   @if(isset($selected) && $selected && isset($my_class_id))
                                         @foreach($sections->where('my_class_id', $my_class_id) as $s)
-                                            <option {{ $section_id == $s->id ? 'selected' : '' }} value="{{ $s->id }}">{{ $s->name }}</option>
+                                            <option {{ (isset($section_id) && $section_id == $s->id) ? 'selected' : '' }} value="{{ $s->id }}">{{ $s->name }}</option>
                                         @endforeach
                                        @endif
                                 </select>
@@ -45,9 +47,10 @@
                             <div class="form-group">
                                 <label for="subject_id" class="col-form-label font-weight-bold">Subject:</label>
                                 <select required id="subject_id" name="subject_id" data-placeholder="Select Class First" class="form-control select-search">
-                                  @if($selected)
+                                    <option value="">Select Class First</option>
+                                  @if(isset($selected) && $selected && isset($my_class_id))
                                         @foreach($subjects->where('my_class_id', $my_class_id) as $s)
-                                            <option {{ $subject_id == $s->id ? 'selected' : '' }} value="{{ $s->id }}">{{ $s->name }}</option>
+                                            <option {{ (isset($subject_id) && $subject_id == $s->id) ? 'selected' : '' }} value="{{ $s->id }}">{{ $s->name }}</option>
                                         @endforeach
                                       @endif
                                 </select>

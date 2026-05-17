@@ -58,6 +58,131 @@ class MarkController extends Controller
         ));
     }
 
+    /**
+     * Marks Progress Dashboard — shows completion status for every
+     * class × section × subject combination within a given exam.
+     *
+     * A subject/section is considered:
+     *   complete   — every student in the section has a non-zero tex score
+     *   partial    — some students have scores, some don't
+     *   not_started — no marks entered at all
+     */
+    public function progress($exam_id)
+    {
+        $exam = $this->exam->find($exam_id);
+        if (!$exam) return Qs::goWithDanger('marks.index', 'Exam not found.');
+
+        $tex = 'tex' . $exam->term;
+        $uid = Auth::id();
+        $isTeacher = Qs::userIsTeacher();
+
+        // Build the full matrix: class → sections → subjects
+        $classes = $this->my_class->all()->load(['section', 'subjects.teacher']);
+
+        // For teachers: only show their assigned subjects
+        $mySubjectIds = $isTeacher
+            ? $this->my_class->findSubjectByTeacher($uid)->pluck('id')->toArray()
+            : null;
+
+        $matrix = [];
+        $totalCells = 0;
+        $completeCells = 0;
+
+        foreach ($classes as $class) {
+            $subjects = $class->subjects;
+            if ($isTeacher) {
+                $subjects = $subjects->filter(fn($s) => in_array($s->id, $mySubjectIds));
+            }
+            if ($subjects->isEmpty()) continue;
+
+            $sections = $class->section;
+            if ($sections->isEmpty()) continue;
+
+            $classData = [
+                'class'    => $class,
+                'sections' => [],
+                'complete' => 0,
+                'partial'  => 0,
+                'not_started' => 0,
+                'total'    => 0,
+            ];
+
+            foreach ($sections as $section) {
+                // Count students in this section
+                $studentCount = \App\Models\StudentRecord::where([
+                    'my_class_id' => $class->id,
+                    'section_id'  => $section->id,
+                    'grad'        => 0,
+                ])->count();
+
+                if ($studentCount === 0) continue;
+
+                $sectionData = [
+                    'section'  => $section,
+                    'subjects' => [],
+                    'student_count' => $studentCount,
+                ];
+
+                foreach ($subjects as $subject) {
+                    // Count marks entered for this combination
+                    $entered = \App\Models\Mark::where([
+                        'exam_id'     => $exam->id,
+                        'my_class_id' => $class->id,
+                        'section_id'  => $section->id,
+                        'subject_id'  => $subject->id,
+                        'year'        => $this->year,
+                    ])->where($tex, '>', 0)->count();
+
+                    // Count total mark rows (may exist but be zero)
+                    $total = \App\Models\Mark::where([
+                        'exam_id'     => $exam->id,
+                        'my_class_id' => $class->id,
+                        'section_id'  => $section->id,
+                        'subject_id'  => $subject->id,
+                        'year'        => $this->year,
+                    ])->count();
+
+                    if ($entered === 0 && $total === 0) {
+                        $status = 'not_started';
+                    } elseif ($entered >= $studentCount) {
+                        $status = 'complete';
+                        $completeCells++;
+                    } elseif ($entered > 0) {
+                        $status = 'partial';
+                    } else {
+                        $status = 'not_started';
+                    }
+
+                    $totalCells++;
+                    $classData[$status]++;
+                    $classData['total']++;
+
+                    $sectionData['subjects'][] = [
+                        'subject'       => $subject,
+                        'status'        => $status,
+                        'entered'       => $entered,
+                        'student_count' => $studentCount,
+                        'pct'           => $studentCount > 0 ? round(($entered / $studentCount) * 100) : 0,
+                    ];
+                }
+
+                if (!empty($sectionData['subjects'])) {
+                    $classData['sections'][] = $sectionData;
+                }
+            }
+
+            if (!empty($classData['sections'])) {
+                $matrix[] = $classData;
+            }
+        }
+
+        $overallPct = $totalCells > 0 ? round(($completeCells / $totalCells) * 100) : 0;
+
+        return view('pages.support_team.marks.progress', compact(
+            'exam', 'matrix', 'overallPct', 'totalCells', 'completeCells', 'isTeacher'
+        ));
+    }
+
     public function year_selector($student_id)
     {
        return $this->verifyStudentExamYear($student_id);
@@ -158,12 +283,17 @@ class MarkController extends Controller
     {
         $data = $req->only(['exam_id', 'my_class_id', 'section_id', 'subject_id']);
         $d2 = $req->only(['exam_id', 'my_class_id', 'section_id']);
-        $d = $req->only(['my_class_id', 'section_id']);
-        $d['session'] = $data['year'] = $d2['year'] = $this->year;
 
-        $students = $this->student->getRecord($d)->get();
+        // Only filter by class + section — do NOT filter by session.
+        // Active students are already filtered by grad=0 in StudentRepo.
+        // The session mismatch was the root cause of "No Record Found".
+        $studentFilter = $req->only(['my_class_id', 'section_id']);
+
+        $data['year'] = $d2['year'] = $this->year;
+
+        $students = $this->student->getRecord($studentFilter)->get();
         if($students->count() < 1){
-            return back()->with('pop_error', __('msg.rnf'));
+            return back()->with('pop_error', 'No active students found in the selected class and section. Please ensure students are enrolled and not graduated.');
         }
 
         foreach ($students as $s){
@@ -181,7 +311,7 @@ class MarkController extends Controller
 
         $d['marks'] = $this->exam->getMark($d);
         if($d['marks']->count() < 1){
-            return $this->noStudentRecord();
+            return redirect()->route('marks.index')->with('flash_danger', 'No mark records found for this combination. Please use the Quick Entry form to initialize marks first.');
         }
 
         $d['m'] =  $d['marks']->first();
@@ -595,7 +725,7 @@ class MarkController extends Controller
 
     protected function noStudentRecord()
     {
-        return redirect()->route('dashboard')->with('flash_danger', __('msg.srnf'));
+        return redirect()->route('marks.index')->with('flash_danger', 'Student record not found. Please verify the student is enrolled in a class and section for the current session.');
     }
 
     protected function checkPinVerified($st_id)

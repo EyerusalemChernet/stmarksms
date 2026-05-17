@@ -20,8 +20,12 @@ class ExamUpdate extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string',
-            'term' => 'required|integer|in:1,2',
+            'name'        => 'required|string|max:100',
+            'term'        => 'required|integer|in:1,2',
+            'start_date'  => 'nullable|date',
+            'end_date'    => 'nullable|date|after_or_equal:start_date',
+            'description' => 'nullable|string|max:500',
+            'status'      => 'nullable|in:upcoming,ongoing,completed,cancelled',
         ];
     }
 
