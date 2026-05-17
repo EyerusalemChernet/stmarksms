@@ -306,6 +306,8 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => ['auth', 'hr_manager
         // Attendance
         Route::get('/attendance', 'HRController@attendance')->name('hr.attendance');
         Route::post('/attendance', 'HRController@saveAttendance')->name('hr.attendance.save');
+        Route::post('/attendance/import', 'HRController@importAttendanceCsv')->name('hr.attendance.import');
+        Route::get('/attendance/template', 'HRController@downloadAttendanceTemplate')->name('hr.attendance.template');
         Route::get('/attendance/report/{hrId}', 'HRController@attendanceReport')->name('hr.attendance.report');
 
         // Payroll

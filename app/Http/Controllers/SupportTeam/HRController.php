@@ -722,6 +722,105 @@ class HRController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
+    /**
+     * Import attendance from a CSV file.
+     * CSV format: employee_code, date, status, sign_in_time, sign_off_time, leave_type, remark
+     */
+    public function importAttendanceCsv(Request $req)
+    {
+        $req->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        $file    = $req->file('csv_file');
+        $handle  = fopen($file->getRealPath(), 'r');
+        $header  = fgetcsv($handle); // skip header row
+
+        $imported = 0;
+        $skipped  = 0;
+        $errors   = [];
+        $row      = 1;
+
+        while (($line = fgetcsv($handle)) !== false) {
+            $row++;
+            if (count($line) < 3) { $skipped++; continue; }
+
+            [$code, $date, $status] = $line;
+            $signIn    = trim($line[3] ?? '');
+            $signOff   = trim($line[4] ?? '');
+            $leaveType = trim($line[5] ?? '');
+            $remark    = trim($line[6] ?? '');
+
+            $code   = trim($code);
+            $date   = trim($date);
+            $status = strtolower(trim($status));
+
+            // Validate status
+            if (!in_array($status, ['present','absent','late','leave'])) {
+                $errors[] = "Row {$row}: Invalid status '{$status}' for code '{$code}'.";
+                $skipped++;
+                continue;
+            }
+
+            // Find employee by code
+            $employee = \App\Models\Employee::where('employee_code', $code)->first();
+            if (!$employee) {
+                $errors[] = "Row {$row}: Employee code '{$code}' not found.";
+                $skipped++;
+                continue;
+            }
+
+            // Validate date
+            try {
+                \Carbon\Carbon::parse($date);
+            } catch (\Exception $e) {
+                $errors[] = "Row {$row}: Invalid date '{$date}'.";
+                $skipped++;
+                continue;
+            }
+
+            $this->attendanceService->save($employee->id, $date, [
+                'status'        => $status,
+                'sign_in_time'  => $signIn  ?: null,
+                'sign_off_time' => $signOff ?: null,
+                'leave_type'    => $leaveType ?: null,
+                'remark'        => $remark ?: null,
+            ]);
+            $imported++;
+        }
+
+        fclose($handle);
+
+        AuditLog::log('created', 'hr', "Attendance CSV imported: {$imported} records, {$skipped} skipped");
+
+        $msg = "Import complete: {$imported} record(s) imported.";
+        if ($skipped > 0) $msg .= " {$skipped} row(s) skipped.";
+
+        $flash = $skipped > 0 ? 'flash_danger' : 'flash_success';
+        return back()
+            ->with($flash, $msg)
+            ->with('import_errors', $errors);
+    }
+
+    /**
+     * Download a blank CSV template for attendance import.
+     */
+    public function downloadAttendanceTemplate()
+    {
+        $headers  = ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename=attendance_import_template.csv'];
+        $callback = function () {
+            $h = fopen('php://output', 'w');
+            fputcsv($h, ['employee_code', 'date', 'status', 'sign_in_time', 'sign_off_time', 'leave_type', 'remark']);
+            // Example rows
+            fputcsv($h, ['STF-0001', date('Y-m-d'), 'present', '08:00', '17:00', '', '']);
+            fputcsv($h, ['STF-0002', date('Y-m-d'), 'absent',  '',      '',      '', 'Sick']);
+            fputcsv($h, ['STF-0003', date('Y-m-d'), 'late',    '08:30', '17:00', '', '']);
+            fputcsv($h, ['STF-0004', date('Y-m-d'), 'leave',   '',      '',      'annual', 'Annual leave']);
+            fclose($h);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function saveAttendance(Request $req)
     {
         $req->validate([
