@@ -161,6 +161,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::resource('users', 'UserController');
         Route::resource('classes', 'MyClassController');
         Route::resource('sections', 'SectionController');
+        Route::post('subjects/bulk', 'SubjectController@storeBulk')->name('subjects.store_bulk');
         Route::resource('subjects', 'SubjectController');
         Route::resource('grades', 'GradeController');
         Route::resource('exams', 'ExamController');
@@ -224,6 +225,21 @@ Route::group(['namespace' => 'SuperAdmin','middleware' => 'super_admin', 'prefix
     Route::delete('/rules/{id}', 'RuleController@destroy')->name('rules.destroy');
 
     Route::get('/audit-logs', 'AuditLogController@index')->name('audit.index');
+
+    Route::get('/departments', 'DepartmentController@index')->name('departments.index');
+    Route::post('/departments', 'DepartmentController@store')->name('departments.store');
+    Route::post('/departments/{department}/teachers', 'DepartmentController@addTeacher')->name('departments.teachers.add');
+    Route::delete('/departments/{department}/teachers/{user}', 'DepartmentController@removeTeacher')->name('departments.teachers.remove');
+
+    Route::get('/auto-timetable', 'AutoTimetableController@index')->name('auto_timetable.index');
+    Route::get('/auto-timetable/sections/{section}/subjects', 'AutoTimetableController@sectionSubjects')->name('auto_timetable.subjects');
+    Route::post('/auto-timetable/build-slots', 'AutoTimetableController@buildSlots')->name('auto_timetable.build_slots');
+    Route::post('/auto-timetable/preview', 'AutoTimetableController@preview')->name('auto_timetable.preview');
+    Route::post('/auto-timetable/load-saved', 'AutoTimetableController@loadSaved')->name('auto_timetable.load_saved');
+    Route::post('/auto-timetable/generate', 'AutoTimetableController@generate')->name('auto_timetable.generate');
+    Route::post('/auto-timetable/save-preview', 'AutoTimetableController@savePreview')->name('auto_timetable.save_preview');
+    Route::post('/auto-timetable/swap-cells', 'AutoTimetableController@swapCells')->name('auto_timetable.swap_cells');
+    Route::post('/auto-timetable/update-cell', 'AutoTimetableController@updateCell')->name('auto_timetable.update_cell');
 
 });
 

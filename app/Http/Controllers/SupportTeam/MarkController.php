@@ -189,7 +189,7 @@ class MarkController extends Controller
         $d['sections'] = $this->my_class->getAllSections();
         $d['subjects'] = $this->my_class->getAllSubjects();
         if(Qs::userIsTeacher()){
-            $d['subjects'] = $this->my_class->findSubjectByTeacher(Auth::user()->id)->where('my_class_id', $class_id);
+            $d['subjects'] = $this->my_class->findSubjectByTeacher(Auth::user()->id)->where('my_class_id', $class_id)->get();
         }
         $d['selected'] = true;
         $d['class_type'] = $this->my_class->findTypeByClass($class_id);

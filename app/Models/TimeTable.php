@@ -6,7 +6,7 @@ use Eloquent;
 
 class TimeTable extends Eloquent
 {
-    protected $fillable = ['ttr_id', 'ts_id', 'exam_date', 'day', 'timestamp_from', 'timestamp_to', 'subject_id',];
+    protected $fillable = ['ttr_id', 'ts_id', 'exam_date', 'day', 'timestamp_from', 'timestamp_to', 'subject_id', 'teacher_id'];
 
     public function time_slot()
     {
@@ -21,5 +21,10 @@ class TimeTable extends Eloquent
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function teacher()
+    {
+        return $this->belongsTo(\App\User::class, 'teacher_id');
     }
 }

@@ -77,7 +77,7 @@ class CommunicationController extends Controller
         }
         // Teacher — can message parents of their students
         elseif (Qs::userIsTeacher()) {
-            $classIds = \App\Models\Subject::where('teacher_id', $uid)->pluck('my_class_id')->unique();
+            $classIds = \App\Models\Subject::forTeacher($uid)->pluck('my_class_id')->unique();
             $parentIds = \App\Models\StudentRecord::whereIn('my_class_id', $classIds)
                 ->whereNotNull('my_parent_id')->pluck('my_parent_id')->unique();
             $d['users'] = \App\User::whereIn('id', $parentIds)->where('id', '!=', $uid)->orderBy('name')->get();
@@ -86,7 +86,7 @@ class CommunicationController extends Controller
         // Parent — can only message teachers of their children
         elseif (Qs::userIsParent()) {
             $classIds = \App\Models\StudentRecord::where('my_parent_id', $uid)->pluck('my_class_id')->unique();
-            $teacherIds = \App\Models\Subject::whereIn('my_class_id', $classIds)->pluck('teacher_id')->unique();
+            $teacherIds = \App\Models\Subject::teacherUserIdsForClasses($classIds);
             $d['users'] = \App\User::whereIn('id', $teacherIds)->where('id', '!=', $uid)->orderBy('name')->get();
             $d['label'] = 'Send to your child\'s teachers';
         }
