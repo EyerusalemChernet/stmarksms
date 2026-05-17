@@ -1674,7 +1674,7 @@ Sensitive IDs in URLs are hashed using `hashids/hashids`:
 Qs::hash($id)       // encode
 Qs::decodeHash($str) // decode
 ```
-Salt: `date('dMY') . 'CJ'` (changes daily)
+Salt: `date('dMY') . 'STM'` (changes daily)
 
 ## 10.7 Audit Logging
 
