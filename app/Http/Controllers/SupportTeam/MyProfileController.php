@@ -142,6 +142,32 @@ class MyProfileController extends Controller
         return view('pages.hr.self_service.performance', compact('employee', 'reviews'));
     }
 
+    // ── MY TRAINING ──────────────────────────────────────────────────────────
+
+    /**
+     * Show the employee's own training & development history.
+     */
+    public function training()
+    {
+        $employee = $this->resolveEmployee();
+        if (!$employee) return $this->noEmployeeRedirect();
+
+        $trainings = \App\Models\EmployeeTraining::with('program')
+            ->where('employee_id', $employee->id)
+            ->orderByDesc('start_date')
+            ->get();
+
+        $stats = [
+            'total'     => $trainings->count(),
+            'completed' => $trainings->where('status', 'completed')->count(),
+            'ongoing'   => $trainings->whereIn('status', ['enrolled', 'in_progress'])->count(),
+            'hours'     => $trainings->where('status', 'completed')
+                ->sum(fn($t) => $t->program->duration_hours ?? 0),
+        ];
+
+        return view('pages.hr.self_service.training', compact('employee', 'trainings', 'stats'));
+    }
+
     // ── JOB BOARD ────────────────────────────────────────────────────────────
 
     /**

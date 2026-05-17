@@ -37,6 +37,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/payslips',             'MyProfileController@payslips')->name('my.payslips');
         Route::get('/payslips/{payrollId}', 'MyProfileController@payslip')->name('my.payslip');
         Route::get('/performance',          'MyProfileController@performance')->name('my.performance.self');
+        Route::get('/training',             'MyProfileController@training')->name('my.training');
         Route::get('/jobs',                 'MyProfileController@jobBoard')->name('my.job_board');
         Route::get('/jobs/{postingId}',     'MyProfileController@jobPosting')->name('my.job_posting');
         Route::get('/jobs/{postingId}/apply', 'MyProfileController@applyForm')->name('my.job_apply');
@@ -326,6 +327,25 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => ['auth', 'hr_manager
         Route::post('/holidays', 'HRController@storeHoliday')->name('hr.holidays.store');
         Route::post('/holidays/seed', 'HRController@seedHolidays')->name('hr.holidays.seed');
         Route::delete('/holidays/{hrId}', 'HRController@destroyHoliday')->name('hr.holidays.destroy');
+
+        // ── Training & Development ────────────────────────────────────────────
+        Route::prefix('training')->group(function () {
+            // Programs catalog
+            Route::get('/programs', 'TrainingController@programs')->name('hr.training.programs');
+            Route::post('/programs', 'TrainingController@storeProgram')->name('hr.training.programs.store');
+            Route::get('/programs/{hrId}/edit', 'TrainingController@editProgram')->name('hr.training.programs.edit');
+            Route::put('/programs/{hrId}', 'TrainingController@updateProgram')->name('hr.training.programs.update');
+            Route::delete('/programs/{hrId}', 'TrainingController@destroyProgram')->name('hr.training.programs.destroy');
+
+            // Enrollments
+            Route::get('/enrollments', 'TrainingController@enrollments')->name('hr.training.enrollments');
+            Route::post('/enroll', 'TrainingController@enroll')->name('hr.training.enroll');
+            Route::put('/enrollments/{hrId}', 'TrainingController@updateEnrollment')->name('hr.training.enrollments.update');
+            Route::delete('/enrollments/{hrId}', 'TrainingController@destroyEnrollment')->name('hr.training.enrollments.destroy');
+
+            // Per-employee history
+            Route::get('/employee/{employeeId}', 'TrainingController@employeeTraining')->name('hr.training.employee');
+        });
 
         // ── Recruitment ──────────────────────────────────────────────────────
         Route::prefix('recruitment')->group(function () {
