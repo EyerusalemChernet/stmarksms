@@ -116,7 +116,7 @@ class EnhanceHrModule extends Migration
                 $table->decimal('deductions', 12, 2)->default(0);
                 $table->decimal('net_pay', 12, 2)->default(0);
                 $table->string('month', 7); // e.g. 2024-07
-                $table->enum('status', ['pending', 'approved', 'paid'])->default('pending');
+                $table->enum('status', ['draft', 'pending', 'approved', 'paid'])->default('draft');
                 $table->text('notes')->nullable();
                 $table->timestamps();
                 $table->unique(['user_id', 'month']);

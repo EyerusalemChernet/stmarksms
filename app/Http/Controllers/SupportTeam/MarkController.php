@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SupportTeam;
 use App\Helpers\Qs;
 use App\Helpers\Mk;
 use App\Http\Requests\Mark\MarkSelector;
+use App\Models\AssessmentComponent;
 use App\Models\Setting;
 use App\Repositories\ExamRepo;
 use App\Repositories\MarkRepo;
@@ -194,6 +195,11 @@ class MarkController extends Controller
         $d['selected'] = true;
         $d['class_type'] = $this->my_class->findTypeByClass($class_id);
 
+        // Load assessment components for this scope (empty = single-input fallback)
+        $d['assessment_components'] = AssessmentComponent::forScope(
+            (int)$exam_id, (int)$class_id, (int)$subject_id
+        );
+
         return view('pages.support_team.marks.manage', $d);
     }
 
@@ -209,9 +215,32 @@ class MarkController extends Controller
 
         $mks = $req->all();
 
+        // Load components for this scope (may be empty = single-input mode)
+        $components = AssessmentComponent::forScope((int)$exam_id, (int)$class_id, (int)$subject_id);
+        $hasComponents = $components->isNotEmpty();
+
         // Validate per-student mark inputs against Ethiopian St. Mark's format
         foreach ($marks as $mk) {
-            $t1  = (int) ($mks['t1_'.$mk->id]  ?? 0);
+            if ($hasComponents) {
+                // Sum all sub-component inputs for this student
+                $t1 = 0;
+                foreach ($components as $comp) {
+                    $t1 += (int) ($mks["comp_{$comp->id}_{$mk->id}"] ?? 0);
+                }
+                // Validate each sub-component doesn't exceed its own max
+                foreach ($components as $comp) {
+                    $val = (int) ($mks["comp_{$comp->id}_{$mk->id}"] ?? 0);
+                    if ($val > $comp->max_mark) {
+                        return Qs::json(
+                            "{$mk->user->name}: '{$comp->name}' cannot exceed {$comp->max_mark}.",
+                            false
+                        );
+                    }
+                }
+            } else {
+                $t1 = (int) ($mks['t1_'.$mk->id] ?? 0);
+            }
+
             $t2  = (int) ($mks['t2_'.$mk->id]  ?? 0);
             $exm = (int) ($mks['exm_'.$mk->id] ?? 0);
 
@@ -228,11 +257,20 @@ class MarkController extends Controller
         {
             $all_st_ids[] = $mk->student_id;
 
-                $d['t1'] = $t1 = $mks['t1_'.$mk->id];
-                $d['t2'] = $t2 = $mks['t2_'.$mk->id];
-                $d['tca'] = $tca = $t1 + $t2;
-                $d['exm'] = $exm = $mks['exm_'.$mk->id];
+            if ($hasComponents) {
+                // Sum all sub-component inputs into t1 (the assessment total)
+                $t1 = 0;
+                foreach ($components as $comp) {
+                    $t1 += (int) ($mks["comp_{$comp->id}_{$mk->id}"] ?? 0);
+                }
+                $d['t1'] = $t1;
+            } else {
+                $d['t1'] = $t1 = (int) ($mks['t1_'.$mk->id] ?? 0);
+            }
 
+            $d['t2']  = $t2  = (int) ($mks['t2_'.$mk->id]  ?? 0);
+            $d['tca'] = $tca = $t1 + $t2;
+            $d['exm'] = $exm = (int) ($mks['exm_'.$mk->id] ?? 0);
 
             /** SubTotal Grade, Remark, Cum, CumAvg**/
 
@@ -242,15 +280,6 @@ class MarkController extends Controller
                 $d['tex'.$exam->term] = $d['t1'] = $d['t2'] = $d['t3'] = $d['t4'] = $d['tca'] = $d['exm'] = NULL;
             }
 
-         /*   if($exam->term < 3){
-                $grade = $this->mark->getGrade($total, $class_type->id);
-            }
-
-            if($exam->term == 3){
-                $d['cum'] = $this->mark->getSubCumTotal($total, $st_id, $subject_id, $class_id, $this->year);
-                $d['cum_ave'] = $cav = $this->mark->getSubCumAvg($total, $st_id, $subject_id, $class_id, $this->year);
-                $grade = $this->mark->getGrade(round($cav), $class_type->id);
-            }*/
             $grade = $this->mark->getGrade($total, $class_type->id);
             $d['grade_id'] = $grade ? $grade->id : NULL;
 
@@ -286,6 +315,78 @@ class MarkController extends Controller
         /*Exam Record End*/
 
        return Qs::jsonUpdateOk();
+    }
+
+    // ── Assessment Components ────────────────────────────────────────────────
+
+    /**
+     * Return current components for a scope as JSON.
+     */
+    public function getComponents($exam_id, $class_id, $subject_id)
+    {
+        $components = AssessmentComponent::forScope((int)$exam_id, (int)$class_id, (int)$subject_id);
+        return response()->json([
+            'components' => $components->map(fn($c) => [
+                'id'       => $c->id,
+                'name'     => $c->name,
+                'max_mark' => $c->max_mark,
+            ])->values(),
+            'total' => $components->sum('max_mark'),
+        ]);
+    }
+
+    /**
+     * Save (replace) components for a scope.
+     * Validates that total max_marks == 30.
+     */
+    public function saveComponents(Request $req, $exam_id, $class_id, $subject_id)
+    {
+        $req->validate([
+            'components'             => 'required|array|min:1|max:10',
+            'components.*.name'      => 'required|string|max:60',
+            'components.*.max_mark'  => 'required|integer|min:1|max:30',
+        ]);
+
+        $total = array_sum(array_column($req->components, 'max_mark'));
+        if ($total !== 30) {
+            return response()->json([
+                'ok'  => false,
+                'msg' => "Component marks must sum to exactly 30. Current total: {$total}.",
+            ], 422);
+        }
+
+        // Replace existing components for this scope
+        AssessmentComponent::where('exam_id', $exam_id)
+            ->where('my_class_id', $class_id)
+            ->where('subject_id', $subject_id)
+            ->delete();
+
+        foreach ($req->components as $i => $comp) {
+            AssessmentComponent::create([
+                'exam_id'     => $exam_id,
+                'my_class_id' => $class_id,
+                'subject_id'  => $subject_id,
+                'name'        => trim($comp['name']),
+                'max_mark'    => (int) $comp['max_mark'],
+                'sort_order'  => $i,
+                'created_by'  => Auth::id(),
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'msg' => 'Assessment components saved.']);
+    }
+
+    /**
+     * Clear components for a scope (revert to single-input mode).
+     */
+    public function clearComponents($exam_id, $class_id, $subject_id)
+    {
+        AssessmentComponent::where('exam_id', $exam_id)
+            ->where('my_class_id', $class_id)
+            ->where('subject_id', $subject_id)
+            ->delete();
+
+        return response()->json(['ok' => true, 'msg' => 'Components cleared. Single input restored.']);
     }
 
     public function batch_fix()

@@ -47,11 +47,11 @@ Open your browser at **http://127.0.0.1:8000**
 
 | Role | Username | Email | Password |
 |---|---|---|---|
-| Super Admin | `emnet` | `emnet@stmarksms.com` | `cj` |
-| Admin | `admin` | `admin@stmarksms.com` | `cj` |
-| Teacher | `teacher` | `teacher@stmarksms.com` | `cj` |
+| Super Admin | `emnet` | `emnet@stmarksms.com` | `stmark` |
+| Admin | `admin` | `admin@stmarksms.com` | `stmark` |
+| Teacher | `teacher` | `teacher@stmarksms.com` | `stmark` |
 | HR Manager | `hr` | `hr@stmarksms.com` | `hr123` |
-| Parent | `parent` | `parent@stmarksms.com` | `cj` |
+| Parent | `parent` | `parent@stmarksms.com` | `stmark` |
 
 You can log in with either the **username** or the **email** — both work.
 

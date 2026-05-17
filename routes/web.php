@@ -148,6 +148,11 @@ Route::group(['middleware' => 'auth'], function () {
                 Route::post('selector', 'MarkController@selector')->name('marks.selector');
                 Route::get('bulk/{class?}/{section?}', 'MarkController@bulk')->name('marks.bulk');
                 Route::post('bulk', 'MarkController@bulk_select')->name('marks.bulk_select');
+
+                // Assessment components (configure the 30-mark breakdown)
+                Route::get('components/{exam}/{class}/{subject}',    'MarkController@getComponents')->name('marks.components.get');
+                Route::post('components/{exam}/{class}/{subject}',   'MarkController@saveComponents')->name('marks.components.save');
+                Route::delete('components/{exam}/{class}/{subject}', 'MarkController@clearComponents')->name('marks.components.clear');
             });
 
             Route::get('select_year/{id}', 'MarkController@year_selector')->name('marks.year_selector');
@@ -187,6 +192,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('/', 'LibraryController@store')->name('library.store');
             Route::get('/bulk-template', 'LibraryController@bulkTemplate')->name('library.bulk.template');
             Route::post('/bulk-import', 'LibraryController@bulkImport')->name('library.bulk.import');
+            Route::get('/isbn-lookup', 'LibraryController@isbnLookup')->name('library.isbn.lookup');
             Route::get('/edit/{id}', 'LibraryController@edit')->name('library.edit');
             Route::put('/{id}', 'LibraryController@update')->name('library.update');
             Route::delete('/{id}', 'LibraryController@destroy')->name('library.destroy');
