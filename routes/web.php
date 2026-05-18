@@ -324,6 +324,10 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => ['auth', 'hr_manager
         // Workload
         Route::get('/workload', 'HRController@workload')->name('hr.workload');
 
+        // ── Contracts ────────────────────────────────────────────────────────
+        Route::get('/contracts', 'HRController@contracts')->name('hr.contracts');
+        Route::post('/employees/{hrId}/renew-contract', 'HRController@renewContract')->name('hr.contracts.renew');
+
         // ── Ethiopian Holidays ────────────────────────────────────────────────
         Route::get('/holidays', 'HRController@holidays')->name('hr.holidays');
         Route::post('/holidays', 'HRController@storeHoliday')->name('hr.holidays.store');

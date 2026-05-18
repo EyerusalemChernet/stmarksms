@@ -74,4 +74,40 @@ class EmploymentDetails extends Model
     {
         return $this->contract_end_date && $this->contract_end_date->isPast();
     }
+
+    /**
+     * Returns true if contract expires within the given number of days.
+     */
+    public function isContractExpiringSoon(int $days = 30): bool
+    {
+        if (!$this->contract_end_date) return false;
+        return !$this->contract_end_date->isPast()
+            && $this->contract_end_date->diffInDays(now()) <= $days;
+    }
+
+    /**
+     * Days until contract expires. Negative = already expired.
+     */
+    public function daysUntilExpiry(): ?int
+    {
+        if (!$this->contract_end_date) return null;
+        return (int) now()->diffInDays($this->contract_end_date, false);
+    }
+
+    public function contractStatusBadgeClass(): string
+    {
+        if (!$this->contract_end_date) return 'success'; // permanent
+        if ($this->isContractExpired()) return 'danger';
+        if ($this->isContractExpiringSoon(30)) return 'warning';
+        return 'info';
+    }
+
+    public function contractStatusLabel(): string
+    {
+        if (!$this->contract_end_date) return 'Permanent';
+        if ($this->isContractExpired()) return 'Expired';
+        $days = $this->daysUntilExpiry();
+        if ($days <= 30) return "Expires in {$days}d";
+        return 'Active';
+    }
 }

@@ -132,6 +132,7 @@
                         <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
                         <li class="nav-item"><a href="{{ route('hr.payroll') }}" class="nav-link {{ Route::is('hr.payroll') || Route::is('hr.payroll.edit') ? 'active' : '' }}"><i class="bi bi-cash-stack mr-1"></i>Payroll</a></li>
                         <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.contracts') }}" class="nav-link {{ Route::is('hr.contracts') ? 'active' : '' }}"><i class="bi bi-file-earmark-text mr-1"></i>Contracts</a></li>
                         <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
                         <li class="nav-item"><a href="{{ route('hr.training.programs') }}" class="nav-link {{ str_starts_with(Route::currentRouteName() ?? '', 'hr.training') ? 'active' : '' }}"><i class="bi bi-mortarboard mr-1"></i>Training</a></li>
                         @php $leaveActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.leave.'); @endphp
@@ -281,6 +282,7 @@
                         <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
                         <li class="nav-item"><a href="{{ route('hr.payroll') }}" class="nav-link {{ Route::is('hr.payroll') || Route::is('hr.payroll.edit') ? 'active' : '' }}"><i class="bi bi-cash-stack mr-1"></i>Payroll</a></li>
                         <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.contracts') }}" class="nav-link {{ Route::is('hr.contracts') ? 'active' : '' }}"><i class="bi bi-file-earmark-text mr-1"></i>Contracts</a></li>
                         <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
                         <li class="nav-item"><a href="{{ route('hr.training.programs') }}" class="nav-link {{ str_starts_with(Route::currentRouteName() ?? '', 'hr.training') ? 'active' : '' }}"><i class="bi bi-mortarboard mr-1"></i>Training</a></li>
                         @php $leaveActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.leave.'); @endphp

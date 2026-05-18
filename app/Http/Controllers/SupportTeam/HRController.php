@@ -142,6 +142,14 @@ class HRController extends Controller
         $unlinkedCount  = User::whereIn('user_type', $staffTypes)
             ->whereNotIn('id', $linkedUserIds)->count();
 
+        // ── Expiring contracts ───────────────────────────────────────────────
+        $expiringContractsCount = EmploymentDetails::whereHas('employee', fn($q) => $q->where('status','active'))
+            ->whereNotNull('contract_end_date')
+            ->whereBetween('contract_end_date', [now(), now()->addDays(30)])->count();
+        $expiredContractsCount  = EmploymentDetails::whereHas('employee', fn($q) => $q->where('status','active'))
+            ->whereNotNull('contract_end_date')
+            ->where('contract_end_date', '<', now())->count();
+
         return view('pages.hr.dashboard', compact(
             'totalActive', 'totalOnLeave', 'totalSuspended', 'totalTerminated',
             'todayPresent', 'todayAbsent', 'todayLate', 'todayOnLeave', 'attRate',
@@ -149,7 +157,7 @@ class HRController extends Controller
             'pendingLeave', 'approvedLeave', 'recentLeave',
             'openPostings', 'newApplications',
             'deptBreakdown', 'recentHires', 'attendanceTrend', 'today',
-            'unlinkedCount'
+            'unlinkedCount', 'expiringContractsCount', 'expiredContractsCount'
         ));
     }
 
@@ -998,6 +1006,102 @@ class HRController extends Controller
     {
         $this->payrollService->revertToDraft(StaffPayroll::findOrFail($hrId));
         return back()->with('flash_success','Payroll reverted to draft.');
+    }
+
+    // ── CONTRACTS ────────────────────────────────────────────────────────────
+
+    public function contracts(Request $req)
+    {
+        $filter = $req->get('filter', 'expiring'); // expiring, expired, all, permanent
+        $days   = (int) $req->get('days', 60);
+
+        $query = EmploymentDetails::with(['employee.employmentDetails'])
+            ->whereHas('employee', fn($q) => $q->where('status', 'active'))
+            ->whereNotNull('contract_end_date');
+
+        $contracts = match($filter) {
+            'expired'   => $query->where('contract_end_date', '<', now())->get(),
+            'expiring'  => $query->whereBetween('contract_end_date', [now(), now()->addDays($days)])->get(),
+            'permanent' => EmploymentDetails::with('employee')
+                ->whereHas('employee', fn($q) => $q->where('status', 'active'))
+                ->whereNull('contract_end_date')->get(),
+            default     => EmploymentDetails::with('employee')
+                ->whereHas('employee', fn($q) => $q->where('status', 'active'))
+                ->get(),
+        };
+
+        // Summary counts
+        $expiredCount  = EmploymentDetails::whereHas('employee', fn($q) => $q->where('status','active'))
+            ->whereNotNull('contract_end_date')
+            ->where('contract_end_date', '<', now())->count();
+        $expiringCount = EmploymentDetails::whereHas('employee', fn($q) => $q->where('status','active'))
+            ->whereNotNull('contract_end_date')
+            ->whereBetween('contract_end_date', [now(), now()->addDays(60)])->count();
+        $permanentCount = EmploymentDetails::whereHas('employee', fn($q) => $q->where('status','active'))
+            ->whereNull('contract_end_date')->count();
+
+        if ($req->get('export') === 'pdf') {
+            $pdf = PDF::loadView('pages.hr.contracts_pdf', compact('contracts','filter','days'));
+            return $pdf->download("contracts_{$filter}.pdf");
+        }
+        if ($req->get('export') === 'csv') {
+            return $this->exportContractsCsv($contracts, $filter);
+        }
+
+        return view('pages.hr.contracts', compact(
+            'contracts','filter','days','expiredCount','expiringCount','permanentCount'
+        ));
+    }
+
+    protected function exportContractsCsv($contracts, $filter)
+    {
+        $filename = "contracts_{$filter}_".now()->format('Y-m-d').".csv";
+        $headers  = ['Content-Type'=>'text/csv','Content-Disposition'=>"attachment; filename={$filename}"];
+        $callback = function () use ($contracts) {
+            $h = fopen('php://output','w');
+            fputcsv($h, ['Employee','Code','Department','Employment Type','Hire Date','Contract End Date','Days Until Expiry','Status']);
+            foreach ($contracts as $ed) {
+                $emp = $ed->employee;
+                if (!$emp) continue;
+                fputcsv($h, [
+                    $emp->full_name,
+                    $emp->employee_code,
+                    $ed->department?->name ?? '—',
+                    $ed->employmentTypeLabel(),
+                    $ed->hire_date?->format('Y-m-d') ?? '—',
+                    $ed->contract_end_date?->format('Y-m-d') ?? 'Permanent',
+                    $ed->contract_end_date ? $ed->daysUntilExpiry() : '—',
+                    $ed->contractStatusLabel(),
+                ]);
+            }
+            fclose($h);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function renewContract(Request $req, $hrId)
+    {
+        $req->validate([
+            'contract_end_date' => 'required|date|after:today',
+            'notes'             => 'nullable|string|max:500',
+        ]);
+
+        $employee = Employee::findOrFail($hrId);
+        $ed       = $employee->employmentDetails;
+
+        if (!$ed) {
+            return back()->with('flash_danger', 'No employment details found for this employee.');
+        }
+
+        $oldDate = $ed->contract_end_date?->format('d M Y') ?? 'none';
+        $ed->update(['contract_end_date' => $req->contract_end_date]);
+
+        AuditLog::log('updated', 'hr',
+            "Contract renewed for {$employee->employee_code}: {$oldDate} → {$req->contract_end_date}. ".($req->notes ?? '')
+        );
+
+        return back()->with('flash_success',
+            "Contract renewed for {$employee->full_name} until ".Carbon::parse($req->contract_end_date)->format('d M Y').".");
     }
 
     // ── WORKLOAD ─────────────────────────────────────────────────────────────
