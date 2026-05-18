@@ -30,6 +30,33 @@
 </div>
 @endif
 
+{{-- ── Contract expiry alerts ───────────────────────────────────────────────── --}}
+@if(($expiredContractsCount ?? 0) > 0)
+<div class="alert alert-danger d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <i class="bi bi-file-earmark-x mr-2"></i>
+        <strong>{{ $expiredContractsCount }} contract(s) have expired</strong> —
+        these employees need immediate contract renewal or termination.
+    </div>
+    <a href="{{ route('hr.contracts', ['filter'=>'expired']) }}" class="btn btn-sm btn-danger ml-3" style="white-space:nowrap;">
+        <i class="bi bi-arrow-repeat mr-1"></i>Review
+    </a>
+</div>
+@endif
+
+@if(($expiringContractsCount ?? 0) > 0)
+<div class="alert alert-warning d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <i class="bi bi-file-earmark-text mr-2"></i>
+        <strong>{{ $expiringContractsCount }} contract(s) expiring within 30 days</strong> —
+        renew them before they expire.
+    </div>
+    <a href="{{ route('hr.contracts', ['filter'=>'expiring','days'=>30]) }}" class="btn btn-sm btn-warning ml-3" style="white-space:nowrap;">
+        <i class="bi bi-arrow-repeat mr-1"></i>Renew
+    </a>
+</div>
+@endif
+
 {{-- ── Row 1: Headcount stat cards ─────────────────────────────────────────── --}}
 <div class="row mb-3">
     <div class="col-6 col-md-3 mb-2">
