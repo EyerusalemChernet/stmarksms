@@ -110,9 +110,13 @@
                             <select name="user_id" class="form-control form-control-sm mr-2" style="width:200px;" required>
                                 <option value="">— Select User —</option>
                                 @forelse($availableUsers as $u)
-                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->user_type }})</option>
+                                    @php
+                                        $isLinked = \App\Models\Employee::where('user_id', $u->id)->exists();
+                                        $linkedLabel = $isLinked ? ' ✓ (linked)' : '';
+                                    @endphp
+                                    <option value="{{ $u->id }}">{{ $u->name }}{{ $linkedLabel }} ({{ $u->user_type }})</option>
                                 @empty
-                                    <option value="" disabled>No available users</option>
+                                    <option value="" disabled>No users available</option>
                                 @endforelse
                             </select>
                             <button type="submit" class="btn btn-xs btn-primary">
