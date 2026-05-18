@@ -109,7 +109,7 @@
                             @csrf
                             <select name="user_id" class="form-control form-control-sm mr-2" style="width:200px;" required>
                                 <option value="">— Select User —</option>
-                                @foreach(\App\User::whereIn('user_type',['teacher','hr_manager','admin','super_admin'])->whereNotIn('id', \App\Models\Employee::whereNotNull('user_id')->pluck('user_id'))->orderBy('name')->get() as $u)
+                                @foreach(\App\User::whereIn('user_type',['teacher','hr_manager','admin','super_admin','employee'])->whereNotIn('id', \App\Models\Employee::whereNotNull('user_id')->pluck('user_id'))->orderBy('name')->get() as $u)
                                     <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->user_type }})</option>
                                 @endforeach
                             </select>
