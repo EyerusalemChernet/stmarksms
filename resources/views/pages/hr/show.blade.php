@@ -302,7 +302,7 @@
                 @if($employee->qualifications->count())
                 <table class="table table-sm table-bordered mb-3">
                     <thead class="thead-light">
-                        <tr><th>Degree</th><th>Field</th><th>Institution</th><th>Year</th><th></th></tr>
+                        <tr><th>Degree</th><th>Field</th><th>Institution</th><th>Year</th><th>Certificate</th><th></th></tr>
                     </thead>
                     <tbody>
                         @foreach($employee->qualifications as $q)
@@ -311,6 +311,15 @@
                             <td>{{ $q->field_of_study ?? '—' }}</td>
                             <td>{{ $q->institution ?? '—' }}</td>
                             <td>{{ $q->graduation_year ?? '—' }}</td>
+                            <td>
+                                @if($q->certificate_path)
+                                    <a href="{{ asset('storage/' . $q->certificate_path) }}" target="_blank" class="btn btn-xs btn-outline-primary">
+                                        <i class="bi bi-file-pdf mr-1"></i>{{ $q->getCertificateFileName() }}
+                                    </a>
+                                @else
+                                    <span class="text-muted small">—</span>
+                                @endif
+                            </td>
                             <td>
                                 <form action="{{ route('hr.qualification.delete', $employee->id) }}"
                                       method="POST" class="d-inline">
