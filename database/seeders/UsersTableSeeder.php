@@ -73,6 +73,15 @@ class UsersTableSeeder extends Seeder
                 'code'           => strtoupper(Str::random(10)),
                 'remember_token' => Str::random(10),
             ],
+            [
+                'name'           => 'Demo Employee',
+                'email'          => 'employee@stmarksms.com',
+                'user_type'      => 'employee',
+                'username'       => 'employee',
+                'password'       => $password,
+                'code'           => strtoupper(Str::random(10)),
+                'remember_token' => Str::random(10),
+            ],
         ];
         DB::table('users')->insert($d);
     }
