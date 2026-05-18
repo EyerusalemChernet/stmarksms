@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\Qs;
+use App\Mail\MessageNotification;
 use App\Models\Announcement;
 use App\Models\Message;
 use App\Repositories\UserRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class CommunicationController extends Controller
 {
@@ -107,12 +110,27 @@ class CommunicationController extends Controller
             'receiver_id' => 'required|exists:users,id',
             'body'        => 'required|string',
         ]);
-        Message::create([
+
+        $message = Message::create([
             'sender_id'   => Auth::id(),
             'receiver_id' => $req->receiver_id,
             'subject'     => $req->subject,
             'body'        => $req->body,
         ]);
+
+        // Send email notification to the recipient if they have an email address
+        $message->load('sender', 'receiver');
+        Log::info('MAIL_DEBUG: receiver=' . ($message->receiver->email ?? 'NULL') . ' host=' . config('mail.host'));
+        if ($message->receiver && $message->receiver->email) {
+            try {
+                Mail::to($message->receiver->email, $message->receiver->name)
+                    ->send(new MessageNotification($message));
+                Log::info('MAIL_DEBUG: sent OK to ' . $message->receiver->email);
+            } catch (\Exception $e) {
+                Log::error('MAIL_DEBUG: FAILED - ' . $e->getMessage());
+            }
+        }
+
         return redirect()->route('inbox')->with('flash_success', 'Message sent.');
     }
 
