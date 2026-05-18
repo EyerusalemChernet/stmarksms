@@ -28,14 +28,15 @@
                         </div>
 
                         <div class="form-group row">
-                            <label for="teacher_id" class="col-lg-3 col-form-label font-weight-semibold">Teacher</label>
+                            <label for="teacher_id" class="col-lg-3 col-form-label font-weight-semibold">Homeroom Teacher</label>
                             <div class="col-lg-9">
-                                <select data-placeholder="Select Teacher" class="form-control select-search" name="teacher_id" id="teacher_id">
+                                <select data-placeholder="Select Homeroom Teacher" class="form-control select-search" name="teacher_id" id="teacher_id">
                                     <option value=""></option>
                                     @foreach($teachers as $t)
                                         <option {{ $s->teacher_id == $t->id ? 'selected' : '' }} value="{{ Qs::hash($t->id) }}">{{ $t->name }}</option>
                                     @endforeach
                                 </select>
+                                <span class="form-text text-muted"><i class="icon-info22 mr-1"></i> This teacher will be the homeroom teacher, responsible for marking attendance.</span>
                             </div>
                         </div>
 

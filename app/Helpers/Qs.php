@@ -38,6 +38,7 @@ class Qs
     {
         return '    <div class="header-elements">
                     <div class="list-icons">
+                        <a href="javascript:history.back()" class="list-icons-item" data-popup="tooltip" title="Go Back"><i class="icon-arrow-left52"></i></a>
                         <a class="list-icons-item" data-action="collapse"></a>
                         <a class="list-icons-item" data-action="remove"></a>
                     </div>
