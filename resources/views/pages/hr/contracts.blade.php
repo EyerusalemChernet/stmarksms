@@ -26,7 +26,7 @@
         </a>
     </div>
     <div class="col-6 col-md-3 mb-2">
-        <a href="{{ route('hr.contracts', ['filter'=>'expiring','days'=>30]) }}" class="text-decoration-none">
+        <a href="{{ route('hr.contracts', ['filter'=>'expiring','days'=>60]) }}" class="text-decoration-none">
             <div class="card text-center p-3 border-warning">
                 <h3 class="text-warning mb-0">{{ $expiringCount }}</h3>
                 <small class="text-muted">Expiring (60 days)</small>
@@ -174,7 +174,7 @@
 <div class="modal fade" id="renewModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="renew-form" method="POST">
+            <form id="renew-form" method="POST" onsubmit="return confirmRenewal(event)">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-arrow-repeat mr-1"></i>Renew Contract</h5>
@@ -184,12 +184,17 @@
                     <p class="mb-3">Renewing contract for: <strong id="renew-name"></strong></p>
                     <div class="form-group">
                         <label class="font-weight-bold">Current End Date</label>
-                        <input type="text" id="renew-current" class="form-control bg-light" readonly>
+                        <div class="input-group">
+                            <input type="text" id="renew-current" class="form-control bg-light" readonly>
+                            <div class="input-group-append">
+                                <span class="input-group-text small text-muted" id="renew-current-readable"></span>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="font-weight-bold">New Contract End Date <span class="text-danger">*</span></label>
-                        <input type="date" name="contract_end_date" class="form-control" required>
-                        <small class="text-muted">Must be a future date.</small>
+                        <input type="date" name="contract_end_date" id="new-contract-date" class="form-control" required>
+                        <small class="text-muted">Must be a future date (max 10 years from now).</small>
                     </div>
                     <div class="form-group">
                         <label class="font-weight-bold">Notes</label>
@@ -211,14 +216,38 @@
 
 @section('scripts')
 <script>
+// Format date from ISO format to readable format
+function formatDate(dateStr) {
+    var date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Open renew modal and populate fields
 $(document).on('click', '.renew-btn', function() {
     var id      = $(this).data('id');
     var name    = $(this).data('name');
     var current = $(this).data('current');
+    
     $('#renew-form').attr('action', '/hr/employees/' + id + '/renew-contract');
     $('#renew-name').text(name);
     $('#renew-current').val(current);
+    $('#renew-current-readable').text(formatDate(current));
+    $('#new-contract-date').val('');
     $('#renewModal').modal('show');
 });
+
+// Confirmation dialog before renewal
+function confirmRenewal(event) {
+    var name = $('#renew-name').text();
+    var newDate = $('#new-contract-date').val();
+    var readableDate = formatDate(newDate);
+    
+    if (!newDate) {
+        alert('Please select a new contract end date.');
+        return false;
+    }
+    
+    return confirm('Renew contract for ' + name + ' until ' + readableDate + '?');
+}
 </script>
 @endsection

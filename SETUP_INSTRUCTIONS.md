@@ -1,49 +1,49 @@
 # Setup Instructions for Qualification File Upload Feature
 
-## Problem
-The qualification file upload feature is not working because:
-1. The database migration hasn't been run yet
-2. Laravel cache needs to be cleared
+## Quick Setup (Easiest - 3 Steps)
 
-## Solution
+### Step 1: Run the Setup Script
+Open your browser and go to:
+```
+http://127.0.0.1:8000/quick-setup.php
+```
 
-### Option 1: Run the Batch File (Easiest)
-1. Double-click `run-setup.bat` in the project root
-2. Wait for all commands to complete
-3. Close the window
+Wait for the page to complete. You should see:
+```
+✓ Setup complete!
+```
 
-### Option 2: Run Commands Manually in Terminal
+### Step 2: Refresh Your Browser
+Press **Ctrl+F5** (Windows) or **Cmd+Shift+R** (Mac)
 
-Open Command Prompt or PowerShell in the project directory and run:
+### Step 3: Test the Feature
+1. Go to **HR → Select an Employee**
+2. Click **"Edit Profile"**
+3. Scroll to **"Qualifications"** section
+4. **Upload a certificate file** (PDF, DOC, DOCX, JPG, PNG)
+5. Click **"Save Changes"**
+6. Go back to **Employee Profile**
+7. Scroll to **"Qualifications"**
+8. **You should see the certificate with a download link** ✅
+
+---
+
+## Alternative: Manual Setup
+
+If the quick setup doesn't work, run these commands in Command Prompt:
 
 ```bash
-# 1. Run migrations to add certificate_path column
-php artisan migrate
+cd c:\laragon\www\stmarksms
 
-# 2. Clear all caches
+php artisan migrate --force
 php artisan cache:clear
 php artisan config:clear
 php artisan view:clear
 php artisan route:clear
+php artisan storage:link
 ```
 
-### Option 3: Using Laragon
-
-1. Open Laragon
-2. Right-click on the stmarksms project
-3. Click "Terminal"
-4. Run the commands above
-
-## After Setup
-
-1. **Refresh your browser** (Ctrl+F5 or Cmd+Shift+R)
-2. **Go to HR → Edit Employee Profile**
-3. **Scroll to Qualifications section**
-4. **Upload a certificate file**
-5. **Click "Save Changes"**
-6. **Go to Employee Profile (Show page)**
-7. **Scroll to Qualifications**
-8. **You should now see the certificate with a download link** ✅
+---
 
 ## What Changed
 
@@ -104,9 +104,15 @@ php artisan route:clear
    - Stop the Laravel server (Ctrl+C)
    - Run `php artisan serve` again
 
+6. **Check the logs:**
+   ```bash
+   type storage\logs\laravel.log
+   ```
+
 ## Questions?
 
 If you still have issues:
 1. Check the Laravel logs: `storage/logs/laravel.log`
 2. Make sure you're using the latest code from the repository
 3. Verify the migration file exists: `database/migrations/2024_01_16_000000_add_certificate_to_employee_qualifications.php`
+
