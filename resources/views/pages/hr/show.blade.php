@@ -160,6 +160,38 @@
         </div>
         @endif
 
+        {{-- Training summary --}}
+        @php $trainingCount = $employee->completedTrainings()->count(); @endphp
+        <div class="card mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0"><i class="bi bi-mortarboard mr-1"></i>Training</h6>
+                <a href="{{ route('hr.training.employee', $employee->id) }}" class="btn btn-xs btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body text-center py-2">
+                @php
+                    $allTrainings = $employee->trainings()->with('program')->get();
+                    $ongoing = $allTrainings->whereIn('status',['enrolled','in_progress'])->count();
+                    $trainingHours = $allTrainings->where('status','completed')->sum(fn($t) => $t->program->duration_hours ?? 0);
+                @endphp
+                <div class="row">
+                    <div class="col-4">
+                        <h4 class="text-success mb-0">{{ $trainingCount }}</h4>
+                        <small class="text-muted">Completed</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-info mb-0">{{ $ongoing }}</h4>
+                        <small class="text-muted">Ongoing</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-warning mb-0">{{ $trainingHours }}h</h4>
+                        <small class="text-muted">Hours</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>{{-- /col-md-4 --}}
 
     {{-- ── RIGHT: Details ──────────────────────────────────────────────────── --}}

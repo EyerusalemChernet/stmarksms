@@ -115,6 +115,53 @@
     @endif
 </div>
 
+{{-- CSV Bulk Import --}}
+<div class="card mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="card-title mb-0">
+            <i class="bi bi-upload mr-1"></i>Bulk Import via CSV
+        </h6>
+        <a href="{{ route('hr.attendance.template') }}" class="btn btn-xs btn-outline-secondary">
+            <i class="bi bi-download mr-1"></i>Download Template
+        </a>
+    </div>
+    <div class="card-body">
+
+        @if(session('import_errors') && count(session('import_errors')) > 0)
+        <div class="alert alert-warning py-2 small">
+            <strong>Import warnings:</strong>
+            <ul class="mb-0 mt-1">
+                @foreach(session('import_errors') as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+
+        <form action="{{ route('hr.attendance.import') }}" method="POST" enctype="multipart/form-data"
+              class="form-inline flex-wrap" style="gap:10px;">
+            @csrf
+            <div>
+                <label class="font-weight-bold small d-block mb-1">CSV File <span class="text-danger">*</span></label>
+                <input type="file" name="csv_file" accept=".csv,.txt"
+                       class="form-control form-control-sm" style="width:280px;" required>
+            </div>
+            <div style="padding-top:22px;">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-upload mr-1"></i>Import
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-2 small text-muted">
+            <i class="bi bi-info-circle mr-1"></i>
+            CSV columns: <code>employee_code, date (YYYY-MM-DD), status (present/absent/late/leave), sign_in_time (HH:MM), sign_off_time (HH:MM), leave_type, remark</code>.
+            Download the template above for a ready-to-fill example.
+            Existing records for the same employee + date will be <strong>overwritten</strong>.
+        </div>
+    </div>
+</div>
+
 {{-- Daily marking form --}}
 <div class="card">
     <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-pencil-square mr-1"></i>Mark Today's Attendance</h6></div>

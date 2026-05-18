@@ -182,13 +182,13 @@ class Qs
 
     public static function getStaff($remove=[])
     {
-        $data = ['super_admin', 'admin', 'teacher', 'hr_manager'];
+        $data = ['super_admin', 'admin', 'teacher', 'hr_manager', 'employee'];
         return $remove ? array_values(array_diff($data, $remove)) : $data;
     }
 
     public static function getAllUserTypes($remove=[])
     {
-        $data = ['super_admin', 'admin', 'teacher', 'hr_manager', 'student', 'parent'];
+        $data = ['super_admin', 'admin', 'teacher', 'hr_manager', 'employee', 'student', 'parent'];
         return $remove ? array_values(array_diff($data, $remove)) : $data;
     }
 
