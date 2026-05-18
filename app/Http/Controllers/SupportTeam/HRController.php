@@ -291,9 +291,8 @@ class HRController extends Controller
             ->with('employmentDetails.department')
             ->orderBy('first_name')->get();
 
-        // Get available users for linking (staff types not already linked)
+        // Get ALL staff users for linking (including those already linked, so they can be re-linked)
         $availableUsers = User::whereIn('user_type', $staffTypes)
-            ->whereNotIn('id', $linkedUserIds)
             ->orderBy('name')->get();
 
         return view('pages.hr.employees_unlinked', compact('unlinked', 'employees', 'availableUsers'));
