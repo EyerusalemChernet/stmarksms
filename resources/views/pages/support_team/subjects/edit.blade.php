@@ -39,12 +39,12 @@
                         </div>
 
                         <div class="form-group row">
-                            <label for="teacher_id" class="col-lg-3 col-form-label font-weight-semibold">Teacher</label>
+                            <label for="department_id" class="col-lg-3 col-form-label font-weight-semibold">Department <span class="text-danger">*</span></label>
                             <div class="col-lg-9">
-                                <select data-placeholder="Select Teacher" class="form-control select-search" name="teacher_id" id="teacher_id">
+                                <select required data-placeholder="Select Department" class="form-control select-search" name="department_id" id="department_id">
                                     <option value=""></option>
-                                    @foreach($teachers as $t)
-                                        <option {{ $s->teacher_id == $t->id ? 'selected' : '' }} value="{{ Qs::hash($t->id) }}">{{ $t->name }}</option>
+                                    @foreach($departments as $dept)
+                                        <option {{ $s->department_id == $dept->id ? 'selected' : '' }} value="{{ $dept->id }}">{{ $dept->name }}</option>
                                     @endforeach
                                 </select>
                             </div>

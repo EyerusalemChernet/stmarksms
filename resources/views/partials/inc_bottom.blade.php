@@ -32,7 +32,7 @@
 <script src="{{ asset('global_assets/js/plugins/ui/fullcalendar/fullcalendar.min.js') }}"></script>
 
 
-<script src=" {{ asset('assets/js/app.js') }} "></script>
+<script src="{{ asset('assets/js/app.js') }}"></script>
 <script src="{{ asset('global_assets/js/demo_pages/form_wizard.js') }}"></script>
 <script src="{{ asset('global_assets/js/demo_pages/form_select2.js') }}"></script>
 <script src="{{ asset('global_assets/js/demo_pages/datatables_extension_buttons_html5.js') }}"></script>
@@ -41,7 +41,13 @@
 
 <!-- /theme JS files -->
 
+<<<<<<< HEAD
 <script src=" {{ asset('assets/js/custom.js') }} "></script>
 <script src=" {{ asset('assets/js/hr-select2.js') }} "></script>
+=======
+{{-- i18n must load before custom.js --}}
+<script src="{{ asset('assets/js/i18n.js') }}"></script>
+<script src="{{ asset('assets/js/custom.js') }}"></script>
+>>>>>>> 485a3f2dffea29874a17c67df0f4f98be14705da
 
 @include('partials.js.custom_js')

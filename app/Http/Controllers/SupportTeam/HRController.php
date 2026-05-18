@@ -381,7 +381,7 @@ class HRController extends Controller
             'currentSalary','currentPosition.position','currentShift.shift','user',
         ])->findOrFail($hrId);
 
-        $subjects     = $employee->user_id ? Subject::where('teacher_id',$employee->user_id)->with('my_class')->get() : collect();
+        $subjects     = $employee->user_id ? Subject::forTeacher($employee->user_id)->with('my_class', 'department')->get() : collect();
         $attendance   = StaffAttendance::where('employee_id',$hrId)->orderByDesc('date')->take(30)->get();
         $recentRate   = $this->attendanceService->recentRate($hrId, 30);
         $presentCount = $recentRate['present'];
@@ -1175,7 +1175,7 @@ class HRController extends Controller
     public function workload()
     {
         $teachers = User::where('user_type','teacher')->orderBy('name')->get()->map(function($t) {
-            $t->subjects = Subject::where('teacher_id',$t->id)->with('my_class')->get();
+            $t->subjects = Subject::forTeacher($t->id)->with('my_class', 'department')->get();
             return $t;
         });
         return view('pages.hr.workload', compact('teachers'));

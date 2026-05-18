@@ -1,104 +1,266 @@
 @extends('layouts.master')
-@section('page_title', 'Teacher Dashboard')
+@section('page_title', 'Dashboard')
 @section('content')
 
-<div class="row mb-3">
-    <div class="col-md-4 mb-3">
-        <div class="stat-card primary d-flex align-items-center justify-content-between">
-            <div><div class="stat-value">{{ isset($my_subjects) ? $my_subjects->count() : 0 }}</div><div class="stat-label">My Subjects</div></div>
-            <div class="stat-icon"><i class="bi bi-journal-text"></i></div>
+@php
+    $userName = explode(' ', auth()->user()->name)[0];
+    $hour = now()->hour;
+    $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
+    $subjectCount = isset($my_subjects) ? $my_subjects->count() : 0;
+    $sessionCount = isset($today_sessions) ? $today_sessions->count() : 0;
+@endphp
+
+{{-- ── Welcome Banner ──────────────────────────────────────────────────── --}}
+<div style="
+    background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(16,185,129,.35);
+">
+    <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:rgba(255,255,255,.06);border-radius:50%;"></div>
+    <div style="position:absolute;bottom:-60px;right:80px;width:150px;height:150px;background:rgba(255,255,255,.04);border-radius:50%;"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div>
+            <div style="color:rgba(255,255,255,.75);font-size:13px;margin-bottom:4px;">{{ $greeting }}, Teacher</div>
+            <h4 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 6px;">{{ $userName }} 👋</h4>
+            <div style="color:rgba(255,255,255,.7);font-size:13px;">
+                <i class="bi bi-calendar3 mr-1"></i>{{ now()->format('l, d M Y') }}
+            </div>
         </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="stat-card success d-flex align-items-center justify-content-between">
-            <div><div class="stat-value">{{ isset($today_sessions) ? $today_sessions->count() : 0 }}</div><div class="stat-label">Today's Sessions</div></div>
-            <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="stat-card warning d-flex align-items-center justify-content-between">
-            <div><div class="stat-value">{{ $parent_messages ?? 0 }}</div><div class="stat-label">Parent Messages</div></div>
-            <div class="stat-icon"><i class="bi bi-chat-left-dots"></i></div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center;backdrop-filter:blur(4px);">
+                <div style="color:#fff;font-size:24px;font-weight:800;">{{ $subjectCount }}</div>
+                <div style="color:rgba(255,255,255,.8);font-size:11px;font-weight:500;">Subjects</div>
+            </div>
+            <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center;backdrop-filter:blur(4px);">
+                <div style="color:#fff;font-size:24px;font-weight:800;">{{ $sessionCount }}</div>
+                <div style="color:rgba(255,255,255,.8);font-size:11px;font-weight:500;">Today's Sessions</div>
+            </div>
+            <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:12px 20px;text-align:center;backdrop-filter:blur(4px);">
+                <div style="color:#fff;font-size:24px;font-weight:800;">{{ $parent_messages ?? 0 }}</div>
+                <div style="color:rgba(255,255,255,.8);font-size:11px;font-weight:500;">Parent Messages</div>
+            </div>
         </div>
     </div>
 </div>
 
+{{-- ── Main grid ────────────────────────────────────────────────────────── --}}
 <div class="row">
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="card-title"><i class="bi bi-journal-text mr-2 text-primary"></i>My Subjects</h6>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-sm mb-0">
-                    <thead><tr><th>Subject</th><th>Class</th></tr></thead>
-                    <tbody>
-                        @forelse($my_subjects ?? [] as $sub)
-                        <tr><td>{{ $sub->name }}</td><td><span class="badge badge-primary">{{ $sub->my_class->name ?? '-' }}</span></td></tr>
-                        @empty
-                        <tr><td colspan="2" class="text-center text-muted py-3">No subjects assigned.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-header"><h6 class="card-title"><i class="bi bi-journal-check mr-2 text-warning"></i>Upcoming Exams</h6></div>
-            <div class="card-body p-0">
-                <table class="table table-sm mb-0">
-                    <thead><tr><th>Exam</th><th>Term</th><th>Year</th></tr></thead>
-                    <tbody>
-                        @forelse($upcoming_exams ?? [] as $ex)
-                        <tr><td>{{ $ex->name }}</td><td><span class="badge badge-info">Semester {{ $ex->term }}</span></td><td>{{ $ex->year }}</td></tr>
-                        @empty
-                        <tr><td colspan="3" class="text-center text-muted py-3">No exams scheduled.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 
-    {{-- Announcements --}}
-    <div class="col-md-7 mb-3">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="card-title"><i class="bi bi-megaphone mr-2 text-primary"></i>Announcements</h6>
-                <a href="{{ route('announcements') }}" class="btn btn-xs btn-light">View All</a>
+    {{-- My Subjects --}}
+    <div class="col-lg-5 mb-4">
+
+        {{-- My Homeroom --}}
+        @if(isset($homeroom) && $homeroom)
+        <div style="background:linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);border-radius:14px;box-shadow:0 4px 15px rgba(79,70,229,.2);overflow:hidden;margin-bottom:20px;color:#fff;">
+            <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;">
+                <div style="background:rgba(255,255,255,.2);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-person-badge" style="color:#fff;font-size:16px;"></i>
+                </div>
+                <span style="font-weight:700;font-size:15px;">My Homeroom</span>
             </div>
-            <div class="card-body p-0">
-                @forelse($announcements ?? [] as $a)
-                <div class="p-3 border-bottom">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <strong style="font-size:13px;">{{ $a->title }}</strong>
-                        <small class="text-muted ml-2" style="white-space:nowrap;">{{ $a->created_at->diffForHumans() }}</small>
+            <div style="padding:20px;">
+                <div style="font-size:12px;color:rgba(255,255,255,.8);margin-bottom:4px;">You are the Homeroom Teacher for</div>
+                <div style="font-size:22px;font-weight:800;margin-bottom:16px;line-height:1.2;">
+                    {{ $homeroom->my_class->name }} <span style="opacity:0.7;font-weight:400;font-size:18px;">- Sec {{ $homeroom->name }}</span>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <a href="{{ route('attendance.index') }}" style="flex:1;background:#fff;color:#4f46e5;text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;transition:all 0.2s;">
+                        <i class="bi bi-clipboard-check mr-1"></i> Attendance
+                    </a>
+                    <a href="{{ route('students.list', $homeroom->my_class_id) }}" style="flex:1;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.2s;backdrop-filter:blur(4px);">
+                        <i class="bi bi-people mr-1"></i> Students
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;">
+            <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="background:#d1fae5;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-journal-text" style="color:#10b981;font-size:14px;"></i>
                     </div>
-                    <p class="mb-0 text-muted" style="font-size:12px;margin-top:3px;">{{ \Illuminate\Support\Str::limit($a->body, 120) }}</p>
+                    <span style="font-weight:700;font-size:14px;color:#1e293b;">My Subjects</span>
+                </div>
+                <span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;">{{ $subjectCount }} total</span>
+            </div>
+            <div>
+                @forelse($my_subjects ?? [] as $sub)
+                <div style="padding:12px 20px;border-bottom:1px solid #f8fafc;display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="bi bi-book-fill" style="color:#fff;font-size:13px;"></i>
+                        </div>
+                        <span style="font-weight:600;font-size:13px;color:#1e293b;">{{ $sub->name }}</span>
+                    </div>
+                    <span style="background:#ede9fe;color:#4f46e5;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;">{{ $sub->my_class->name ?? '—' }}</span>
                 </div>
                 @empty
-                <div class="p-4 text-center text-muted"><p class="mb-0 small">No announcements.</p></div>
+                <div style="padding:40px 20px;text-align:center;">
+                    <i class="bi bi-journal-x" style="font-size:36px;color:#cbd5e1;display:block;margin-bottom:10px;"></i>
+                    <p style="color:#94a3b8;font-size:13px;margin:0;">No subjects assigned yet.</p>
+                </div>
                 @endforelse
             </div>
         </div>
     </div>
 
-    {{-- Quick Actions --}}
-    <div class="col-md-5 mb-3">
-        <div class="card h-100">
-            <div class="card-header"><h6 class="card-title"><i class="bi bi-lightning-charge mr-2 text-warning"></i>Quick Actions</h6></div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-4 mb-3"><a href="{{ route('attendance.index') }}" class="quick-link-card"><i class="bi bi-clipboard-check"></i><small>Attendance</small></a></div>
-                    <div class="col-4 mb-3"><a href="{{ route('marks.index') }}" class="quick-link-card"><i class="bi bi-journal-check"></i><small>Marks</small></a></div>
-                    <div class="col-4 mb-3"><a href="{{ route('marks.bulk') }}" class="quick-link-card"><i class="bi bi-file-earmark-text"></i><small>Marksheet</small></a></div>
-                    <div class="col-4 mb-3"><a href="{{ route('library.index') }}" class="quick-link-card"><i class="bi bi-bookshelf"></i><small>Library</small></a></div>
-                    <div class="col-4 mb-3"><a href="{{ route('inbox') }}" class="quick-link-card"><i class="bi bi-envelope"></i><small>Inbox @if(($unread_messages??0)>0)<span class="badge badge-danger" style="font-size:9px;">{{$unread_messages}}</span>@endif</small></a></div>
-                    <div class="col-4 mb-3"><a href="{{ route('tt.index') }}" class="quick-link-card"><i class="bi bi-calendar-week"></i><small>Timetable</small></a></div>
+    {{-- Right column --}}
+    <div class="col-lg-7">
+
+        {{-- Quick Actions --}}
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:20px;">
+            <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px;">
+                <div style="background:#fef3c7;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;font-size:14px;"></i>
                 </div>
+                <span style="font-weight:700;font-size:14px;color:#1e293b;">Quick Actions</span>
             </div>
+            <div style="padding:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                @php
+                $actions = [
+                    ['route'=>'attendance.index','icon'=>'bi-clipboard-check-fill','label'=>'Attendance','color'=>'#10b981','bg'=>'#d1fae5'],
+                    ['route'=>'marks.index','icon'=>'bi-journal-check','label'=>'Enter Marks','color'=>'#4f46e5','bg'=>'#ede9fe'],
+                    ['route'=>'marks.bulk','icon'=>'bi-file-earmark-text-fill','label'=>'Marksheet','color'=>'#3b82f6','bg'=>'#dbeafe'],
+                    ['route'=>'tt.index','icon'=>'bi-calendar-week-fill','label'=>'Timetable','color'=>'#f59e0b','bg'=>'#fef3c7'],
+                    ['route'=>'library.index','icon'=>'bi-bookshelf','label'=>'Library','color'=>'#14b8a6','bg'=>'#ccfbf1'],
+                    ['route'=>'inbox','icon'=>'bi-envelope-fill','label'=>'Inbox','color'=>'#64748b','bg'=>'#f1f5f9'],
+                ];
+                @endphp
+                @foreach($actions as $a)
+                <a href="{{ route($a['route']) }}" style="
+                    background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;
+                    padding:14px 8px;text-align:center;text-decoration:none;display:block;transition:all .15s;
+                " onmouseover="this.style.borderColor='{{ $a['color'] }}';this.style.background='{{ $a['bg'] }}'"
+                   onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#f8fafc'">
+                    <i class="bi {{ $a['icon'] }}" style="font-size:20px;color:{{ $a['color'] }};display:block;margin-bottom:6px;"></i>
+                    <span style="font-size:11px;font-weight:600;color:#475569;">{{ $a['label'] }}</span>
+                    @if($a['route'] === 'inbox' && ($unread_messages??0) > 0)
+                        <span style="background:#ef4444;color:#fff;border-radius:10px;font-size:9px;padding:1px 5px;margin-left:2px;">{{ $unread_messages }}</span>
+                    @endif
+                </a>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Upcoming Exams --}}
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:20px;">
+            <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px;">
+                <div style="background:#fce7f3;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-journal-check" style="color:#ec4899;font-size:14px;"></i>
+                </div>
+                <span style="font-weight:700;font-size:14px;color:#1e293b;">Exams</span>
+            </div>
+            <div style="padding:4px 0;">
+                @forelse($upcoming_exams ?? [] as $ex)
+                <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f8fafc;">
+                    <div>
+                        <div style="font-weight:600;font-size:13px;color:#1e293b;">{{ $ex->name }}</div>
+                        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ $ex->year }}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="background:#fce7f3;color:#9d174d;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;">
+                            Semester {{ $ex->term }}
+                        </span>
+                        <a href="{{ route('marks.progress', $ex->id) }}"
+                           style="background:#ede9fe;border:1px solid #c4b5fd;color:#4f46e5;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:600;text-decoration:none;">
+                            <i class="bi bi-bar-chart-steps mr-1"></i>Progress
+                        </a>
+                    </div>
+                </div>
+                @empty
+                <div style="padding:24px 20px;text-align:center;color:#94a3b8;font-size:13px;">No exams scheduled.</div>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- My Pending Marks ──────────────────────────────────────────────── --}}
+        @php
+            $session = \App\Helpers\Qs::getCurrentSession();
+            $currentExams = \App\Models\Exam::where('year', $session)->orderBy('term')->get();
+            $mySubjectIds = isset($my_subjects) ? $my_subjects->pluck('id')->toArray() : [];
+            $pendingItems = [];
+            foreach($currentExams as $ex) {
+                $tex = 'tex'.$ex->term;
+                foreach($my_subjects ?? [] as $sub) {
+                    $sections = \App\Models\Section::where('my_class_id', $sub->my_class_id)->get();
+                    foreach($sections as $sec) {
+                        $studentCount = \App\Models\StudentRecord::where(['my_class_id'=>$sub->my_class_id,'section_id'=>$sec->id,'grad'=>0])->count();
+                        if($studentCount === 0) continue;
+                        $entered = \App\Models\Mark::where(['exam_id'=>$ex->id,'my_class_id'=>$sub->my_class_id,'section_id'=>$sec->id,'subject_id'=>$sub->id,'year'=>$session])->where($tex,'>',0)->count();
+                        if($entered < $studentCount) {
+                            $pendingItems[] = ['exam'=>$ex,'subject'=>$sub,'section'=>$sec,'entered'=>$entered,'total'=>$studentCount];
+                        }
+                    }
+                }
+            }
+        @endphp
+        @if(!empty($pendingItems))
+        <div style="background:#fff;border:1.5px solid #fde68a;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:20px;">
+            <div style="padding:14px 20px;border-bottom:1px solid #fef3c7;background:#fffbeb;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="background:#fef3c7;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:14px;"></i>
+                    </div>
+                    <span style="font-weight:700;font-size:14px;color:#92400e;">Pending Marks</span>
+                    <span style="background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">{{ count($pendingItems) }}</span>
+                </div>
+                <span style="font-size:11px;color:#a16207;">Action required</span>
+            </div>
+            @foreach(array_slice($pendingItems, 0, 5) as $item)
+            <div style="padding:10px 20px;border-bottom:1px solid #fef9c3;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:13px;color:#1e293b;">{{ $item['subject']->name }}</div>
+                    <div style="font-size:11px;color:#64748b;margin-top:2px;">
+                        {{ $item['exam']->name }} · {{ $item['subject']->my_class->name ?? '' }} Sec.{{ $item['section']->name }}
+                        · <span style="color:#f59e0b;font-weight:600;">{{ $item['entered'] }}/{{ $item['total'] }} entered</span>
+                    </div>
+                </div>
+                <a href="{{ route('marks.manage', [$item['exam']->id, $item['subject']->my_class_id, $item['section']->id, $item['subject']->id]) }}"
+                   style="background:#f59e0b;color:#fff;border-radius:7px;padding:5px 12px;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;">
+                    <i class="bi bi-pencil mr-1"></i>Enter
+                </a>
+            </div>
+            @endforeach
+            @if(count($pendingItems) > 5)
+            <div style="padding:10px 20px;text-align:center;">
+                <a href="{{ route('marks.index') }}" style="font-size:12px;color:#f59e0b;font-weight:600;text-decoration:none;">
+                    +{{ count($pendingItems) - 5 }} more pending → View all
+                </a>
+            </div>
+            @endif
+        </div>
+        @endif
+
+        {{-- Announcements --}}
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;">
+            <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="background:#dbeafe;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-megaphone-fill" style="color:#3b82f6;font-size:14px;"></i>
+                    </div>
+                    <span style="font-weight:700;font-size:14px;color:#1e293b;">Announcements</span>
+                </div>
+                <a href="{{ route('announcements') }}" style="font-size:12px;color:#4f46e5;text-decoration:none;font-weight:500;">View all <i class="bi bi-arrow-right"></i></a>
+            </div>
+            @forelse($announcements ?? [] as $a)
+            <div style="padding:12px 20px;border-bottom:1px solid #f8fafc;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                    <span style="font-weight:600;font-size:13px;color:#1e293b;">{{ $a->title }}</span>
+                    <span style="font-size:11px;color:#94a3b8;white-space:nowrap;">{{ $a->created_at->diffForHumans() }}</span>
+                </div>
+                <p style="margin:4px 0 0;font-size:12px;color:#64748b;">{{ \Illuminate\Support\Str::limit($a->body, 100) }}</p>
+            </div>
+            @empty
+            <div style="padding:24px 20px;text-align:center;color:#94a3b8;font-size:13px;">No announcements.</div>
+            @endforelse
         </div>
     </div>
 </div>
+
 @endsection

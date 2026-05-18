@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SupportTeam;
 use App\Helpers\Qs;
 use App\Helpers\Mk;
 use App\Http\Requests\Mark\MarkSelector;
+use App\Models\AssessmentComponent;
 use App\Models\Setting;
 use App\Repositories\ExamRepo;
 use App\Repositories\MarkRepo;
@@ -54,6 +55,131 @@ class MarkController extends Controller
         return view('pages.support_team.marks.insights', compact(
             'summary', 'atRiskStudents', 'classOverview',
             'subjectAlerts', 'topPerformers', 'mostImproved'
+        ));
+    }
+
+    /**
+     * Marks Progress Dashboard — shows completion status for every
+     * class × section × subject combination within a given exam.
+     *
+     * A subject/section is considered:
+     *   complete   — every student in the section has a non-zero tex score
+     *   partial    — some students have scores, some don't
+     *   not_started — no marks entered at all
+     */
+    public function progress($exam_id)
+    {
+        $exam = $this->exam->find($exam_id);
+        if (!$exam) return Qs::goWithDanger('marks.index', 'Exam not found.');
+
+        $tex = 'tex' . $exam->term;
+        $uid = Auth::id();
+        $isTeacher = Qs::userIsTeacher();
+
+        // Build the full matrix: class → sections → subjects
+        $classes = $this->my_class->all()->load(['section', 'subjects.teacher']);
+
+        // For teachers: only show their assigned subjects
+        $mySubjectIds = $isTeacher
+            ? $this->my_class->findSubjectByTeacher($uid)->pluck('id')->toArray()
+            : null;
+
+        $matrix = [];
+        $totalCells = 0;
+        $completeCells = 0;
+
+        foreach ($classes as $class) {
+            $subjects = $class->subjects;
+            if ($isTeacher) {
+                $subjects = $subjects->filter(fn($s) => in_array($s->id, $mySubjectIds));
+            }
+            if ($subjects->isEmpty()) continue;
+
+            $sections = $class->section;
+            if ($sections->isEmpty()) continue;
+
+            $classData = [
+                'class'    => $class,
+                'sections' => [],
+                'complete' => 0,
+                'partial'  => 0,
+                'not_started' => 0,
+                'total'    => 0,
+            ];
+
+            foreach ($sections as $section) {
+                // Count students in this section
+                $studentCount = \App\Models\StudentRecord::where([
+                    'my_class_id' => $class->id,
+                    'section_id'  => $section->id,
+                    'grad'        => 0,
+                ])->count();
+
+                if ($studentCount === 0) continue;
+
+                $sectionData = [
+                    'section'  => $section,
+                    'subjects' => [],
+                    'student_count' => $studentCount,
+                ];
+
+                foreach ($subjects as $subject) {
+                    // Count marks entered for this combination
+                    $entered = \App\Models\Mark::where([
+                        'exam_id'     => $exam->id,
+                        'my_class_id' => $class->id,
+                        'section_id'  => $section->id,
+                        'subject_id'  => $subject->id,
+                        'year'        => $this->year,
+                    ])->where($tex, '>', 0)->count();
+
+                    // Count total mark rows (may exist but be zero)
+                    $total = \App\Models\Mark::where([
+                        'exam_id'     => $exam->id,
+                        'my_class_id' => $class->id,
+                        'section_id'  => $section->id,
+                        'subject_id'  => $subject->id,
+                        'year'        => $this->year,
+                    ])->count();
+
+                    if ($entered === 0 && $total === 0) {
+                        $status = 'not_started';
+                    } elseif ($entered >= $studentCount) {
+                        $status = 'complete';
+                        $completeCells++;
+                    } elseif ($entered > 0) {
+                        $status = 'partial';
+                    } else {
+                        $status = 'not_started';
+                    }
+
+                    $totalCells++;
+                    $classData[$status]++;
+                    $classData['total']++;
+
+                    $sectionData['subjects'][] = [
+                        'subject'       => $subject,
+                        'status'        => $status,
+                        'entered'       => $entered,
+                        'student_count' => $studentCount,
+                        'pct'           => $studentCount > 0 ? round(($entered / $studentCount) * 100) : 0,
+                    ];
+                }
+
+                if (!empty($sectionData['subjects'])) {
+                    $classData['sections'][] = $sectionData;
+                }
+            }
+
+            if (!empty($classData['sections'])) {
+                $matrix[] = $classData;
+            }
+        }
+
+        $overallPct = $totalCells > 0 ? round(($completeCells / $totalCells) * 100) : 0;
+
+        return view('pages.support_team.marks.progress', compact(
+            'exam', 'matrix', 'overallPct', 'totalCells', 'completeCells', 'isTeacher'
         ));
     }
 
@@ -157,12 +283,17 @@ class MarkController extends Controller
     {
         $data = $req->only(['exam_id', 'my_class_id', 'section_id', 'subject_id']);
         $d2 = $req->only(['exam_id', 'my_class_id', 'section_id']);
-        $d = $req->only(['my_class_id', 'section_id']);
-        $d['session'] = $data['year'] = $d2['year'] = $this->year;
 
-        $students = $this->student->getRecord($d)->get();
+        // Only filter by class + section — do NOT filter by session.
+        // Active students are already filtered by grad=0 in StudentRepo.
+        // The session mismatch was the root cause of "No Record Found".
+        $studentFilter = $req->only(['my_class_id', 'section_id']);
+
+        $data['year'] = $d2['year'] = $this->year;
+
+        $students = $this->student->getRecord($studentFilter)->get();
         if($students->count() < 1){
-            return back()->with('pop_error', __('msg.rnf'));
+            return back()->with('pop_error', 'No active students found in the selected class and section. Please ensure students are enrolled and not graduated.');
         }
 
         foreach ($students as $s){
@@ -180,7 +311,7 @@ class MarkController extends Controller
 
         $d['marks'] = $this->exam->getMark($d);
         if($d['marks']->count() < 1){
-            return $this->noStudentRecord();
+            return redirect()->route('marks.index')->with('flash_danger', 'No mark records found for this combination. Please use the Quick Entry form to initialize marks first.');
         }
 
         $d['m'] =  $d['marks']->first();
@@ -189,10 +320,15 @@ class MarkController extends Controller
         $d['sections'] = $this->my_class->getAllSections();
         $d['subjects'] = $this->my_class->getAllSubjects();
         if(Qs::userIsTeacher()){
-            $d['subjects'] = $this->my_class->findSubjectByTeacher(Auth::user()->id)->where('my_class_id', $class_id);
+            $d['subjects'] = $this->my_class->findSubjectByTeacher(Auth::user()->id)->where('my_class_id', $class_id)->get();
         }
         $d['selected'] = true;
         $d['class_type'] = $this->my_class->findTypeByClass($class_id);
+
+        // Load assessment components for this scope (empty = single-input fallback)
+        $d['assessment_components'] = AssessmentComponent::forScope(
+            (int)$exam_id, (int)$class_id, (int)$subject_id
+        );
 
         return view('pages.support_team.marks.manage', $d);
     }
@@ -209,9 +345,32 @@ class MarkController extends Controller
 
         $mks = $req->all();
 
+        // Load components for this scope (may be empty = single-input mode)
+        $components = AssessmentComponent::forScope((int)$exam_id, (int)$class_id, (int)$subject_id);
+        $hasComponents = $components->isNotEmpty();
+
         // Validate per-student mark inputs against Ethiopian St. Mark's format
         foreach ($marks as $mk) {
-            $t1  = (int) ($mks['t1_'.$mk->id]  ?? 0);
+            if ($hasComponents) {
+                // Sum all sub-component inputs for this student
+                $t1 = 0;
+                foreach ($components as $comp) {
+                    $t1 += (int) ($mks["comp_{$comp->id}_{$mk->id}"] ?? 0);
+                }
+                // Validate each sub-component doesn't exceed its own max
+                foreach ($components as $comp) {
+                    $val = (int) ($mks["comp_{$comp->id}_{$mk->id}"] ?? 0);
+                    if ($val > $comp->max_mark) {
+                        return Qs::json(
+                            "{$mk->user->name}: '{$comp->name}' cannot exceed {$comp->max_mark}.",
+                            false
+                        );
+                    }
+                }
+            } else {
+                $t1 = (int) ($mks['t1_'.$mk->id] ?? 0);
+            }
+
             $t2  = (int) ($mks['t2_'.$mk->id]  ?? 0);
             $exm = (int) ($mks['exm_'.$mk->id] ?? 0);
 
@@ -228,11 +387,20 @@ class MarkController extends Controller
         {
             $all_st_ids[] = $mk->student_id;
 
-                $d['t1'] = $t1 = $mks['t1_'.$mk->id];
-                $d['t2'] = $t2 = $mks['t2_'.$mk->id];
-                $d['tca'] = $tca = $t1 + $t2;
-                $d['exm'] = $exm = $mks['exm_'.$mk->id];
+            if ($hasComponents) {
+                // Sum all sub-component inputs into t1 (the assessment total)
+                $t1 = 0;
+                foreach ($components as $comp) {
+                    $t1 += (int) ($mks["comp_{$comp->id}_{$mk->id}"] ?? 0);
+                }
+                $d['t1'] = $t1;
+            } else {
+                $d['t1'] = $t1 = (int) ($mks['t1_'.$mk->id] ?? 0);
+            }
 
+            $d['t2']  = $t2  = (int) ($mks['t2_'.$mk->id]  ?? 0);
+            $d['tca'] = $tca = $t1 + $t2;
+            $d['exm'] = $exm = (int) ($mks['exm_'.$mk->id] ?? 0);
 
             /** SubTotal Grade, Remark, Cum, CumAvg**/
 
@@ -242,15 +410,6 @@ class MarkController extends Controller
                 $d['tex'.$exam->term] = $d['t1'] = $d['t2'] = $d['t3'] = $d['t4'] = $d['tca'] = $d['exm'] = NULL;
             }
 
-         /*   if($exam->term < 3){
-                $grade = $this->mark->getGrade($total, $class_type->id);
-            }
-
-            if($exam->term == 3){
-                $d['cum'] = $this->mark->getSubCumTotal($total, $st_id, $subject_id, $class_id, $this->year);
-                $d['cum_ave'] = $cav = $this->mark->getSubCumAvg($total, $st_id, $subject_id, $class_id, $this->year);
-                $grade = $this->mark->getGrade(round($cav), $class_type->id);
-            }*/
             $grade = $this->mark->getGrade($total, $class_type->id);
             $d['grade_id'] = $grade ? $grade->id : NULL;
 
@@ -286,6 +445,78 @@ class MarkController extends Controller
         /*Exam Record End*/
 
        return Qs::jsonUpdateOk();
+    }
+
+    // ── Assessment Components ────────────────────────────────────────────────
+
+    /**
+     * Return current components for a scope as JSON.
+     */
+    public function getComponents($exam_id, $class_id, $subject_id)
+    {
+        $components = AssessmentComponent::forScope((int)$exam_id, (int)$class_id, (int)$subject_id);
+        return response()->json([
+            'components' => $components->map(fn($c) => [
+                'id'       => $c->id,
+                'name'     => $c->name,
+                'max_mark' => $c->max_mark,
+            ])->values(),
+            'total' => $components->sum('max_mark'),
+        ]);
+    }
+
+    /**
+     * Save (replace) components for a scope.
+     * Validates that total max_marks == 30.
+     */
+    public function saveComponents(Request $req, $exam_id, $class_id, $subject_id)
+    {
+        $req->validate([
+            'components'             => 'required|array|min:1|max:10',
+            'components.*.name'      => 'required|string|max:60',
+            'components.*.max_mark'  => 'required|integer|min:1|max:30',
+        ]);
+
+        $total = array_sum(array_column($req->components, 'max_mark'));
+        if ($total !== 30) {
+            return response()->json([
+                'ok'  => false,
+                'msg' => "Component marks must sum to exactly 30. Current total: {$total}.",
+            ], 422);
+        }
+
+        // Replace existing components for this scope
+        AssessmentComponent::where('exam_id', $exam_id)
+            ->where('my_class_id', $class_id)
+            ->where('subject_id', $subject_id)
+            ->delete();
+
+        foreach ($req->components as $i => $comp) {
+            AssessmentComponent::create([
+                'exam_id'     => $exam_id,
+                'my_class_id' => $class_id,
+                'subject_id'  => $subject_id,
+                'name'        => trim($comp['name']),
+                'max_mark'    => (int) $comp['max_mark'],
+                'sort_order'  => $i,
+                'created_by'  => Auth::id(),
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'msg' => 'Assessment components saved.']);
+    }
+
+    /**
+     * Clear components for a scope (revert to single-input mode).
+     */
+    public function clearComponents($exam_id, $class_id, $subject_id)
+    {
+        AssessmentComponent::where('exam_id', $exam_id)
+            ->where('my_class_id', $class_id)
+            ->where('subject_id', $subject_id)
+            ->delete();
+
+        return response()->json(['ok' => true, 'msg' => 'Components cleared. Single input restored.']);
     }
 
     public function batch_fix()
@@ -494,7 +725,7 @@ class MarkController extends Controller
 
     protected function noStudentRecord()
     {
-        return redirect()->route('dashboard')->with('flash_danger', __('msg.srnf'));
+        return redirect()->route('marks.index')->with('flash_danger', 'Student record not found. Please verify the student is enrolled in a class and section for the current session.');
     }
 
     protected function checkPinVerified($st_id)

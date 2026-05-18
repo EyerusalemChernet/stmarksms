@@ -51,6 +51,7 @@
                     <a href="#" class="nav-link"><i class="bi bi-people"></i><span>Students</span></a>
                     <ul class="nav nav-group-sub">
                         <li class="nav-item"><a href="{{ route('students.create') }}" class="nav-link {{ Route::is('students.create') ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Admit Student</a></li>
+                        <li class="nav-item"><a href="{{ route('students.create') }}#tab-bulk" class="nav-link"><i class="bi bi-people-fill mr-1"></i>Bulk Admission</a></li>
                         <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.list','students.edit','students.show']) ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link"><i class="bi bi-list-ul mr-1"></i>Student List</a>
                             <ul class="nav nav-group-sub">
@@ -72,6 +73,7 @@
 
                 {{-- Academics --}}
                 <li class="sidebar-section-label">Academics</li>
+                <li class="nav-item"><a href="{{ route('calendar.index') }}" class="nav-link {{ Route::is('calendar.index') || Route::is('acal.*') ? 'active' : '' }}"><i class="bi bi-calendar-range"></i><span>Academic Calendar</span></a></li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['exams.index','exams.edit','grades.index','grades.edit','marks.index','marks.manage','marks.bulk','marks.tabulation','marks.show','marks.batch_fix']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-journal-check"></i><span>Exams & Marks</span></a>
                     <ul class="nav nav-group-sub">
@@ -83,10 +85,13 @@
                         <li class="nav-item"><a href="{{ route('marks.bulk') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['marks.bulk','marks.show']) ? 'active' : '' }}">Marksheet</a></li>
                     </ul>
                 </li>
-                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['tt.index','ttr.edit','ttr.show','ttr.manage']) ? 'nav-item-expanded nav-item-open' : '' }}">
+                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['tt.index','ttr.edit','ttr.show','ttr.manage']) || Route::is('auto_timetable.*') ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-calendar-week"></i><span>Timetable</span></a>
                     <ul class="nav nav-group-sub">
                         <li class="nav-item"><a href="{{ route('tt.index') }}" class="nav-link {{ Route::is('tt.index') ? 'active' : '' }}">View Timetables</a></li>
+                        @if(Qs::userIsSuperAdmin())
+                        <li class="nav-item"><a href="{{ route('auto_timetable.index') }}" class="nav-link {{ Route::is('auto_timetable.*') ? 'active' : '' }}">Auto Timetable</a></li>
+                        @endif
                     </ul>
                 </li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['attendance.index','attendance.manage','attendance.sessions','attendance.report']) ? 'nav-item-expanded nav-item-open' : '' }}">
@@ -103,6 +108,9 @@
                 <li class="nav-item"><a href="{{ route('classes.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['classes.index','classes.edit']) ? 'active' : '' }}"><i class="bi bi-grid-3x3-gap"></i><span>Classes</span></a></li>
                 <li class="nav-item"><a href="{{ route('sections.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['sections.index','sections.edit']) ? 'active' : '' }}"><i class="bi bi-diagram-3"></i><span>Sections</span></a></li>
                 <li class="nav-item"><a href="{{ route('subjects.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['subjects.index','subjects.edit']) ? 'active' : '' }}"><i class="bi bi-book"></i><span>Subjects</span></a></li>
+                @if(Qs::userIsSuperAdmin())
+                <li class="nav-item"><a href="{{ route('departments.index') }}" class="nav-link {{ Route::is('departments.*') ? 'active' : '' }}"><i class="bi bi-building"></i><span>Departments</span></a></li>
+                @endif
 
                 {{-- Library --}}
                 <li class="sidebar-section-label">Library</li>
@@ -130,7 +138,6 @@
                         <li class="nav-item"><a href="{{ route('hr.positions') }}" class="nav-link {{ Route::is('hr.positions') ? 'active' : '' }}"><i class="bi bi-briefcase mr-1"></i>Positions</a></li>
                         <li class="nav-item"><a href="{{ route('hr.shifts') }}" class="nav-link {{ Route::is('hr.shifts') ? 'active' : '' }}"><i class="bi bi-clock mr-1"></i>Shifts</a></li>
                         <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.payroll') }}" class="nav-link {{ Route::is('hr.payroll') || Route::is('hr.payroll.edit') ? 'active' : '' }}"><i class="bi bi-cash-stack mr-1"></i>Payroll</a></li>
                         <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
                         <li class="nav-item"><a href="{{ route('hr.contracts') }}" class="nav-link {{ Route::is('hr.contracts') ? 'active' : '' }}"><i class="bi bi-file-earmark-text mr-1"></i>Contracts</a></li>
                         <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
@@ -240,11 +247,6 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('my.payslips') }}" class="nav-link {{ Route::is('my.payslips') || Route::is('my.payslip') ? 'active' : '' }}">
-                        <i class="bi bi-cash-stack"></i><span>My Payslips</span>
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a href="{{ route('my.leave.index') }}" class="nav-link {{ Route::is('my.leave.*') ? 'active' : '' }}">
                         <i class="bi bi-calendar-heart"></i><span>My Leave</span>
                     </a>
@@ -280,7 +282,6 @@
                         <li class="nav-item"><a href="{{ route('hr.positions') }}" class="nav-link {{ Route::is('hr.positions') ? 'active' : '' }}"><i class="bi bi-briefcase mr-1"></i>Positions</a></li>
                         <li class="nav-item"><a href="{{ route('hr.shifts') }}" class="nav-link {{ Route::is('hr.shifts') ? 'active' : '' }}"><i class="bi bi-clock mr-1"></i>Shifts</a></li>
                         <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.payroll') }}" class="nav-link {{ Route::is('hr.payroll') || Route::is('hr.payroll.edit') ? 'active' : '' }}"><i class="bi bi-cash-stack mr-1"></i>Payroll</a></li>
                         <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
                         <li class="nav-item"><a href="{{ route('hr.contracts') }}" class="nav-link {{ Route::is('hr.contracts') ? 'active' : '' }}"><i class="bi bi-file-earmark-text mr-1"></i>Contracts</a></li>
                         <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
@@ -319,7 +320,16 @@
                     </ul>
                 </li>
 
-                {{-- My Leave self-service for HR manager --}}
+
+                {{-- Payroll --}}
+                @php $payrollActive = Route::is('hr.payroll') || Route::is('hr.payroll.edit'); @endphp
+                <li class="nav-item">
+                    <a href="{{ route('hr.payroll') }}" class="nav-link {{ $payrollActive ? 'active' : '' }}">
+                        <i class="bi bi-cash-stack"></i><span>Payroll</span>
+                    </a>
+                </li>
+
+                {{-- My Leave self-service --}}
                 <li class="nav-item">
                     <a href="{{ route('my.leave.index') }}" class="nav-link {{ Route::is('my.leave.*') ? 'active' : '' }}">
                         <i class="bi bi-calendar-heart"></i><span>My Leave</span>
@@ -331,30 +341,49 @@
                     </a>
                 </li>
 
-                <li class="sidebar-section-label">Finance</li>
-                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['payments.index','payments.create','payments.edit','payments.manage','payments.show','payments.invoice']) ? 'nav-item-expanded nav-item-open' : '' }}">
-                    <a href="#" class="nav-link"><i class="bi bi-cash-stack"></i><span>Payments</span></a>
+                <li class="sidebar-section-label">Finance Management System</li>
+                <li class="nav-item"><a href="{{ route('finance.dashboard') }}" class="nav-link {{ Route::is('finance.dashboard') ? 'active' : '' }}"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+
+                {{-- Fee Management --}}
+                @php $feesActive = str_starts_with(Route::currentRouteName() ?? '', 'fees.'); @endphp
+                <li class="nav-item nav-item-submenu {{ $feesActive ? 'nav-item-expanded nav-item-open' : '' }}">
+                    <a href="#" class="nav-link"><i class="bi bi-cash-coin"></i><span>Fee Management</span></a>
                     <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('payments.create') }}" class="nav-link {{ Route::is('payments.create') ? 'active' : '' }}">Create Payment</a></li>
-                        <li class="nav-item"><a href="{{ route('payments.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['payments.index','payments.edit','payments.show']) ? 'active' : '' }}">Manage Payments</a></li>
-                        <li class="nav-item"><a href="{{ route('payments.manage') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['payments.manage','payments.invoice','payments.receipts']) ? 'active' : '' }}">Student Payments</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.categories') }}" class="nav-link {{ Route::is('fees.categories') ? 'active' : '' }}">Fee Categories</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.structures') }}" class="nav-link {{ Route::is('fees.structures') ? 'active' : '' }}">Fee Structures</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.invoices') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['fees.invoices','fees.invoice']) ? 'active' : '' }}">Invoices</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.payments') }}" class="nav-link {{ Route::is('fees.payments') ? 'active' : '' }}">Payments</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.pending') }}" class="nav-link {{ Route::is('fees.pending') ? 'active' : '' }}">Pending Fees</a></li>
+                        <li class="nav-item"><a href="{{ route('fees.report') }}" class="nav-link {{ Route::is('fees.report') ? 'active' : '' }}">Fee Report</a></li>
                     </ul>
                 </li>
 
-                @php $reportsActive = str_starts_with(Route::currentRouteName() ?? '', 'reports.'); @endphp
-                <li class="sidebar-section-label">Analytics</li>
-                <li class="nav-item nav-item-submenu {{ $reportsActive ? 'nav-item-expanded nav-item-open' : '' }}">
-                    <a href="#" class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Reports</span></a>
+                {{-- Expenses --}}
+                @php $expActive = str_starts_with(Route::currentRouteName() ?? '', 'expenses') || str_starts_with(Route::currentRouteName() ?? '', 'expense_cats') || str_starts_with(Route::currentRouteName() ?? '', 'finance.expenses'); @endphp
+                <li class="nav-item nav-item-submenu {{ $expActive ? 'nav-item-expanded nav-item-open' : '' }}">
+                    <a href="#" class="nav-link"><i class="bi bi-receipt-cutoff"></i><span>Expenses</span></a>
                     <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('reports.finance') }}" class="nav-link {{ Route::is('reports.finance') ? 'active' : '' }}">Finance Report</a></li>
+                        <li class="nav-item"><a href="{{ route('expenses.index') }}" class="nav-link {{ Route::is('expenses.index') ? 'active' : '' }}">All Expenses</a></li>
+                        <li class="nav-item"><a href="{{ route('expenses.create') }}" class="nav-link {{ Route::is('expenses.create') ? 'active' : '' }}">Add Expense</a></li>
+                        <li class="nav-item"><a href="{{ route('expense_cats.index') }}" class="nav-link {{ Route::is('expense_cats.index') ? 'active' : '' }}">Categories</a></li>
+                    </ul>
+                </li>
+
+                {{-- Financial Reports --}}
+                @php $repActive = str_starts_with(Route::currentRouteName() ?? '', 'reports.') && !in_array(Route::currentRouteName(), ['reports.index', 'reports.students', 'reports.attendance', 'reports.academic', 'reports.library']); @endphp
+                <li class="nav-item nav-item-submenu {{ $repActive ? 'nav-item-expanded nav-item-open' : '' }}">
+                    <a href="#" class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Financial Reports</span></a>
+                    <ul class="nav nav-group-sub">
+                        <li class="nav-item"><a href="{{ route('reports.income') }}" class="nav-link {{ Route::is('reports.income') ? 'active' : '' }}">Income</a></li>
+                        <li class="nav-item"><a href="{{ route('reports.expenses') }}" class="nav-link {{ Route::is('reports.expenses') ? 'active' : '' }}">Expenses</a></li>
+                        <li class="nav-item"><a href="{{ route('reports.profit_loss') }}" class="nav-link {{ Route::is('reports.profit_loss') ? 'active' : '' }}">Profit / Loss</a></li>
+                        <li class="nav-item"><a href="{{ route('reports.outstanding') }}" class="nav-link {{ Route::is('reports.outstanding') ? 'active' : '' }}">Outstanding Fees</a></li>
                     </ul>
                 </li>
 
                 @endif {{-- end hr_manager --}}
 
-                {{-- ════════════════════════════════════════════════════════════
-                     COMMUNICATION — all roles
-                     ════════════════════════════════════════════════════════════ --}}
+                {{-- Communication — all roles --}}
                 <li class="sidebar-section-label">Communication</li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['announcements','inbox','compose','messages.read']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-chat-dots"></i><span>Messages</span></a>

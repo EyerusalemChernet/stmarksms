@@ -26,7 +26,7 @@ class Qs
 
     public static function getAppCode()
     {
-        return self::getSetting('system_title') ?: 'CJ';
+        return self::getSetting('system_title') ?: 'SMS';
     }
 
     public static function getDefaultUserImage()
@@ -38,6 +38,7 @@ class Qs
     {
         return '    <div class="header-elements">
                     <div class="list-icons">
+                        <a href="javascript:history.back()" class="list-icons-item" data-popup="tooltip" title="Go Back"><i class="icon-arrow-left52"></i></a>
                         <a class="list-icons-item" data-action="collapse"></a>
                         <a class="list-icons-item" data-action="remove"></a>
                     </div>
@@ -85,7 +86,7 @@ class Qs
     }
     public static function hash($id)
     {
-        $date = date('dMY').'CJ';
+        $date = date('dMY').'SMS';
         $hash = new Hashids($date, 14);
         return $hash->encode($id);
     }
@@ -99,7 +100,7 @@ class Qs
 
     public static function getStaffRecord($remove = [])
     {
-        $data = ['emp_date',];
+        $data = ['emp_date', 'department_id'];
 
         return $remove ? array_values(array_diff($data, $remove)) : $data;
     }
@@ -114,7 +115,7 @@ class Qs
 
     public static function decodeHash($str, $toString = true)
     {
-        $date = date('dMY').'CJ';
+        $date = date('dMY').'SMS';
         $hash = new Hashids($date, 14);
         $decoded = $hash->decode($str);
         return $toString ? implode(',', $decoded) : $decoded;
@@ -263,7 +264,12 @@ class Qs
 
     public static function getSetting($type)
     {
-        return Setting::where('type', $type)->first()->description;
+        try {
+            $setting = Setting::where('type', $type)->first();
+            return $setting ? $setting->description : null;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     public static function getCurrentSession()
@@ -290,7 +296,7 @@ class Qs
 
     public static function findTeacherSubjects($teacher_id)
     {
-        return Subject::where('teacher_id', $teacher_id)->with('my_class')->get();
+        return Subject::forTeacher($teacher_id)->with(['my_class', 'department'])->get();
     }
 
     public static function findStudentRecord($user_id)

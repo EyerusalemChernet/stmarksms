@@ -34,6 +34,17 @@ class SectionController extends Controller
     public function store(SectionCreate $req)
     {
         $data = $req->all();
+        
+        if(!empty($data['teacher_id'])) {
+            $exists = \App\Models\Section::where('teacher_id', $data['teacher_id'])->exists();
+            if($exists) {
+                return response()->json([
+                    'ok' => false, 
+                    'msg' => 'This teacher is already assigned as a homeroom teacher for another section.'
+                ]);
+            }
+        }
+        
         $this->my_class->createSection($data);
 
         return Qs::jsonStoreOk();
@@ -50,6 +61,19 @@ class SectionController extends Controller
     public function update(SectionUpdate $req, $id)
     {
         $data = $req->only(['name', 'teacher_id']);
+        
+        if(!empty($data['teacher_id'])) {
+            $exists = \App\Models\Section::where('teacher_id', $data['teacher_id'])
+                                         ->where('id', '!=', $id)
+                                         ->exists();
+            if($exists) {
+                return response()->json([
+                    'ok' => false, 
+                    'msg' => 'This teacher is already assigned as a homeroom teacher for another section.'
+                ]);
+            }
+        }
+        
         $this->my_class->updateSection($id, $data);
 
         return Qs::jsonUpdateOk();

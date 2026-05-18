@@ -107,7 +107,7 @@ class HomeController extends Controller
 
         // ── Teacher dashboard ──────────────────────────────────────────────────
         if (Qs::userIsTeacher()) {
-            $d['my_subjects'] = Subject::where('teacher_id', $uid)->with('my_class')->get();
+            $d['my_subjects'] = Subject::forTeacher($uid)->with('my_class', 'department')->get();
 
             $myClassIds = $d['my_subjects']->pluck('my_class_id')->unique();
             $d['today_sessions'] = AttendanceSession::whereIn('my_class_id', $myClassIds)
@@ -123,6 +123,8 @@ class HomeController extends Controller
 
             $d['announcements']   = $this->getAnnouncements($uid);
             $d['unread_messages'] = Message::where('receiver_id', $uid)->where('read', false)->count();
+
+            $d['homeroom'] = \App\Models\Section::where('teacher_id', $uid)->with('my_class')->first();
 
             return view('pages.teacher.dashboard', $d);
         }
