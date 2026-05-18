@@ -1,0 +1,203 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║         EMPLOYEE QUALIFICATION CERTIFICATE UPLOAD - FEATURE FLOW          ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─ SETUP FLOW ─────────────────────────────────────────────────────────────┐
+│                                                                            │
+│  START                                                                     │
+│    │                                                                       │
+│    ├─→ Run quick-setup.php                                                │
+│    │   (or setup-qualifications.bat/ps1)                                  │
+│    │                                                                       │
+│    ├─→ Step 1: Run Database Migration                                     │
+│    │   └─→ Adds certificate_path column                                   │
+│    │                                                                       │
+│    ├─→ Step 2: Clear All Caches                                           │
+│    │   ├─→ Cache cleared                                                  │
+│    │   ├─→ Config cleared                                                 │
+│    │   ├─→ View cleared                                                   │
+│    │   └─→ Route cleared                                                  │
+│    │                                                                       │
+│    ├─→ Step 3: Create Storage Link                                        │
+│    │   └─→ public/storage → storage/app/public                            │
+│    │                                                                       │
+│    ├─→ Step 4: Create Directories                                         │
+│    │   └─→ storage/app/public/qualifications/                             │
+│    │                                                                       │
+│    └─→ ✅ SETUP COMPLETE                                                  │
+│        Refresh browser (Ctrl+F5)                                          │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ UPLOAD CERTIFICATE FLOW ────────────────────────────────────────────────┐
+│                                                                            │
+│  USER ACTION                                                               │
+│    │                                                                       │
+│    ├─→ Go to HR → Employees                                               │
+│    │                                                                       │
+│    ├─→ Select Employee                                                    │
+│    │                                                                       │
+│    ├─→ Click "Edit Profile"                                               │
+│    │   └─→ Load profile_edit.blade.php                                    │
+│    │                                                                       │
+│    ├─→ Scroll to "Qualifications" Section                                 │
+│    │   └─→ Show qualification form with file upload                       │
+│    │                                                                       │
+│    ├─→ Fill in Qualification Details                                      │
+│    │   ├─→ Degree (required)                                              │
+│    │   ├─→ Field of Study (optional)                                      │
+│    │   ├─→ Institution (optional)                                         │
+│    │   └─→ Graduation Year (optional)                                     │
+│    │                                                                       │
+│    ├─→ Select Certificate File                                            │
+│    │   ├─→ Validate file type (PDF, DOC, DOCX, JPG, PNG)                  │
+│    │   ├─→ Validate file size (max 5MB)                                   │
+│    │   └─→ Display file name                                              │
+│    │                                                                       │
+│    ├─→ Click "Save Changes"                                               │
+│    │   └─→ Submit form to updateProfile()                                 │
+│    │                                                                       │
+│    └─→ BACKEND PROCESSING                                                 │
+│        │                                                                   │
+│        ├─→ HRController::updateProfile()                                  │
+│        │   └─→ Validate all inputs                                        │
+│        │                                                                   │
+│        ├─→ HRController::updateQualifications()                            │
+│        │   ├─→ For each qualification:                                    │
+│        │   │   ├─→ Check if file uploaded                                 │
+│        │   │   ├─→ Store file in storage/qualifications/{emp_id}/         │
+│        │   │   ├─→ Save path to database                                  │
+│        │   │   └─→ Create/Update qualification record                     │
+│        │   │                                                               │
+│        │   └─→ Return success message                                      │
+│        │                                                                   │
+│        └─→ ✅ CERTIFICATE UPLOADED                                        │
+│            Redirect to profile                                            │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ VIEW CERTIFICATE FLOW ──────────────────────────────────────────────────┐
+│                                                                            │
+│  USER ACTION                                                               │
+│    │                                                                       │
+│    ├─→ Go to HR → Employees                                               │
+│    │                                                                       │
+│    ├─→ Select Employee                                                    │
+│    │   └─→ Load show.blade.php                                            │
+│    │                                                                       │
+│    ├─→ Scroll to "Qualifications" Section                                 │
+│    │   └─→ Display qualifications table                                   │
+│    │                                                                       │
+│    ├─→ See Qualification Details                                          │
+│    │   ├─→ Degree                                                         │
+│    │   ├─→ Field of Study                                                 │
+│    │   ├─→ Institution                                                    │
+│    │   ├─→ Graduation Year                                                │
+│    │   └─→ Certificate Link (if uploaded)                                 │
+│    │                                                                       │
+│    ├─→ Click Certificate Link                                             │
+│    │   └─→ Browser downloads file from:                                   │
+│    │       /storage/qualifications/{emp_id}/{filename}                    │
+│    │                                                                       │
+│    └─→ ✅ FILE DOWNLOADED                                                 │
+│        User can open/view certificate                                     │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ FILE STORAGE STRUCTURE ─────────────────────────────────────────────────┐
+│                                                                            │
+│  storage/                                                                  │
+│  └── app/                                                                  │
+│      └── public/                                                           │
+│          └── qualifications/                                               │
+│              ├── 1/                    (Employee ID 1)                     │
+│              │   ├── diploma.pdf                                           │
+│              │   ├── degree.docx                                           │
+│              │   └── certificate.jpg                                       │
+│              │                                                             │
+│              ├── 2/                    (Employee ID 2)                     │
+│              │   └── masters.pdf                                           │
+│              │                                                             │
+│              └── 3/                    (Employee ID 3)                     │
+│                  ├── bsc.pdf                                               │
+│                  └── msc.pdf                                               │
+│                                                                            │
+│  public/                                                                   │
+│  └── storage → ../storage/app/public   (Symbolic Link)                    │
+│                                                                            │
+│  Access URL: /storage/qualifications/{emp_id}/{filename}                  │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ DATABASE FLOW ──────────────────────────────────────────────────────────┐
+│                                                                            │
+│  employee_qualifications table                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ id │ employee_id │ degree │ field_of_study │ institution │ year │ path │
+│  ├─────────────────────────────────────────────────────────────────────┤  │
+│  │ 1  │ 1           │ BSc    │ CS             │ AAU         │ 2020 │ ... │  │
+│  │ 2  │ 1           │ MSc    │ AI             │ MIT         │ 2022 │ ... │  │
+│  │ 3  │ 2           │ PhD    │ ML             │ Stanford    │ 2023 │ ... │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                            │
+│  certificate_path format:                                                 │
+│  qualifications/1/diploma.pdf                                              │
+│  qualifications/1/degree.docx                                              │
+│  qualifications/2/phd.pdf                                                  │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ VALIDATION FLOW ────────────────────────────────────────────────────────┐
+│                                                                            │
+│  FILE UPLOAD VALIDATION                                                    │
+│    │                                                                       │
+│    ├─→ Check File Type                                                    │
+│    │   ├─→ Allowed: PDF, DOC, DOCX, JPG, JPEG, PNG                        │
+│    │   └─→ Reject if not allowed                                          │
+│    │                                                                       │
+│    ├─→ Check File Size                                                    │
+│    │   ├─→ Max: 5MB (5120 KB)                                              │
+│    │   └─→ Reject if too large                                            │
+│    │                                                                       │
+│    ├─→ Check Qualification Data                                           │
+│    │   ├─→ At least one field required (degree, field, institution, year) │
+│    │   └─→ Reject if all empty                                            │
+│    │                                                                       │
+│    └─→ ✅ VALIDATION PASSED                                               │
+│        Store file and save to database                                    │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ ERROR HANDLING FLOW ────────────────────────────────────────────────────┐
+│                                                                            │
+│  ERROR SCENARIOS                                                           │
+│    │                                                                       │
+│    ├─→ File Too Large                                                     │
+│    │   └─→ Show: "File must be less than 5MB"                             │
+│    │                                                                       │
+│    ├─→ Invalid File Type                                                  │
+│    │   └─→ Show: "Only PDF, DOC, DOCX, JPG, PNG allowed"                  │
+│    │                                                                       │
+│    ├─→ Storage Not Writable                                               │
+│    │   └─→ Show: "Storage directory not writable"                         │
+│    │                                                                       │
+│    ├─→ Database Error                                                     │
+│    │   └─→ Show: "Error saving qualification"                             │
+│    │                                                                       │
+│    └─→ All errors logged to: storage/logs/laravel.log                     │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║  SUMMARY:                                                                  ║
+║                                                                            ║
+║  1. Setup runs migrations, clears caches, creates storage link            ║
+║  2. User uploads certificate through edit profile form                    ║
+║  3. File validated and stored in storage/qualifications/{emp_id}/         ║
+║  4. Path saved to database                                                ║
+║  5. User can view and download certificate from profile                   ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝

@@ -1,0 +1,150 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║                    QUICK CACHE CLEAR GUIDE                                ║
+║                                                                            ║
+║              To see the contract feature fixes, follow these steps:        ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+⚡ FASTEST WAY (1 minute)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Open browser and go to:
+   http://127.0.0.1:8000/quick-setup.php
+
+Step 2: Wait for "✅ Setup Complete!" message
+
+Step 3: Refresh browser (Ctrl+F5)
+
+Step 4: Go to HR → Contract Management
+
+Done! You should now see all the fixes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🖥️ USING BATCH FILE (2 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Open Command Prompt
+
+Step 2: Navigate to project:
+   cd c:\laragon\www\stmarksms
+
+Step 3: Run batch file:
+   clear-caches.bat
+
+Step 4: Wait for completion
+
+Step 5: Refresh browser (Ctrl+F5)
+
+Step 6: Go to HR → Contract Management
+
+Done! You should now see all the fixes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⌨️ MANUAL COMMANDS (3 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Open Command Prompt
+
+Step 2: Navigate to project:
+   cd c:\laragon\www\stmarksms
+
+Step 3: Run these commands one by one:
+   php artisan cache:clear
+   php artisan config:clear
+   php artisan view:clear
+   php artisan route:clear
+
+Step 4: Refresh browser (Ctrl+F5)
+
+Step 5: Go to HR → Contract Management
+
+Done! You should now see all the fixes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ WHAT YOU'LL SEE AFTER CLEARING CACHE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Confirmation Dialog
+   When you click "Renew Contract", you'll see a confirmation dialog
+   asking to confirm the renewal.
+
+2. Readable Date Format
+   The modal will show both ISO format (2026-05-18) and readable format
+   (May 18, 2026).
+
+3. Max Date Validation
+   If you try to set a date more than 10 years in future, you'll see
+   a validation error.
+
+4. Consistent Days
+   The "Expiring (60 days)" card will now link to 60 days (not 30).
+
+5. Consistent Audit Log
+   Contract renewals will show consistent date format in audit log.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 VERIFY THE FIXES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After clearing cache and refreshing:
+
+1. Go to: HR → Contract Management
+
+2. Click "Renew Contract" button on any employee
+   → Should show confirmation dialog ✅
+
+3. In the modal, check the date display
+   → Should show both ISO and readable format ✅
+
+4. Try to set a date more than 10 years in future
+   → Should show validation error ✅
+
+5. Click "Expiring (60 days)" card
+   → Should filter by 60 days ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ STILL NOT SEEING CHANGES?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Make sure you pressed Ctrl+F5 (not just F5)
+   → This clears browser cache
+
+2. Make sure you ran ALL cache clear commands
+   → Don't skip any steps
+
+3. Try a different browser
+   → Chrome, Firefox, Edge, etc.
+
+4. Restart your Laravel server
+   → Stop (Ctrl+C) and run php artisan serve again
+
+5. Check the files were modified
+   → Open: app/Http/Controllers/SupportTeam/HRController.php
+   → Search for: addYears(10)
+   → Should find the max date validation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For more details, see:
+   APPLY_CONTRACT_FIXES.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CHOOSE ONE METHOD ABOVE AND FOLLOW THE STEPS!
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║              RECOMMENDED: Use quick-setup.php (fastest)                   ║
+║                                                                            ║
+║              http://127.0.0.1:8000/quick-setup.php                        ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
