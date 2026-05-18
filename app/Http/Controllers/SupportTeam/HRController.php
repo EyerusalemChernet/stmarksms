@@ -483,10 +483,18 @@ class HRController extends Controller
 
             // Update or create qualification
             if (!empty($qual['id'])) {
-                // Update existing
-                EmployeeQualification::where('id', $qual['id'])
+                // Update existing - only update provided fields
+                $existingQual = EmployeeQualification::where('id', $qual['id'])
                     ->where('employee_id', $employee->id)
-                    ->update($qualData);
+                    ->first();
+                
+                if ($existingQual) {
+                    // If no new file uploaded, keep the existing certificate_path
+                    if (!$req->hasFile("qualifications.{$index}.certificate")) {
+                        unset($qualData['certificate_path']);
+                    }
+                    $existingQual->update($qualData);
+                }
             } else {
                 // Create new
                 $qualData['employee_id'] = $employee->id;
@@ -1136,8 +1144,10 @@ class HRController extends Controller
 
     public function renewContract(Request $req, $hrId)
     {
+        // Validate with max date (10 years from now)
+        $maxDate = now()->addYears(10)->format('Y-m-d');
         $req->validate([
-            'contract_end_date' => 'required|date|after:today',
+            'contract_end_date' => 'required|date|after:today|before:' . $maxDate,
             'notes'             => 'nullable|string|max:500',
         ]);
 
@@ -1149,14 +1159,15 @@ class HRController extends Controller
         }
 
         $oldDate = $ed->contract_end_date?->format('d M Y') ?? 'none';
+        $newDate = Carbon::parse($req->contract_end_date)->format('d M Y');
         $ed->update(['contract_end_date' => $req->contract_end_date]);
 
         AuditLog::log('updated', 'hr',
-            "Contract renewed for {$employee->employee_code}: {$oldDate} → {$req->contract_end_date}. ".($req->notes ?? '')
+            "Contract renewed for {$employee->employee_code}: {$oldDate} → {$newDate}. ".($req->notes ?? '')
         );
 
         return back()->with('flash_success',
-            "Contract renewed for {$employee->full_name} until ".Carbon::parse($req->contract_end_date)->format('d M Y').".");
+            "Contract renewed for {$employee->full_name} until {$newDate}.");
     }
 
     // ── WORKLOAD ─────────────────────────────────────────────────────────────

@@ -188,6 +188,9 @@
 
                     @foreach($qualifications as $i => $qual)
                     <div class="qualification-row border rounded p-3 mb-3">
+                        @if(!empty($qual['id']))
+                        <input type="hidden" name="qualifications[{{ $i }}][id]" value="{{ $qual['id'] }}">
+                        @endif
                         <div class="form-row">
                             <div class="form-group col-md-3">
                                 <label class="small font-weight-bold">Degree <span class="text-danger">*</span></label>
