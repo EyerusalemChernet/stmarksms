@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\EmployeeQualification;
 use App\Models\EmploymentDetails;
 use App\Models\EthiopianHoliday;
 use App\Models\JobPosting;
@@ -435,13 +436,63 @@ class HRController extends Controller
             'emergency.*.name'     => 'nullable|string|max:100',
             'emergency.*.phone'    => 'nullable|string|max:20',
             'emergency.*.relationship' => 'nullable|string|max:50',
+            'qualifications.*.degree'           => 'nullable|string|max:100',
+            'qualifications.*.field_of_study'  => 'nullable|string|max:100',
+            'qualifications.*.institution'     => 'nullable|string|max:100',
+            'qualifications.*.graduation_year' => 'nullable|integer|min:1950|max:' . date('Y'),
+            'qualifications.*.certificate'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
         $employee = Employee::findOrFail($hrId);
         $this->profileService->update($employee, $req->all());
         if ($req->has('emergency')) {
             $this->profileService->syncEmergencyContacts($employee, $req->emergency);
         }
+        
+        // Handle qualifications with file uploads
+        if ($req->has('qualifications')) {
+            $this->updateQualifications($employee, $req->qualifications, $req);
+        }
+        
         return back()->with('flash_success','Employee profile updated.');
+    }
+
+    /**
+     * Update employee qualifications with file uploads
+     */
+    private function updateQualifications($employee, $qualifications, $req)
+    {
+        foreach ($qualifications as $index => $qual) {
+            // Skip empty rows
+            if (empty($qual['degree']) && empty($qual['field_of_study']) && empty($qual['institution'])) {
+                continue;
+            }
+
+            $qualData = [
+                'degree'           => $qual['degree'] ?? null,
+                'field_of_study'   => $qual['field_of_study'] ?? null,
+                'institution'      => $qual['institution'] ?? null,
+                'graduation_year'  => $qual['graduation_year'] ?? null,
+            ];
+
+            // Handle file upload
+            if ($req->hasFile("qualifications.{$index}.certificate")) {
+                $file = $req->file("qualifications.{$index}.certificate");
+                $path = $file->store('qualifications/' . $employee->id, 'public');
+                $qualData['certificate_path'] = $path;
+            }
+
+            // Update or create qualification
+            if (!empty($qual['id'])) {
+                // Update existing
+                EmployeeQualification::where('id', $qual['id'])
+                    ->where('employee_id', $employee->id)
+                    ->update($qualData);
+            } else {
+                // Create new
+                $qualData['employee_id'] = $employee->id;
+                EmployeeQualification::create($qualData);
+            }
+        }
     }
 
     // ── EMPLOYEE STATUS ──────────────────────────────────────────────────────
