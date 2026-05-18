@@ -280,7 +280,7 @@ class HRController extends Controller
      */
     public function unlinkedUsers()
     {
-        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin', 'employee'];
         $linkedUserIds = Employee::whereNotNull('user_id')->pluck('user_id');
 
         $unlinked = User::whereIn('user_type', $staffTypes)
@@ -291,7 +291,12 @@ class HRController extends Controller
             ->with('employmentDetails.department')
             ->orderBy('first_name')->get();
 
-        return view('pages.hr.employees_unlinked', compact('unlinked', 'employees'));
+        // Get available users for linking (staff types not already linked)
+        $availableUsers = User::whereIn('user_type', $staffTypes)
+            ->whereNotIn('id', $linkedUserIds)
+            ->orderBy('name')->get();
+
+        return view('pages.hr.employees_unlinked', compact('unlinked', 'employees', 'availableUsers'));
     }
 
     /**
