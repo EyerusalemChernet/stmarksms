@@ -89,6 +89,12 @@
             </div>
         </div>
         <div style="display:flex;gap:8px;">
+            @if($sr->section && $sr->section->teacher_id)
+            <a href="{{ route('compose', ['reply' => $sr->section->teacher_id]) }}"
+               style="background:#fef3c7;border:1px solid #fde68a;color:#d97706;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-chat-text-fill"></i> Message Teacher
+            </a>
+            @endif
             <a href="{{ route('parent.timeline', $sr->user_id) }}"
                style="background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:6px;">
                 <i class="bi bi-clock-history"></i> Timeline
@@ -112,6 +118,19 @@
             <div style="font-size:22px;font-weight:800;color:{{ $attColor }};line-height:1;">{{ $cd['att_pct'] }}%</div>
             <div style="font-size:11px;color:#64748b;margin-top:4px;font-weight:500;">Attendance</div>
             <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ $cd['att_present'] }}/{{ $cd['att_total'] }} days</div>
+            @if(count($cd['recent_att']) > 0)
+            <div style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px;" title="Last 5 Days Attendance (Left to Right)">
+                @foreach($cd['recent_att']->reverse() as $att)
+                    @if($att->status == 'present')
+                        <div title="{{ \Carbon\Carbon::parse($att->date)->format('D, M d') }} - Present" style="width:12px;height:12px;border-radius:50%;background:#10b981;"></div>
+                    @elseif($att->status == 'late')
+                        <div title="{{ \Carbon\Carbon::parse($att->date)->format('D, M d') }} - Late" style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                    @else
+                        <div title="{{ \Carbon\Carbon::parse($att->date)->format('D, M d') }} - Absent" style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                    @endif
+                @endforeach
+            </div>
+            @endif
             @if($cd['att_pct'] < 75)
             <div style="margin-top:8px;">
                 <span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;">Below 75%</span>

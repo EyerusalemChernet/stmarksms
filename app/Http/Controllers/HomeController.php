@@ -124,6 +124,8 @@ class HomeController extends Controller
             $d['announcements']   = $this->getAnnouncements($uid);
             $d['unread_messages'] = Message::where('receiver_id', $uid)->where('read', false)->count();
 
+            $d['homeroom'] = \App\Models\Section::where('teacher_id', $uid)->with('my_class')->first();
+
             return view('pages.teacher.dashboard', $d);
         }
 

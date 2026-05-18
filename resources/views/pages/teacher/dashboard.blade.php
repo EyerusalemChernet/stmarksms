@@ -52,6 +52,33 @@
 
     {{-- My Subjects --}}
     <div class="col-lg-5 mb-4">
+
+        {{-- My Homeroom --}}
+        @if(isset($homeroom) && $homeroom)
+        <div style="background:linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);border-radius:14px;box-shadow:0 4px 15px rgba(79,70,229,.2);overflow:hidden;margin-bottom:20px;color:#fff;">
+            <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;">
+                <div style="background:rgba(255,255,255,.2);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-person-badge" style="color:#fff;font-size:16px;"></i>
+                </div>
+                <span style="font-weight:700;font-size:15px;">My Homeroom</span>
+            </div>
+            <div style="padding:20px;">
+                <div style="font-size:12px;color:rgba(255,255,255,.8);margin-bottom:4px;">You are the Homeroom Teacher for</div>
+                <div style="font-size:22px;font-weight:800;margin-bottom:16px;line-height:1.2;">
+                    {{ $homeroom->my_class->name }} <span style="opacity:0.7;font-weight:400;font-size:18px;">- Sec {{ $homeroom->name }}</span>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <a href="{{ route('attendance.index') }}" style="flex:1;background:#fff;color:#4f46e5;text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;transition:all 0.2s;">
+                        <i class="bi bi-clipboard-check mr-1"></i> Attendance
+                    </a>
+                    <a href="{{ route('students.list', $homeroom->my_class_id) }}" style="flex:1;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.2s;backdrop-filter:blur(4px);">
+                        <i class="bi bi-people mr-1"></i> Students
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;">
             <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
                 <div style="display:flex;align-items:center;gap:8px;">
