@@ -220,20 +220,34 @@
                             <table class="table table-sm table-bordered" style="font-size:12px;">
                                 <thead class="thead-light">
                                     <tr>
-                                        <th>Column</th><th>user_type</th><th>name</th><th>email</th>
-                                        <th>username</th><th>phone</th><th>gender</th>
-                                        <th>address</th><th>emp_date</th><th>password</th>
+                                        <th>Column</th>
+                                        <th>user_type <span class="text-danger">*</span></th>
+                                        <th>name <span class="text-danger">*</span></th>
+                                        <th>gender <span class="text-danger">*</span></th>
+                                        <th>email</th>
+                                        <th>username</th>
+                                        <th>phone</th>
+                                        <th>dob</th>
+                                        <th>address</th>
+                                        <th>emp_date</th>
+                                        <th>password</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td class="font-weight-bold">Example</td>
-                                        <td>teacher</td><td>Abebe Kebede</td><td>abebe@email.com</td>
-                                        <td>abebe.kebede</td><td>0911234567</td><td>Male</td>
-                                        <td>Addis Ababa</td><td>{{ date('Y-m-d') }}</td><td>Teacher@123</td>
+                                        <td>teacher</td><td>ABEBE KEBEDE</td><td>Male</td>
+                                        <td>abebe@email.com</td><td>abebe.kebede</td><td>0911234567</td>
+                                        <td>1990-05-12</td><td>Addis Ababa</td>
+                                        <td>{{ date('Y-m-d') }}</td><td>Teacher@123</td>
                                     </tr>
                                 </tbody>
                             </table>
+                            <small class="text-muted">
+                                <span class="text-danger">*</span> Required. Valid user_type values:
+                                <code>teacher</code>, <code>parent</code>, <code>hr_manager</code>, <code>admin</code>, <code>super_admin</code>.
+                                DOB format: YYYY-MM-DD. All imported users must change password on first login.
+                            </small>
                         </div>
 
                         <form id="bulk-user-form" method="post" enctype="multipart/form-data" action="{{ route('users.bulk.import') }}">
@@ -397,12 +411,13 @@ $(function () {
     });
 
     // ── Bulk User Import ──────────────────────────────────────────────────────
-    var validUserTypes = ['teacher','parent','hr_manager','admin','super_admin','accountant'];
+    var validUserTypes = ['teacher','parent','hr_manager','admin','super_admin'];
 
     $('#bulk-user-csv').on('change', function () {
         $('#bulk-user-preview-area').hide();
         $('#bulk-user-submit-btn').prop('disabled', true);
         $('#bulk-user-preview-head, #bulk-user-preview-body, #bulk-user-validation-errors').empty();
+        $('#bulk-user-row-count').text('');
     });
 
     $('#bulk-user-preview-btn').on('click', function () {
@@ -413,35 +428,88 @@ $(function () {
             var lines = e.target.result.split(/\r?\n/).filter(function (l) { return l.trim(); });
             if (lines.length < 2) { flash({ msg: 'CSV must have a header row and at least one data row.', type: 'warning' }); return; }
             var headers = lines[0].split(',').map(function (h) { return h.trim(); });
+
+            // Check required columns
+            var required = ['user_type','name','gender'];
+            var missing = required.filter(function(r){ return headers.indexOf(r) < 0; });
+            if (missing.length) {
+                flash({ msg: 'Missing required columns: ' + missing.join(', '), type: 'danger' });
+                return;
+            }
+
             var $head = $('<tr>');
-            headers.forEach(function (h) { $head.append($('<th>').text(h)); });
+            headers.forEach(function (h) {
+                var isReq = required.indexOf(h) >= 0;
+                $head.append($('<th>').html(h + (isReq ? ' <span class="text-danger">*</span>' : '')));
+            });
             $head.append('<th>Status</th>');
             $('#bulk-user-preview-head').html($head);
+
             var $body = $('#bulk-user-preview-body').empty();
-            var errors = [], validRows = 0;
-            for (var i = 1; i < Math.min(lines.length, 51); i++) {
+            var allErrors = [], validRows = 0;
+
+            for (var i = 1; i < Math.min(lines.length, 101); i++) {
                 var cols = lines[i].split(',').map(function (c) { return c.trim(); });
+                if (cols.every(function(c){ return c === ''; })) continue;
+
                 var rowErrors = [];
-                var typeIdx = headers.indexOf('user_type'), nameIdx = headers.indexOf('name'), genderIdx = headers.indexOf('gender');
-                if (typeIdx >= 0 && !validUserTypes.includes((cols[typeIdx] || '').toLowerCase())) rowErrors.push('Invalid user_type');
-                if (nameIdx >= 0 && (!cols[nameIdx] || cols[nameIdx].length < 2)) rowErrors.push('Name too short');
-                if (genderIdx >= 0 && cols[genderIdx] && !['Male', 'Female'].includes(cols[genderIdx])) rowErrors.push('Gender must be Male/Female');
+                var get = function(col) {
+                    var idx = headers.indexOf(col);
+                    return idx >= 0 ? (cols[idx] || '') : '';
+                };
+
+                // user_type
+                var ut = get('user_type').toLowerCase();
+                if (!ut || validUserTypes.indexOf(ut) < 0) {
+                    rowErrors.push('user_type must be one of: ' + validUserTypes.join(', '));
+                }
+                // name
+                if (!get('name') || get('name').length < 3) rowErrors.push('Name required (min 3 chars)');
+                // gender
+                if (['Male','Female'].indexOf(get('gender')) < 0) rowErrors.push('Gender must be Male/Female');
+                // dob (optional but validate if present)
+                var dobVal = get('dob');
+                if (dobVal) {
+                    var dob = new Date(dobVal);
+                    if (isNaN(dob.getTime())) rowErrors.push('DOB invalid (use YYYY-MM-DD)');
+                }
+                // email format (optional)
+                var emailVal = get('email');
+                if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+                    rowErrors.push('Invalid email format');
+                }
+
                 var statusCell = rowErrors.length
-                    ? '<td><span class="badge badge-danger">' + rowErrors.join(', ') + '</span></td>'
-                    : '<td><span class="badge badge-success">OK</span></td>';
-                if (rowErrors.length) errors.push('Row ' + i + ': ' + rowErrors.join(', '));
+                    ? '<td><span class="badge badge-danger" style="white-space:normal;">' + rowErrors.join('<br>') + '</span></td>'
+                    : '<td><span class="badge badge-success">✓ OK</span></td>';
+                if (rowErrors.length) allErrors.push('Row ' + i + ': ' + rowErrors.join(', '));
                 else validRows++;
-                var $tr = $('<tr>');
+
+                var $tr = $('<tr>').addClass(rowErrors.length ? 'table-danger' : '');
                 cols.forEach(function (c) { $tr.append($('<td>').text(c)); });
                 $tr.append(statusCell);
                 $body.append($tr);
             }
-            if (lines.length > 51) $body.append('<tr><td colspan="' + (headers.length + 1) + '" class="text-center text-muted">... and ' + (lines.length - 51) + ' more rows</td></tr>');
-            $('#bulk-user-row-count').text((lines.length - 1) + ' rows');
-            $('#bulk-user-preview-area').show();
-            if (errors.length) {
-                $('#bulk-user-validation-errors').html('<div class="alert alert-warning border-0"><strong>' + errors.length + ' row(s) have issues:</strong><ul class="mb-0 mt-1">' + errors.map(function (e) { return '<li>' + e + '</li>'; }).join('') + '</ul></div>');
+
+            if (lines.length > 101) {
+                $body.append('<tr><td colspan="' + (headers.length + 1) + '" class="text-center text-muted small">… and ' + (lines.length - 101) + ' more rows</td></tr>');
             }
+
+            $('#bulk-user-row-count').text((lines.length - 1) + ' rows · ' + validRows + ' valid' + (allErrors.length ? ' · ' + allErrors.length + ' errors' : ''));
+            $('#bulk-user-preview-area').show();
+
+            if (allErrors.length) {
+                $('#bulk-user-validation-errors').html(
+                    '<div class="alert alert-warning border-0"><strong>' + allErrors.length + ' row(s) have issues and will be skipped:</strong>'
+                    + '<ul class="mb-0 mt-1 small">'
+                    + allErrors.slice(0, 20).map(function (e) { return '<li>' + e + '</li>'; }).join('')
+                    + (allErrors.length > 20 ? '<li>… and ' + (allErrors.length - 20) + ' more</li>' : '')
+                    + '</ul></div>'
+                );
+            } else {
+                $('#bulk-user-validation-errors').empty();
+            }
+
             $('#bulk-user-submit-btn').prop('disabled', validRows === 0);
         };
         reader.readAsText(file);

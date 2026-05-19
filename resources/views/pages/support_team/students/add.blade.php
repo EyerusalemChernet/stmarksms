@@ -388,8 +388,8 @@
                 <i class="bi bi-info-circle-fill mr-3 mt-1" style="font-size:18px;"></i>
                 <div>
                     <strong>Bulk Student Admission via CSV</strong><br>
-                    Upload a CSV file to admit multiple students at once. Each row becomes one student record.
-                    Admission numbers are auto-generated. Default password is <code>student</code>.
+                    Upload a CSV file to admit multiple students at once. Admission numbers are auto-generated.
+                    Default password is <code>student</code>. Names are stored in UPPERCASE.
                     <a href="{{ route('students.bulk.template') }}" class="ml-2 font-weight-bold">
                         <i class="bi bi-download mr-1"></i>Download CSV Template
                     </a>
@@ -397,24 +397,36 @@
             </div>
         </div>
 
+        {{-- Column reference --}}
         <div class="table-responsive mb-4">
             <table class="table table-sm table-bordered" style="font-size:12px;">
                 <thead class="thead-light">
                     <tr>
-                        <th>Column</th><th>name</th><th>gender</th><th>email</th><th>phone</th>
-                        <th>dob</th><th>address</th><th>class_name</th><th>section_name</th>
-                        <th>year_admitted</th><th>religion</th>
+                        <th>Column</th>
+                        <th>name <span class="text-danger">*</span></th>
+                        <th>gender <span class="text-danger">*</span></th>
+                        <th>dob <span class="text-danger">*</span></th>
+                        <th>email</th>
+                        <th>phone</th>
+                        <th>address</th>
+                        <th>class_name <span class="text-danger">*</span></th>
+                        <th>section_name</th>
+                        <th>year_admitted</th>
+                        <th>religion</th>
+                        <th>nationality</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td class="font-weight-bold">Example</td>
-                        <td>Abebe Kebede</td><td>Male</td><td>abebe@email.com</td><td>0911234567</td>
-                        <td>2010-05-12</td><td>Addis Ababa</td><td>Grade 1</td><td>A</td>
-                        <td>{{ date('Y') }}</td><td>Ethiopian Orthodox</td>
+                        <td>ABEBE KEBEDE</td><td>Male</td><td>2012-05-12</td>
+                        <td>abebe@email.com</td><td>0911234567</td><td>Addis Ababa</td>
+                        <td>Grade 1</td><td>A</td><td>{{ date('Y') }}</td>
+                        <td>Ethiopian Orthodox</td><td>Ethiopian</td>
                     </tr>
                 </tbody>
             </table>
+            <small class="text-muted"><span class="text-danger">*</span> Required columns. DOB format: YYYY-MM-DD. Nationality defaults to Ethiopian if blank.</small>
         </div>
 
         <form id="bulk-upload-form" method="post" enctype="multipart/form-data" action="{{ route('students.bulk.import') }}">
@@ -451,6 +463,8 @@
                 <h6 class="font-weight-semibold mb-2">
                     <i class="bi bi-table mr-1"></i>Preview
                     <span id="bulk-row-count" class="badge badge-primary ml-1"></span>
+                    <span id="bulk-valid-count" class="badge badge-success ml-1"></span>
+                    <span id="bulk-error-count" class="badge badge-danger ml-1"></span>
                 </h6>
                 <div class="table-responsive" style="max-height:320px;overflow-y:auto;">
                     <table class="table table-sm table-bordered table-hover" id="bulk-preview-table">
@@ -704,30 +718,84 @@ document.getElementById('bulk-preview-btn').addEventListener('click', function()
         var lines = e.target.result.split(/\r?\n/).filter(function(l) { return l.trim(); });
         if (lines.length < 2) { flash({ msg: 'CSV must have a header row and at least one data row.', type: 'warning' }); return; }
         var headers = lines[0].split(',').map(function(h) { return h.trim(); });
-        var headRow = '<tr>' + headers.map(function(h) { return '<th>' + h + '</th>'; }).join('') + '<th>Status</th></tr>';
-        document.getElementById('bulk-preview-head').innerHTML = headRow;
-        var bodyHtml = '', errors = [], validRows = 0;
-        for (var i = 1; i < Math.min(lines.length, 51); i++) {
-            var cols = lines[i].split(',').map(function(c) { return c.trim(); });
-            var rowErrors = [];
-            var nameIdx = headers.indexOf('name'), genderIdx = headers.indexOf('gender'), classIdx = headers.indexOf('class_name');
-            if (nameIdx >= 0 && (!cols[nameIdx] || cols[nameIdx].length < 3)) rowErrors.push('Name too short');
-            if (genderIdx >= 0 && cols[genderIdx] && !['Male','Female'].includes(cols[genderIdx])) rowErrors.push('Gender must be Male/Female');
-            if (classIdx >= 0 && !cols[classIdx]) rowErrors.push('Class required');
-            var statusCell = rowErrors.length
-                ? '<td><span class="badge badge-danger">' + rowErrors.join(', ') + '</span></td>'
-                : '<td><span class="badge badge-success">OK</span></td>';
-            if (rowErrors.length) errors.push('Row ' + i + ': ' + rowErrors.join(', '));
-            else validRows++;
-            bodyHtml += '<tr>' + cols.map(function(c) { return '<td>' + c + '</td>'; }).join('') + statusCell + '</tr>';
+
+        // Check required columns exist
+        var required = ['name','gender','dob','class_name'];
+        var missing = required.filter(function(r){ return headers.indexOf(r) < 0; });
+        if (missing.length) {
+            flash({ msg: 'Missing required columns: ' + missing.join(', '), type: 'danger' });
+            return;
         }
-        if (lines.length > 51) bodyHtml += '<tr><td colspan="' + (headers.length + 1) + '" class="text-center text-muted">... and ' + (lines.length - 51) + ' more rows</td></tr>';
+
+        var headRow = '<tr>' + headers.map(function(h) {
+            var req = ['name','gender','dob','class_name'].indexOf(h) >= 0;
+            return '<th>' + h + (req ? ' <span class="text-danger">*</span>' : '') + '</th>';
+        }).join('') + '<th>Status</th></tr>';
+        document.getElementById('bulk-preview-head').innerHTML = headRow;
+
+        var bodyHtml = '', allErrors = [], validRows = 0;
+        var today = new Date();
+
+        for (var i = 1; i < Math.min(lines.length, 101); i++) {
+            var cols = lines[i].split(',').map(function(c) { return c.trim(); });
+            if (cols.every(function(c){ return c === ''; })) continue; // skip blank rows
+            var rowErrors = [];
+
+            var get = function(col) {
+                var idx = headers.indexOf(col);
+                return idx >= 0 ? (cols[idx] || '') : '';
+            };
+
+            // name
+            if (!get('name') || get('name').length < 3) rowErrors.push('Name required (min 3 chars)');
+            // gender
+            if (['Male','Female'].indexOf(get('gender')) < 0) rowErrors.push('Gender must be Male/Female');
+            // dob
+            var dobVal = get('dob');
+            if (!dobVal) {
+                rowErrors.push('DOB required');
+            } else {
+                var dob = new Date(dobVal);
+                if (isNaN(dob.getTime())) {
+                    rowErrors.push('DOB invalid (use YYYY-MM-DD)');
+                } else {
+                    var ageYrs = (today - dob) / (365.25 * 24 * 3600 * 1000);
+                    if (ageYrs < 3 || ageYrs > 25) rowErrors.push('Age must be 3–25 yrs');
+                }
+            }
+            // class_name
+            if (!get('class_name')) rowErrors.push('Class required');
+
+            var statusCell = rowErrors.length
+                ? '<td><span class="badge badge-danger" style="white-space:normal;">' + rowErrors.join('<br>') + '</span></td>'
+                : '<td><span class="badge badge-success">✓ OK</span></td>';
+            if (rowErrors.length) allErrors.push('Row ' + (i) + ': ' + rowErrors.join(', '));
+            else validRows++;
+            bodyHtml += '<tr class="' + (rowErrors.length ? 'table-danger' : '') + '">'
+                + cols.map(function(c) { return '<td>' + c + '</td>'; }).join('')
+                + statusCell + '</tr>';
+        }
+
+        if (lines.length > 101) {
+            bodyHtml += '<tr><td colspan="' + (headers.length + 1) + '" class="text-center text-muted small">… and ' + (lines.length - 101) + ' more rows (not shown)</td></tr>';
+        }
+
         document.getElementById('bulk-preview-body').innerHTML = bodyHtml;
         document.getElementById('bulk-row-count').textContent = (lines.length - 1) + ' rows';
+        document.getElementById('bulk-valid-count').textContent = validRows + ' valid';
+        document.getElementById('bulk-error-count').textContent = allErrors.length ? allErrors.length + ' errors' : '';
         document.getElementById('bulk-preview-area').style.display = 'block';
-        if (errors.length) {
-            document.getElementById('bulk-validation-errors').innerHTML = '<div class="alert alert-warning border-0"><strong>' + errors.length + ' row(s) have issues:</strong><ul class="mb-0 mt-1">' + errors.map(function(e) { return '<li>' + e + '</li>'; }).join('') + '</ul></div>';
+
+        if (allErrors.length) {
+            document.getElementById('bulk-validation-errors').innerHTML =
+                '<div class="alert alert-warning border-0 mt-2"><strong>' + allErrors.length + ' row(s) have issues and will be skipped on import:</strong>'
+                + '<ul class="mb-0 mt-1 small">' + allErrors.slice(0, 20).map(function(e) { return '<li>' + e + '</li>'; }).join('')
+                + (allErrors.length > 20 ? '<li>… and ' + (allErrors.length - 20) + ' more</li>' : '')
+                + '</ul></div>';
+        } else {
+            document.getElementById('bulk-validation-errors').innerHTML = '';
         }
+
         document.getElementById('bulk-submit-btn').disabled = validRows === 0;
     };
     reader.readAsText(file);
