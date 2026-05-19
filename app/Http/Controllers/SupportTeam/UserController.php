@@ -65,6 +65,7 @@ class UserController extends Controller
         }
 
         $data['password'] = Hash::make('user');
+        $data['must_change_password'] = true; // force password change after reset
         $this->user->update($id, $data);
         return back()->with('flash_success', __('msg.pu_reset'));
     }
@@ -87,6 +88,7 @@ class UserController extends Controller
 
         $pass = $req->password ?: $user_type;
         $data['password'] = Hash::make($pass);
+        $data['must_change_password'] = true; // force password change on first login
 
         if($req->hasFile('photo')) {
             $photo = $req->file('photo');

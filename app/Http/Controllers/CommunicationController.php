@@ -27,9 +27,14 @@ class CommunicationController extends Controller
     public function announcements()
     {
         $userType = Qs::getUserType();
+
+        // Map user_type to the audience value used when posting
+        // e.g. user_type 'hr_manager' matches audience 'hr_managers'
+        $audienceKey = $userType . 's'; // teacher→teachers, parent→parents, student→students, admin→admins, hr_manager→hr_managers
+
         $d['announcements'] = Announcement::where('active', true)
-            ->where(function ($q) use ($userType) {
-                $q->where('audience', 'all')->orWhere('audience', $userType . 's');
+            ->where(function ($q) use ($audienceKey) {
+                $q->where('audience', 'all')->orWhere('audience', $audienceKey);
             })
             ->with('author')->orderByDesc('created_at')->paginate(15);
         return view('pages.communication.announcements', $d);
@@ -65,8 +70,44 @@ class CommunicationController extends Controller
     public function inbox()
     {
         $d['messages'] = Message::where('receiver_id', Auth::id())
+                            ->where('archived', false)
                             ->with('sender')->orderByDesc('created_at')->paginate(20);
         return view('pages.communication.inbox', $d);
+    }
+
+    public function markRead(Message $message)
+    {
+        $this->authorizeMessage($message);
+        $message->update(['read' => true]);
+        return back()->with('flash_success', 'Message marked as read.');
+    }
+
+    public function markUnread(Message $message)
+    {
+        $this->authorizeMessage($message);
+        $message->update(['read' => false]);
+        return back()->with('flash_success', 'Message marked as unread.');
+    }
+
+    public function archiveMessage(Message $message)
+    {
+        $this->authorizeMessage($message);
+        $message->update(['archived' => true]);
+        return back()->with('flash_success', 'Message archived.');
+    }
+
+    public function deleteMessage(Message $message)
+    {
+        $this->authorizeMessage($message);
+        $message->delete();
+        return back()->with('flash_success', 'Message deleted.');
+    }
+
+    private function authorizeMessage(Message $message)
+    {
+        if ($message->receiver_id !== Auth::id() && $message->sender_id !== Auth::id()) {
+            abort(403);
+        }
     }
 
     public function compose()

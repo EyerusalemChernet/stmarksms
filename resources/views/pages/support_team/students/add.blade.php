@@ -121,7 +121,9 @@
                             <div class="form-group">
                                 <label class="field-label">Full Name <span class="req">*</span></label>
                                 <input type="text" name="name" id="f-name" value="{{ old('name') }}"
-                                       class="form-input" placeholder="Full Name">
+                                       class="form-input" placeholder="Full Name"
+                                       oninput="this.value = this.value.toUpperCase()"
+                                       style="text-transform:uppercase;">
                                 <div class="error-msg" id="err-name">Full Name is required.</div>
                             </div>
                         </div>
@@ -204,13 +206,15 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="field-label">Date of Birth</label>
+                                <label class="field-label">Date of Birth <span class="req">*</span></label>
                                 <input type="date" name="dob" id="f-dob"
                                        value="{{ old('dob') }}"
                                        class="form-input"
+                                       required
                                        max="{{ now()->subYears(3)->format('Y-m-d') }}"
                                        min="{{ now()->subYears(25)->format('Y-m-d') }}"
                                        title="Student must be between 3 and 25 years old">
+                                <div class="error-msg" id="err-dob">Date of Birth is required.</div>
                                 <small style="font-size:11px;color:#9ca3af;">Age must be between 3 and 25 years</small>
                             </div>
                         </div>
@@ -220,7 +224,7 @@
                                 <select name="nal_id" id="f-nal" class="form-input">
                                     <option value="">-- Choose --</option>
                                     @foreach($nationals->sortBy(fn($n) => $n->name === 'Ethiopian' ? 0 : 1) as $nal)
-                                        <option value="{{ $nal->id }}" {{ old('nal_id')==$nal->id ? 'selected':'' }}>{{ $nal->name }}</option>
+                                        <option value="{{ $nal->id }}" {{ (old('nal_id', 60) == $nal->id) ? 'selected' : '' }}>{{ $nal->name }}</option>
                                     @endforeach
                                 </select>
                                 <div class="error-msg" id="err-nal">Nationality is required.</div>
@@ -517,6 +521,7 @@ function validateStep1() {
     check('f-nal',     'err-nal',     !document.getElementById('f-nal').value);
     check('state_id',  'err-state',   !document.getElementById('state_id').value);
     check('lga_id',    'err-lga',     !document.getElementById('lga_id').value);
+    check('f-dob',     'err-dob',     !document.getElementById('f-dob').value);
 
     // Phone pattern check — uses the selected country's pattern
     var phone = document.getElementById('f-phone');

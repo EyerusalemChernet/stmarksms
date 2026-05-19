@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Subject extends Eloquent
 {
-    protected $fillable = ['name', 'my_class_id', 'teacher_id', 'department_id', 'slug'];
+    protected $fillable = ['name', 'my_class_id', 'teacher_id', 'department_id', 'slug', 'master_subject_id'];
+
+    public function masterSubject()
+    {
+        return $this->belongsTo(MasterSubject::class, 'master_subject_id');
+    }
 
     public function my_class()
     {
