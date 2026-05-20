@@ -13,7 +13,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-body">
-                <form action="{{ route('hr.recruitment.applications.store') }}" method="POST">
+                <form action="{{ route('hr.recruitment.applications.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="form-group">
                         <label class="font-weight-bold">Job Posting <span class="text-danger">*</span></label>
@@ -53,6 +53,17 @@
                         <input type="text" name="address" class="form-control" value="{{ old('address') }}">
                     </div>
                     <div class="form-group">
+                        <label class="font-weight-bold">Resume/CV <span class="text-danger">*</span></label>
+                        <div class="custom-file">
+                            <input type="file" name="resume" class="custom-file-input" id="resumeInput" accept=".pdf,.doc,.docx" required>
+                            <label class="custom-file-label" for="resumeInput">Choose file (PDF, DOC, DOCX - Max 5MB)</label>
+                        </div>
+                        <small class="form-text text-muted d-block mt-2">
+                            <i class="bi bi-info-circle mr-1"></i>
+                            Accepted formats: PDF, DOC, DOCX | Maximum file size: 5MB
+                        </small>
+                    </div>
+                    <div class="form-group">
                         <label class="font-weight-bold">Cover Letter</label>
                         <textarea name="cover_letter" class="form-control" rows="4" placeholder="Applicant's cover letter or notes...">{{ old('cover_letter') }}</textarea>
                     </div>
@@ -67,4 +78,15 @@
         </div>
     </div>
 </div>
+
+@section('scripts')
+<script>
+// Update file input label with selected filename
+document.getElementById('resumeInput').addEventListener('change', function(e) {
+    const fileName = e.target.files[0]?.name || 'Choose file (PDF, DOC, DOCX - Max 5MB)';
+    const label = document.querySelector('label[for="resumeInput"]');
+    label.textContent = fileName;
+});
+</script>
+@endsection
 @endsection
