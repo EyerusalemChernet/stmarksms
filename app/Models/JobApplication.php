@@ -13,6 +13,11 @@ use Illuminate\Database\Eloquent\Model;
  */
 class JobApplication extends Model
 {
+    /**
+     * Pipeline stages for job applications
+     */
+    const PIPELINE = ['applied', 'shortlisted', 'interviewed', 'hired', 'rejected'];
+
     protected $fillable = [
         'job_posting_id',
         'first_name',
