@@ -202,15 +202,42 @@ class RecruitmentController extends Controller
             'email'          => 'nullable|email|max:100',
             'phone'          => 'nullable|string|max:20',
             'address'        => 'nullable|string|max:255',
+            'resume'         => 'nullable|file|mimes:pdf,doc,docx|max:5120', // 5MB max
             'cover_letter'   => 'nullable|string',
         ]);
-        $application = JobApplication::create(array_merge(
-            $req->only('job_posting_id','first_name','last_name','email','phone','address','cover_letter'),
-            ['status'=>'applied','applied_at'=>now()->toDateString()]
-        ));
-        ApplicationNote::create(['application_id'=>$application->id,'user_id'=>auth()->id(),'status_changed_to'=>'applied','note'=>'Application received.']);
-        AuditLog::log('created','hr',"Application received: {$application->full_name}");
-        return redirect()->route('hr.recruitment.applications.show', $application->id)->with('flash_success','Application submitted.');
+
+        try {
+            // Handle resume file upload
+            $resumePath = null;
+            if ($req->hasFile('resume')) {
+                $file = $req->file('resume');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $resumePath = $file->storeAs('applications/' . $req->job_posting_id, $fileName, 'public');
+            }
+
+            $application = JobApplication::create(array_merge(
+                $req->only('job_posting_id','first_name','last_name','email','phone','address','cover_letter'),
+                [
+                    'status' => 'applied',
+                    'applied_at' => now()->toDateString(),
+                    'resume_path' => $resumePath,
+                ]
+            ));
+
+            ApplicationNote::create([
+                'application_id' => $application->id,
+                'user_id' => auth()->id(),
+                'status_changed_to' => 'applied',
+                'note' => 'Application received.' . ($resumePath ? ' Resume uploaded.' : ''),
+            ]);
+
+            AuditLog::log('created','hr',"Application received: {$application->full_name}" . ($resumePath ? ' (with resume)' : ''));
+
+            return redirect()->route('hr.recruitment.applications.show', $application->id)
+                ->with('flash_success','Application submitted successfully.' . ($resumePath ? ' Resume uploaded.' : ''));
+        } catch (\Exception $e) {
+            return back()->with('flash_danger', 'Failed to submit application: ' . $e->getMessage());
+        }
     }
 
     public function showApplication($hrId)
@@ -253,5 +280,25 @@ class RecruitmentController extends Controller
             'hire_date'      => now()->toDateString(),
             '_from_application' => $application->id,
         ]);
+    }
+
+    /**
+     * Download resume file for an application
+     * HR/SuperAdmin only
+     */
+    public function downloadResume($applicationId)
+    {
+        // Check authorization
+        if (!auth()->user()->hasAnyRole(['super_admin', 'admin'])) {
+            abort(403, 'Unauthorized');
+        }
+
+        $application = JobApplication::findOrFail($applicationId);
+
+        if (!$application->resume_path || !\Storage::disk('public')->exists($application->resume_path)) {
+            return back()->with('flash_danger', 'Resume file not found.');
+        }
+
+        return \Storage::disk('public')->download($application->resume_path);
     }
 }

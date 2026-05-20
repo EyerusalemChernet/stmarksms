@@ -3,46 +3,43 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * JobApplication — Job application from a candidate
  * 
  * Represents an application submitted by a candidate for a job posting.
- * Includes applicant information and attached resume/CV.
+ * Includes applicant information and attached resume/CV file.
  */
 class JobApplication extends Model
 {
-    use SoftDeletes;
-
     protected $fillable = [
-        'job_id',
+        'job_posting_id',
         'first_name',
         'last_name',
         'email',
         'phone',
+        'address',
         'resume_path',
         'cover_letter',
         'status',
-        'applied_date',
+        'applied_at',
+        'interview_date',
         'reviewed_by',
-        'reviewed_date',
-        'notes',
     ];
 
     protected $casts = [
-        'applied_date' => 'datetime',
-        'reviewed_date' => 'datetime',
+        'applied_at' => 'date',
+        'interview_date' => 'date',
     ];
 
     // ── Relationships ────────────────────────────────────────────────────────
 
     /**
-     * The job this application is for
+     * The job posting this application is for
      */
-    public function job()
+    public function jobPosting()
     {
-        return $this->belongsTo(Job::class);
+        return $this->belongsTo(JobPosting::class);
     }
 
     /**
@@ -50,7 +47,15 @@ class JobApplication extends Model
      */
     public function reviewedBy()
     {
-        return $this->belongsTo(Employee::class, 'reviewed_by');
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /**
+     * Notes on this application
+     */
+    public function notes()
+    {
+        return $this->hasMany(ApplicationNote::class, 'application_id');
     }
 
     // ── Scopes ───────────────────────────────────────────────────────────────
@@ -68,7 +73,7 @@ class JobApplication extends Model
      */
     public function scopePending($query)
     {
-        return $query->where('status', 'pending');
+        return $query->where('status', 'applied');
     }
 
     /**
@@ -85,6 +90,14 @@ class JobApplication extends Model
     public function scopeRejected($query)
     {
         return $query->where('status', 'rejected');
+    }
+
+    /**
+     * Get hired applications
+     */
+    public function scopeHired($query)
+    {
+        return $query->where('status', 'hired');
     }
 
     // ── Accessors ────────────────────────────────────────────────────────────
@@ -136,11 +149,36 @@ class JobApplication extends Model
     public function getStatusBadgeAttribute()
     {
         return match($this->status) {
-            'pending' => 'warning',
-            'shortlisted' => 'success',
+            'applied' => 'warning',
+            'shortlisted' => 'info',
+            'interviewed' => 'primary',
+            'hired' => 'success',
             'rejected' => 'danger',
-            'hired' => 'info',
             default => 'secondary',
         };
+    }
+
+    /**
+     * Check if application is hired
+     */
+    public function isHired(): bool
+    {
+        return $this->status === 'hired';
+    }
+
+    /**
+     * Check if application is rejected
+     */
+    public function isRejected(): bool
+    {
+        return $this->status === 'rejected';
+    }
+
+    /**
+     * Check if application has resume
+     */
+    public function hasResume(): bool
+    {
+        return !is_null($this->resume_path) && \Storage::disk('public')->exists($this->resume_path);
     }
 }
