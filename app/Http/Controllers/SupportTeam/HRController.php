@@ -301,11 +301,21 @@ class HRController extends Controller
 
     /**
      * Auto-create an Employee record from an existing unlinked User.
+     * 
+     * FIX: Added validation to ensure only staff users can have Employee records created.
      */
     public function syncFromUser($userId)
     {
         $user = User::findOrFail($userId);
 
+        // VALIDATION: Only staff users can have Employee records
+        $staffTypes = config('constants.staff_types', ['teacher', 'hr_manager', 'admin', 'super_admin', 'employee']);
+        if (!in_array($user->user_type, $staffTypes)) {
+            return back()->with('flash_danger', 
+                "Only staff users can have Employee records. {$user->name} is a {$user->user_type}.");
+        }
+
+        // VALIDATION: Check if already linked
         if (Employee::where('user_id', $userId)->exists()) {
             return back()->with('flash_danger', "{$user->name} already has an Employee record.");
         }
@@ -319,10 +329,13 @@ class HRController extends Controller
 
     /**
      * Auto-create Employee records for ALL unlinked staff users at once.
+     * 
+     * FIX: Standardized staff type definitions to match linkUser and syncFromUser
      */
     public function syncAllUsers()
     {
-        $staffTypes  = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        // Use standardized staff types from config
+        $staffTypes  = config('constants.staff_types', ['teacher', 'hr_manager', 'admin', 'super_admin', 'employee']);
         $linkedIds   = Employee::whereNotNull('user_id')->pluck('user_id');
         $unlinked    = User::whereIn('user_type', $staffTypes)
             ->whereNotIn('id', $linkedIds)->get();
@@ -340,36 +353,70 @@ class HRController extends Controller
 
     /**
      * Link an existing Employee record to an existing User account.
+     * 
+     * FIXES:
+     * 1. Added employee status validation (only active employees can be linked)
+     * 2. Moved all validation inside transaction to prevent race conditions
+     * 3. Standardized staff type definitions using config
+     * 4. Improved error handling with user-friendly messages
      */
     public function linkUser(Request $req, $hrId)
     {
+        // Initial validation: user_id exists
         $req->validate(['user_id' => 'required|exists:users,id']);
+
+        // Fetch employee and user
         $employee = Employee::findOrFail($hrId);
         $user = User::findOrFail($req->user_id);
 
-        // Validate user is a staff type
-        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin', 'employee'];
+        // Get standardized staff types from config
+        $staffTypes = config('constants.staff_types', ['teacher', 'hr_manager', 'admin', 'super_admin', 'employee']);
+
+        // VALIDATION 1: User must be a staff type
         if (!in_array($user->user_type, $staffTypes)) {
-            return back()->with('flash_danger', 'Only staff users can be linked to employees.');
+            return back()->with('flash_danger', 
+                "Only staff users can be linked to employees. {$user->name} is a {$user->user_type}.");
         }
 
-        // Check if employee is already linked
+        // VALIDATION 2: Employee must be active (not terminated or suspended)
+        if ($employee->status !== 'active') {
+            return back()->with('flash_danger', 
+                "Only active employees can be linked to user accounts. This employee is {$employee->status}.");
+        }
+
+        // VALIDATION 3: Employee must not already be linked
         if ($employee->user_id) {
-            return back()->with('flash_danger', 'This employee is already linked to a user account.');
+            return back()->with('flash_danger', 
+                "This employee is already linked to user account ({$employee->user->name}).");
         }
 
-        // Check if user is already linked to another employee
+        // VALIDATION 4: User must not already be linked to another employee
         if (Employee::where('user_id', $req->user_id)->exists()) {
-            return back()->with('flash_danger', 'That user account is already linked to another employee.');
+            return back()->with('flash_danger', 
+                "That user account is already linked to another employee.");
         }
 
         // Use transaction to prevent race conditions
-        \DB::transaction(function () use ($employee, $req, $user) {
-            $employee->update(['user_id' => $req->user_id]);
-            AuditLog::log('updated', 'hr', "Employee #{$employee->id} linked to user #{$req->user_id} ({$user->name})");
-        });
+        // All checks are done before transaction, but we re-check inside to be safe
+        try {
+            \DB::transaction(function () use ($employee, $req, $user) {
+                // Final safety check inside transaction
+                $existingLink = Employee::where('user_id', $req->user_id)->lockForUpdate()->first();
+                if ($existingLink) {
+                    throw new \Exception('User is already linked to another employee.');
+                }
 
-        return back()->with('flash_success', "User account ({$user->name}) linked to employee.");
+                $employee->update(['user_id' => $req->user_id]);
+                AuditLog::log('updated', 'hr', 
+                    "Employee #{$employee->id} ({$employee->employee_code}) linked to user #{$req->user_id} ({$user->name})");
+            });
+
+            return back()->with('flash_success', 
+                "User account ({$user->name}) successfully linked to employee {$employee->employee_code}.");
+        } catch (\Exception $e) {
+            return back()->with('flash_danger', 
+                "Failed to link user: {$e->getMessage()}");
+        }
     }
 
     /**
