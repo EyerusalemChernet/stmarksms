@@ -112,9 +112,10 @@
                                 @forelse($availableUsers as $u)
                                     @php
                                         $isLinked = \App\Models\Employee::where('user_id', $u->id)->exists();
-                                        $linkedLabel = $isLinked ? ' ✓ (linked)' : '';
                                     @endphp
-                                    <option value="{{ $u->id }}">{{ $u->name }}{{ $linkedLabel }} ({{ $u->user_type }})</option>
+                                    @if(!$isLinked)
+                                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->user_type }})</option>
+                                    @endif
                                 @empty
                                     <option value="" disabled>No users available</option>
                                 @endforelse

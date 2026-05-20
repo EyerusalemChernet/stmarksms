@@ -110,4 +110,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(StaffPayroll::class)->orderByDesc('month');
     }
+
+    // ── HR Module: Link to Employee ──────────────────────────────────────────
+
+    /** The HR Employee record linked to this user (if any) */
+    public function employee()
+    {
+        return $this->hasOne(\App\Models\Employee::class, 'user_id');
+    }
 }

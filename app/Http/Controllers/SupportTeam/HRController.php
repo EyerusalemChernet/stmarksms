@@ -345,18 +345,31 @@ class HRController extends Controller
     {
         $req->validate(['user_id' => 'required|exists:users,id']);
         $employee = Employee::findOrFail($hrId);
+        $user = User::findOrFail($req->user_id);
 
+        // Validate user is a staff type
+        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin', 'employee'];
+        if (!in_array($user->user_type, $staffTypes)) {
+            return back()->with('flash_danger', 'Only staff users can be linked to employees.');
+        }
+
+        // Check if employee is already linked
         if ($employee->user_id) {
             return back()->with('flash_danger', 'This employee is already linked to a user account.');
         }
+
+        // Check if user is already linked to another employee
         if (Employee::where('user_id', $req->user_id)->exists()) {
             return back()->with('flash_danger', 'That user account is already linked to another employee.');
         }
 
-        $employee->update(['user_id' => $req->user_id]);
-        AuditLog::log('updated', 'hr', "Employee #{$hrId} linked to user #{$req->user_id}");
+        // Use transaction to prevent race conditions
+        \DB::transaction(function () use ($employee, $req, $user) {
+            $employee->update(['user_id' => $req->user_id]);
+            AuditLog::log('updated', 'hr', "Employee #{$employee->id} linked to user #{$req->user_id} ({$user->name})");
+        });
 
-        return back()->with('flash_success', 'User account linked to employee.');
+        return back()->with('flash_success', "User account ({$user->name}) linked to employee.");
     }
 
     /**
