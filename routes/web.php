@@ -584,3 +584,29 @@ Route::group(['namespace' => 'MyParent', 'middleware' => 'my_parent'], function 
     Route::get('/parent/child/{student_id}/timeline', 'MyController@timeline')->name('parent.timeline');
     Route::get('/my_children', 'MyController@children')->name('my_children'); // legacy redirect
 });
+
+
+// ── Recruitment Module Routes ────────────────────────────────────────────────
+
+// Public routes - Job listing and application submission
+Route::prefix('recruitment')->group(function () {
+    // Public job listing
+    Route::get('jobs', [\App\Http\Controllers\JobApplicationController::class, 'index'])->name('recruitment.jobs.index');
+    Route::get('jobs/{jobId}', [\App\Http\Controllers\JobApplicationController::class, 'show'])->name('recruitment.jobs.show');
+    
+    // Public job application submission
+    Route::post('jobs/{jobId}/apply', [\App\Http\Controllers\JobApplicationController::class, 'store'])->name('recruitment.apply');
+});
+
+// HR/SuperAdmin routes - Job and application management
+Route::middleware(['auth', 'role:super_admin|admin'])->prefix('recruitment')->group(function () {
+    // Job management
+    Route::resource('jobs', \App\Http\Controllers\JobController::class);
+    
+    // Application management
+    Route::get('jobs/{jobId}/applications', [\App\Http\Controllers\JobApplicationController::class, 'applications'])->name('recruitment.applications.index');
+    Route::get('applications/{applicationId}', [\App\Http\Controllers\JobApplicationController::class, 'viewApplication'])->name('recruitment.applications.show');
+    Route::get('applications/{applicationId}/download-resume', [\App\Http\Controllers\JobApplicationController::class, 'downloadResume'])->name('recruitment.applications.download-resume');
+    Route::put('applications/{applicationId}/status', [\App\Http\Controllers\JobApplicationController::class, 'updateStatus'])->name('recruitment.applications.update-status');
+    Route::delete('applications/{applicationId}', [\App\Http\Controllers\JobApplicationController::class, 'destroy'])->name('recruitment.applications.destroy');
+});
