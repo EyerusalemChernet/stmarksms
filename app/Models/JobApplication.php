@@ -159,6 +159,21 @@ class JobApplication extends Model
     }
 
     /**
+     * Get status badge CSS class
+     */
+    public function statusBadgeClass(): string
+    {
+        return match($this->status) {
+            'applied' => 'warning',
+            'shortlisted' => 'info',
+            'interviewed' => 'primary',
+            'hired' => 'success',
+            'rejected' => 'danger',
+            default => 'secondary',
+        };
+    }
+
+    /**
      * Check if application is hired
      */
     public function isHired(): bool
