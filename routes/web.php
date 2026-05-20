@@ -186,6 +186,11 @@ Route::group(['middleware' => 'auth'], function () {
         Route::resource('grades', 'GradeController');
         Route::resource('exams', 'ExamController');
 
+        // Term & Semester Setup
+        Route::get('term-setup',          'TermSetupController@index')->name('term_setup.index');
+        Route::post('term-setup/settings','TermSetupController@saveSettings')->name('term_setup.settings');
+        Route::post('term-setup/auto-promote','TermSetupController@autoPromote')->name('term_setup.auto_promote');
+
         /*************** Attendance *****************/
         Route::group(['prefix' => 'attendance'], function(){
             // Read-only: all staff (admin, super_admin, teacher)

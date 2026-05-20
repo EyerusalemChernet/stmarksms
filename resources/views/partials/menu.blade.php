@@ -74,10 +74,10 @@
                 {{-- Academics --}}
                 <li class="sidebar-section-label">Academics</li>
                 <li class="nav-item"><a href="{{ route('calendar.index') }}" class="nav-link {{ Route::is('calendar.index') || Route::is('acal.*') ? 'active' : '' }}"><i class="bi bi-calendar-range"></i><span>Academic Calendar</span></a></li>
-                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['exams.index','exams.edit','grades.index','grades.edit','marks.index','marks.manage','marks.bulk','marks.tabulation','marks.show','marks.batch_fix']) ? 'nav-item-expanded nav-item-open' : '' }}">
+                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['term_setup.index','exams.index','exams.edit','grades.index','grades.edit','marks.index','marks.manage','marks.bulk','marks.tabulation','marks.show','marks.batch_fix']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-journal-check"></i><span>Exams & Marks</span></a>
                     <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('exams.index') }}" class="nav-link {{ Route::is('exams.index') ? 'active' : '' }}">Exam List</a></li>
+                        <li class="nav-item"><a href="{{ route('term_setup.index') }}" class="nav-link {{ Route::is('term_setup.index') ? 'active' : '' }}">Term & Semester Setup</a></li>
                         <li class="nav-item"><a href="{{ route('grades.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['grades.index','grades.edit']) ? 'active' : '' }}">Grades</a></li>
                         <li class="nav-item"><a href="{{ route('marks.tabulation') }}" class="nav-link {{ Route::is('marks.tabulation') ? 'active' : '' }}">Tabulation Sheet</a></li>
                         <li class="nav-item"><a href="{{ route('marks.batch_fix') }}" class="nav-link {{ Route::is('marks.batch_fix') ? 'active' : '' }}">Batch Fix</a></li>

@@ -115,6 +115,27 @@ class ExamRepo
         return Mark::where('student_id', $student_id)->select('year')->distinct()->get();
     }
 
+    /**
+     * Calculate a student's overall average across all exams in a session.
+     * Returns null if no marks exist.
+     */
+    public static function getSessionAverage(int $studentId, string $session): ?float
+    {
+        // Get all exam IDs for this session
+        $examIds = Exam::where('year', $session)->pluck('id', 'id');
+        if ($examIds->isEmpty()) return null;
+
+        // For each exam, get the student's average (ave column in exam_records)
+        $avgs = \App\Models\ExamRecord::where('student_id', $studentId)
+            ->whereIn('exam_id', $examIds)
+            ->whereNotNull('ave')
+            ->pluck('ave');
+
+        if ($avgs->isEmpty()) return null;
+
+        return round($avgs->avg(), 2);
+    }
+
     public function getMark($data)
     {
         return Mark::where($data)->with(['grade', 'user', 'user.student_record', 'subject', 'my_class', 'section', 'exam'])->get();

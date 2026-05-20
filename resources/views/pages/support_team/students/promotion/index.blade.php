@@ -9,6 +9,17 @@
         </div>
 
         <div class="card-body">
+            @if(session('flash_success'))
+            <div class="alert alert-success">{{ session('flash_success') }}</div>
+            @endif
+            @if(session('flash_danger'))
+            <div class="alert alert-danger">{{ session('flash_danger') }}</div>
+            @endif
+            <div class="mb-3">
+                <a href="{{ route('term_setup.index') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-arrow-up-circle mr-1"></i>Auto-Promotion (Term Setup)
+                </a>
+            </div>
             @include('pages.support_team.students.promotion.selector')
         </div>
     </div>
