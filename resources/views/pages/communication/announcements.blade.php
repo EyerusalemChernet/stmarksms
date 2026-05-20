@@ -20,9 +20,11 @@
                         <label>Audience</label>
                         <select name="audience" class="select form-control" data-fouc data-placeholder="Choose..">
                             <option value="all">Everyone</option>
-                            <option value="students">Students</option>
                             <option value="teachers">Teachers</option>
                             <option value="parents">Parents</option>
+                            <option value="students">Students</option>
+                            <option value="admins">Admins</option>
+                            <option value="hr_managers">HR Managers</option>
                         </select>
                     </div>
                 </div>
@@ -45,7 +47,7 @@
             <div class="card-body py-2">
                 <div class="d-flex justify-content-between">
                     <strong>{{ $a->title }}</strong>
-                    <small class="text-muted">{{ $a->created_at->diffForHumans() }} &bull; {{ ucfirst($a->audience) }}</small>
+                    <small class="text-muted">{{ $a->created_at->diffForHumans() }} &bull; {{ $a->audience === 'all' ? 'Everyone' : ucwords(str_replace('_', ' ', $a->audience)) }}</small>
                 </div>
                 <p class="mb-1 mt-1">{{ $a->body }}</p>
                 <small class="text-muted">By {{ $a->author->name ?? 'System' }}</small>

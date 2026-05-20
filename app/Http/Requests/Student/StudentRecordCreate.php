@@ -20,7 +20,7 @@ class StudentRecordCreate extends FormRequest
             'year_admitted' => 'required|string',
             // Date of birth: student must be at least 3 and at most 25 years old
             'dob'           => [
-                'sometimes', 'nullable', 'date',
+                'required', 'date',
                 'before:' . now()->subYears(3)->format('Y-m-d'),
                 'after:'  . now()->subYears(25)->format('Y-m-d'),
             ],
@@ -63,6 +63,8 @@ class StudentRecordCreate extends FormRequest
         return [
             'dob.before'   => 'Student must be at least 3 years old.',
             'dob.after'    => 'Student age cannot exceed 25 years. Please verify the date of birth.',
+            'dob.required' => 'Date of Birth is required.',
+            'dob.date'     => 'Date of Birth must be a valid date.',
         ];
     }
 

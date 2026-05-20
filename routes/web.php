@@ -2,6 +2,10 @@
 
 Auth::routes();
 
+// Force password change — must be outside the auth group so the middleware can redirect here
+Route::get('/change-password',  'Auth\ChangePasswordController@showForm')->name('password.change.form')->middleware('auth');
+Route::post('/change-password', 'Auth\ChangePasswordController@update')->name('password.change.update')->middleware('auth');
+
 //Route::get('/test', 'TestController@index')->name('test');
 Route::get('/privacy-policy', 'HomeController@privacy_policy')->name('privacy_policy');
 Route::get('/terms-of-use', 'HomeController@terms_of_use')->name('terms_of_use');
@@ -168,8 +172,17 @@ Route::group(['middleware' => 'auth'], function () {
         Route::resource('users', 'UserController');
         Route::resource('classes', 'MyClassController');
         Route::resource('sections', 'SectionController');
-        Route::post('subjects/bulk', 'SubjectController@storeBulk')->name('subjects.store_bulk');
+
+        // Master subject catalog
+        Route::post('master-subjects',              'SubjectController@storeMaster')->name('master_subjects.store');
+        Route::put('master-subjects/{master}',      'SubjectController@updateMaster')->name('master_subjects.update');
+        Route::delete('master-subjects/{master}',   'SubjectController@destroyMaster')->name('master_subjects.destroy');
+        // Assign master subject to classes
+        Route::post('subjects/assign',              'SubjectController@assign')->name('subjects.assign');
+        // Legacy bulk route kept for backward compat (now unused but safe to keep)
+        Route::post('subjects/bulk',                'SubjectController@assign')->name('subjects.store_bulk');
         Route::resource('subjects', 'SubjectController');
+
         Route::resource('grades', 'GradeController');
         Route::resource('exams', 'ExamController');
 
@@ -260,6 +273,10 @@ Route::group(['middleware' => 'auth'], function(){
     Route::get('/compose', 'CommunicationController@compose')->name('compose');
     Route::post('/messages', 'CommunicationController@sendMessage')->name('messages.send');
     Route::get('/messages/{message}', 'CommunicationController@readMessage')->name('messages.read');
+    Route::patch('/messages/{message}/read', 'CommunicationController@markRead')->name('messages.mark_read');
+    Route::patch('/messages/{message}/unread', 'CommunicationController@markUnread')->name('messages.mark_unread');
+    Route::patch('/messages/{message}/archive', 'CommunicationController@archiveMessage')->name('messages.archive');
+    Route::delete('/messages/{message}', 'CommunicationController@deleteMessage')->name('messages.delete');
 
     /************************ CALENDAR ****************************/
     Route::get('/calendar', 'CalendarController@index')->name('calendar.index');

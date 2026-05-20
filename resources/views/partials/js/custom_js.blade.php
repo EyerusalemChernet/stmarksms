@@ -295,6 +295,26 @@
         form[0].reset();
     }
 
+    // ── Notification bell dropdown ────────────────────────────────────────────
+    (function () {
+        var bell = document.querySelector('#notif-dropdown');
+        if (!bell) return;
 
+        var trigger = bell.closest('li');
+
+        trigger.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = bell.style.display === 'block';
+            bell.style.display = open ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', function () {
+            if (bell) bell.style.display = 'none';
+        });
+
+        bell.addEventListener('click', function (e) {
+            e.stopPropagation(); // keep open when clicking inside panel
+        });
+    })();
 
 </script>

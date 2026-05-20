@@ -65,6 +65,7 @@ class UserController extends Controller
         }
 
         $data['password'] = Hash::make('user');
+        $data['must_change_password'] = true; // force password change after reset
         $this->user->update($id, $data);
         return back()->with('flash_success', __('msg.pu_reset'));
     }
@@ -87,6 +88,7 @@ class UserController extends Controller
 
         $pass = $req->password ?: $user_type;
         $data['password'] = Hash::make($pass);
+        $data['must_change_password'] = true; // force password change on first login
 
         if($req->hasFile('photo')) {
             $photo = $req->file('photo');
@@ -182,8 +184,8 @@ class UserController extends Controller
 
     public function bulkTemplate()
     {
-        $headers = ['user_type','name','email','username','phone','gender','address','emp_date','password'];
-        $example = ['teacher','Abebe Kebede','abebe@email.com','abebe.kebede','0911234567','Male','Addis Ababa',date('Y-m-d'),'Teacher@123'];
+        $headers = ['user_type','name','email','username','phone','gender','dob','address','emp_date','password'];
+        $example = ['teacher','ABEBE KEBEDE','abebe@email.com','abebe.kebede','0911234567','Male','1990-05-12','Addis Ababa',date('Y-m-d'),'Teacher@123'];
         $csv = implode(',', $headers) . "\n" . implode(',', $example) . "\n";
         return response($csv, 200, [
             'Content-Type'        => 'text/csv',
@@ -208,30 +210,58 @@ class UserController extends Controller
 
         while (($line = fgetcsv($handle)) !== false) {
             $row++;
+
+            // Skip completely empty rows
+            if (empty(array_filter($line, fn($v) => trim($v) !== ''))) continue;
+
             if (count($line) < count($headers)) {
                 $errors[] = "Row {$row}: Not enough columns — skipped.";
                 continue;
             }
+
             $data = array_combine($headers, array_map('trim', $line));
 
-            // Resolve user type
-            $typeKey  = strtolower($data['user_type'] ?? '');
-            $userType = $typeMap[$typeKey] ?? null;
-            if (!$userType) {
-                $errors[] = "Row {$row}: Unknown user type '{$data['user_type']}' — skipped.";
+            // ── Required: name ───────────────────────────────────────────────
+            if (empty($data['name']) || strlen($data['name']) < 3) {
+                $errors[] = "Row {$row}: Name is required (min 3 characters) — skipped.";
                 continue;
             }
 
-            // Skip duplicate email
+            // ── Required: gender ─────────────────────────────────────────────
+            if (!in_array($data['gender'] ?? '', ['Male', 'Female'])) {
+                $errors[] = "Row {$row}: Gender must be 'Male' or 'Female' — skipped.";
+                continue;
+            }
+
+            // ── Resolve user type ────────────────────────────────────────────
+            $typeKey  = strtolower($data['user_type'] ?? '');
+            $userType = $typeMap[$typeKey] ?? null;
+            if (!$userType) {
+                $errors[] = "Row {$row}: Unknown user type '{$data['user_type']}'. Valid: " . implode(', ', $typeMap->keys()->toArray()) . " — skipped.";
+                continue;
+            }
+
+            // ── Duplicate email check ────────────────────────────────────────
             if (!empty($data['email']) && \App\User::where('email', $data['email'])->exists()) {
                 $errors[] = "Row {$row}: Email '{$data['email']}' already exists — skipped.";
                 continue;
             }
 
-            // Skip duplicate username
+            // ── Duplicate username check ─────────────────────────────────────
             if (!empty($data['username']) && \App\User::where('username', $data['username'])->exists()) {
                 $errors[] = "Row {$row}: Username '{$data['username']}' already exists — skipped.";
                 continue;
+            }
+
+            // ── Validate DOB if provided ─────────────────────────────────────
+            $dobFormatted = null;
+            if (!empty($data['dob'])) {
+                try {
+                    $dobFormatted = \Carbon\Carbon::parse($data['dob'])->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$row}: Invalid date of birth '{$data['dob']}' — skipped.";
+                    continue;
+                }
             }
 
             $userTypeTitle = $userType->title;
@@ -245,16 +275,18 @@ class UserController extends Controller
             $code     = strtoupper(Str::random(10));
 
             $user = $this->user->create([
-                'name'      => ucwords($data['name'] ?? ''),
-                'email'     => !empty($data['email']) ? $data['email'] : null,
-                'username'  => $username,
-                'phone'     => $data['phone'] ?? null,
-                'gender'    => $data['gender'] ?? 'Male',
-                'address'   => $data['address'] ?? 'N/A',
-                'user_type' => $userTypeTitle,
-                'code'      => $code,
-                'password'  => Hash::make($pass),
-                'photo'     => Qs::getDefaultUserImage(),
+                'name'                 => strtoupper(trim($data['name'])),
+                'email'                => !empty($data['email']) ? $data['email'] : null,
+                'username'             => $username,
+                'phone'                => $data['phone'] ?? null,
+                'dob'                  => $dobFormatted,
+                'gender'               => $data['gender'],
+                'address'              => !empty($data['address']) ? $data['address'] : 'N/A',
+                'user_type'            => $userTypeTitle,
+                'code'                 => $code,
+                'password'             => Hash::make($pass),
+                'must_change_password' => true, // force password change on first login
+                'photo'                => Qs::getDefaultUserImage(),
             ]);
 
             if ($userIsStaff) {
@@ -263,6 +295,9 @@ class UserController extends Controller
                     'code'     => $staffId,
                     'emp_date' => $empDate,
                 ]);
+
+                /* AUTO-CREATE EMPLOYEE RECORD for HR self-service portal */
+                \App\Services\EmployeeProfileService::createFromUser($user);
             }
 
             $imported++;

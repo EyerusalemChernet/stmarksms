@@ -29,18 +29,18 @@ class EnhanceLibraryTables extends Migration
         });
 
         Schema::table('book_requests', function (Blueprint $table) {
-            if (!Schema::hasColumn('book_requests', 'due_date'))
-                $table->date('due_date')->nullable()->after('issued_at');
-            if (!Schema::hasColumn('book_requests', 'overdue_fine'))
-                $table->decimal('overdue_fine', 8, 2)->default(0)->after('due_date');
-            if (!Schema::hasColumn('book_requests', 'notes'))
-                $table->text('notes')->nullable()->after('overdue_fine');
             if (!Schema::hasColumn('book_requests', 'requested_at'))
-                $table->timestamp('requested_at')->nullable()->after('notes');
+                $table->timestamp('requested_at')->nullable();
             if (!Schema::hasColumn('book_requests', 'issued_at'))
-                $table->timestamp('issued_at')->nullable()->after('requested_at');
+                $table->timestamp('issued_at')->nullable();
             if (!Schema::hasColumn('book_requests', 'returned_at'))
-                $table->timestamp('returned_at')->nullable()->after('issued_at');
+                $table->timestamp('returned_at')->nullable();
+            if (!Schema::hasColumn('book_requests', 'due_date'))
+                $table->date('due_date')->nullable();
+            if (!Schema::hasColumn('book_requests', 'overdue_fine'))
+                $table->decimal('overdue_fine', 8, 2)->default(0);
+            if (!Schema::hasColumn('book_requests', 'notes'))
+                $table->text('notes')->nullable();
         });
     }
 
