@@ -413,7 +413,7 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
     Route::resource('payments', 'PaymentController');
 
     /*************** HR *****************/
-    Route::prefix('hr')->middleware(['auth', 'hr_manager'])->group(function(){
+    Route::group(['middleware' => ['auth', 'hr_manager']], function(){
         Route::get('/', 'HRController@dashboard')->name('hr.index');
         Route::get('/staff', 'HRController@index')->name('hr.staff');
         Route::get('/staff/{hrId}', 'HRController@show')->name('hr.show');
