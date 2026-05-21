@@ -288,9 +288,10 @@ class RecruitmentController extends Controller
      */
     public function downloadResume($applicationId)
     {
-        // Check authorization
-        if (!auth()->user()->hasAnyRole(['super_admin', 'admin'])) {
-            abort(403, 'Unauthorized');
+        // Check authorization using the system's user_type
+        $userType = auth()->user()->user_type ?? null;
+        if ($userType !== 'super_admin' && $userType !== 'admin') {
+            abort(403, 'Unauthorized - You must be an admin or super admin to download resumes.');
         }
 
         $application = JobApplication::findOrFail($applicationId);
