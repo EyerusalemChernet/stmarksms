@@ -11,7 +11,8 @@
         <div class="card-body">
             <ul class="nav nav-tabs nav-tabs-highlight">
                 <li class="nav-item"><a href="#new-user" class="nav-link active" data-toggle="tab">Create New User</a></li>
-                <li class="nav-item"><a href="#bulk-user" class="nav-link" data-toggle="tab"><i class="bi bi-people-fill mr-1"></i>Bulk Import</a></li>
+                <li class="nav-item"><a href="#bulk-user" class="nav-link" data-toggle="tab"><i class="bi bi-people-fill mr-1"></i>Bulk Import (Staff)</a></li>
+                <li class="nav-item"><a href="#bulk-parents" class="nav-link" data-toggle="tab"><i class="bi bi-person-heart mr-1"></i>Bulk Import (Parents)</a></li>
                 <li class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Manage Users</a>
                     <div class="dropdown-menu dropdown-menu-right">
@@ -92,14 +93,6 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label>Date of Employment:</label>
-                                        <input autocomplete="off" name="emp_date" value="{{ old('emp_date') }}" type="text" class="form-control date-pick" placeholder="Select Date...">
-
-                                    </div>
-                                </div>
-
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="password">Password: </label>
@@ -296,6 +289,71 @@
                 </div>
                 {{-- ── END BULK IMPORT TAB ──────────────────────────────── --}}
 
+                {{-- ── PARENT BULK IMPORT TAB ─────────────────────────────── --}}
+                <div class="tab-pane fade" id="bulk-parents">
+                    <div class="pt-3">
+                        <div class="alert alert-info border-0 mb-4">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-person-heart mr-3 mt-1" style="font-size:18px;"></i>
+                                <div>
+                                    <strong>Bulk Parent / Guardian Import via CSV</strong><br>
+                                    Upload a CSV to create multiple parent accounts at once. No employment date or department required.
+                                    Default password is <code>parent</code> unless specified.
+                                    <a href="{{ route('users.bulk.template.parents') }}" class="ml-2 font-weight-bold">
+                                        <i class="bi bi-download mr-1"></i>Download Parent CSV Template
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive mb-4">
+                            <table class="table table-sm table-bordered" style="font-size:12px;">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Column</th>
+                                        <th>name <span class="text-danger">*</span></th>
+                                        <th>email</th>
+                                        <th>phone</th>
+                                        <th>phone2</th>
+                                        <th>gender <span class="text-danger">*</span></th>
+                                        <th>dob</th>
+                                        <th>address</th>
+                                        <th>password</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="font-weight-bold">Example</td>
+                                        <td>TIGIST BEKELE</td><td>tigist@email.com</td>
+                                        <td>0911234567</td><td>0922345678</td><td>Female</td>
+                                        <td>1985-03-20</td><td>Addis Ababa</td><td>Parent@123</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <form id="bulk-parents-form" method="post" enctype="multipart/form-data" action="{{ route('users.bulk.import.parents') }}">
+                            @csrf
+                            <div class="row align-items-end">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-semibold">Select CSV File <span class="text-danger">*</span></label>
+                                        <input type="file" name="csv_file" id="bulk-parents-csv" accept=".csv,text/csv" class="form-control" required>
+                                        <small class="text-muted">Max 5MB. UTF-8 encoded CSV only.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-success btn-block">
+                                        <i class="bi bi-cloud-upload mr-1"></i>Import Parents
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="bulk-parents-result" class="mt-3" style="display:none;"></div>
+                    </div>
+                </div>
+                {{-- ── END PARENT BULK IMPORT TAB ───────────────────────── --}}
+
                 @foreach($user_types as $ut)
                     <div class="tab-pane fade" id="ut-{{Qs::hash($ut->id)}}">                         <table class="table datatable-button-html5-columns">
                             <thead>
@@ -363,10 +421,19 @@ $(function () {
     var teacherTypeHash = @json($teacher_type_hash);
 
     function toggleTeacherDepartment() {
-        var isTeacher = $('#user_type').val() === teacherTypeHash;
-        $('#teacher-department-section').toggle(isTeacher);
+        var selectedVal = $('#user_type').val();
+        var selectedText = $('#user_type option:selected').text().trim().toLowerCase();
+        var isParent = selectedText === 'parent';
+        var hasType  = selectedVal !== '';
+
+        // Show department for all non-parent users with a type selected
+        $('#staff-department-section').toggle(hasType && !isParent);
+        // Show emp_date for all non-parent staff
+        $('#emp-date-section').toggle(hasType && !isParent);
+        // Department is required only for teachers
+        var isTeacher = selectedVal === teacherTypeHash;
         $('#department_id').prop('required', isTeacher);
-        if (!isTeacher) {
+        if (isParent || !hasType) {
             $('#department_id').val('').trigger('change');
         }
     }

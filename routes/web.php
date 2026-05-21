@@ -64,6 +64,8 @@ Route::group(['middleware' => 'auth'], function () {
             /* Bulk import */
             Route::get('bulk/template', 'StudentRecordController@bulkTemplate')->name('students.bulk.template')->middleware('teamSA');
             Route::post('bulk/import', 'StudentRecordController@bulkImport')->name('students.bulk.import')->middleware('teamSA');
+            /* Document download — super admin only */
+            Route::get('{sr_id}/document', 'StudentRecordController@downloadDocument')->name('students.document.download')->middleware('super_admin');
 
             /* Promotions */
             Route::post('promote_selector', 'PromotionController@selector')->name('students.promote_selector');
@@ -78,8 +80,10 @@ Route::group(['middleware' => 'auth'], function () {
         /*************** Users *****************/
         Route::group(['prefix' => 'users'], function(){
             Route::get('reset_pass/{id}', 'UserController@reset_pass')->name('users.reset_pass');
-        Route::post('bulk-import', 'UserController@bulkImport')->name('users.bulk.import')->middleware('teamSA');
-        Route::get('bulk-template', 'UserController@bulkTemplate')->name('users.bulk.template')->middleware('teamSA');
+            Route::post('bulk-import', 'UserController@bulkImport')->name('users.bulk.import')->middleware('teamSA');
+            Route::get('bulk-template', 'UserController@bulkTemplate')->name('users.bulk.template')->middleware('teamSA');
+            Route::post('bulk-import-parents', 'UserController@bulkImportParents')->name('users.bulk.import.parents')->middleware('teamSA');
+            Route::get('bulk-template-parents', 'UserController@bulkTemplateParents')->name('users.bulk.template.parents')->middleware('teamSA');
         });
 
         /*************** TimeTables *****************/
@@ -249,6 +253,13 @@ Route::group(['namespace' => 'SuperAdmin','middleware' => 'super_admin', 'prefix
     Route::post('/rules', 'RuleController@store')->name('rules.store');
     Route::put('/rules/{id}', 'RuleController@update')->name('rules.update');
     Route::delete('/rules/{id}', 'RuleController@destroy')->name('rules.destroy');
+
+    // Promotion Rules (configurable engine rules)
+    Route::get('/promotion-rules',              'PromotionRuleController@index')->name('promotion_rules.index');
+    Route::post('/promotion-rules',             'PromotionRuleController@store')->name('promotion_rules.store');
+    Route::put('/promotion-rules/{rule}',       'PromotionRuleController@update')->name('promotion_rules.update');
+    Route::patch('/promotion-rules/{rule}/toggle','PromotionRuleController@toggle')->name('promotion_rules.toggle');
+    Route::delete('/promotion-rules/{rule}',    'PromotionRuleController@destroy')->name('promotion_rules.destroy');
 
     Route::get('/audit-logs', 'AuditLogController@index')->name('audit.index');
 

@@ -99,6 +99,28 @@ class StudentRecordController extends Controller
             } catch (\Exception $e) {}
         }
 
+        // Save birth certificate / student ID document if uploaded
+        if ($req->hasFile('birth_cert')) {
+            $doc = $req->file('birth_cert');
+            $docPath = $doc->storeAs(
+                Qs::getUploadPath('student') . $data['code'],
+                'birth_cert.' . $doc->getClientOriginalExtension()
+            );
+            $sr['birth_cert_path'] = $docPath;
+            $sr['birth_cert_name'] = $doc->getClientOriginalName();
+        }
+
+        // Save birth certificate / student ID document if uploaded
+        if ($req->hasFile('birth_cert')) {
+            $doc = $req->file('birth_cert');
+            $docPath = $doc->storeAs(
+                Qs::getUploadPath('student') . $data['code'],
+                'birth_cert.' . $doc->getClientOriginalExtension()
+            );
+            $sr['birth_cert_path'] = $docPath;
+            $sr['birth_cert_name'] = $doc->getClientOriginalName();
+        }
+
         $this->student->createRecord($sr); // Create Student
         AuditLog::log('created', 'students', "Student '{$data['name']}' admitted (Adm: {$data['username']})");
         return Qs::jsonStoreOk();
@@ -200,8 +222,8 @@ class StudentRecordController extends Controller
      */
     public function bulkTemplate()
     {
-        $headers = ['name','gender','dob','email','phone','address','class_name','section_name','year_admitted','religion','nationality'];
-        $example = ['ABEBE KEBEDE','Male','2012-05-12','abebe@email.com','0911234567','Addis Ababa','Grade 1','A',date('Y'),'Ethiopian Orthodox','Ethiopian'];
+        $headers = ['name','gender','dob','email','phone','address','class_name','section_name','year_admitted','religion','nationality','parent_email'];
+        $example = ['ABEBE KEBEDE','Male','2012-05-12','abebe@email.com','0911234567','Addis Ababa','Grade 1','A',date('Y'),'Ethiopian Orthodox','Ethiopian','parent@email.com'];
 
         $csv = implode(',', $headers)."\n".implode(',', $example)."\n";
 
@@ -209,6 +231,24 @@ class StudentRecordController extends Controller
             'Content-Type'        => 'text/csv',
             'Content-Disposition' => 'attachment; filename="students_bulk_template.csv"',
         ]);
+    }
+
+    /**
+     * Download a student's uploaded document (birth cert / ID).
+     * Super admin only.
+     */
+    public function downloadDocument($sr_id)
+    {
+        if (!Qs::userIsSuperAdmin()) return Qs::goWithDanger();
+
+        $sr_id = Qs::decodeHash($sr_id);
+        $sr = $this->student->getRecord(['id' => $sr_id])->first();
+
+        if (!$sr || !$sr->birth_cert_path || !Storage::exists($sr->birth_cert_path)) {
+            return back()->with('flash_danger', 'Document not found.');
+        }
+
+        return Storage::download($sr->birth_cert_path, $sr->birth_cert_name ?: 'document');
     }
 
     /**
@@ -345,6 +385,9 @@ class StudentRecordController extends Controller
                 'religion'      => $data['religion'] ?? null,
                 'age'           => $age,
                 'session'       => Qs::getSetting('current_session'),
+                'my_parent_id'  => !empty($data['parent_email'])
+                    ? (\App\User::where('email', $data['parent_email'])->where('user_type','parent')->value('id') ?? null)
+                    : null,
             ]);
 
             $imported++;
@@ -362,7 +405,6 @@ class StudentRecordController extends Controller
 
     public function destroy($st_id)
     {
-        $st_id = Qs::decodeHash($st_id);
         if(!$st_id){return Qs::goWithDanger();}
 
         $sr = $this->student->getRecord(['user_id' => $st_id])->first();

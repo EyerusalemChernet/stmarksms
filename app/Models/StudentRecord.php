@@ -14,7 +14,7 @@ class StudentRecord extends Eloquent
     protected $fillable = [
         'session', 'user_id', 'my_class_id', 'section_id', 'my_parent_id',
         'adm_no', 'year_admitted', 'wd', 'wd_date', 'grad', 'grad_date',
-        'religion', 'age',
+        'religion', 'age', 'birth_cert_path', 'birth_cert_name',
     ];
 
     public function user()       { return $this->belongsTo(User::class); }

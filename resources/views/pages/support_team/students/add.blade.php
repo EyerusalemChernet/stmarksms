@@ -84,8 +84,12 @@
                             <div class="row align-items-end">
                                 <div class="col-md-5">
                                     <label class="field-label">Upload Birth Certificate or Student ID</label>
-                                    <input type="file" id="ocr-upload" accept="image/*" class="form-input" style="padding:5px;">
-                                    <small class="text-muted" style="font-size:11px;">Upload a clear photo or scan (JPEG/PNG)</small>
+                                    {{-- This input is used for OCR scanning AND saved to storage --}}
+                                    <input type="file" id="ocr-upload" name="birth_cert" accept="image/*,.pdf" class="form-input" style="padding:5px;">
+                                    <small class="text-muted" style="font-size:11px;">
+                                        Accepted: JPEG, PNG, PDF. Max 5MB.
+                                        <span style="color:#10b981;font-weight:600;">File will be saved and accessible to Super Admin.</span>
+                                    </small>
                                 </div>
                                 <div class="col-md-4"><div id="ocr-status" class="small mt-2"></div></div>
                                 <div class="col-md-3 text-right">

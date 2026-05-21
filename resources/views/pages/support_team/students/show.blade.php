@@ -83,6 +83,21 @@
                                 <td class="font-weight-bold">Year Admitted</td>
                                 <td>{{ $sr->year_admitted }}</td>
                             </tr>
+                            @if(Qs::userIsSuperAdmin() && $sr->birth_cert_path)
+                            <tr>
+                                <td class="font-weight-bold">
+                                    <i class="bi bi-file-earmark-text mr-1 text-primary"></i>Admission Document
+                                </td>
+                                <td>
+                                    <a href="{{ route('students.document.download', Qs::hash($sr->id)) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download mr-1"></i>
+                                        {{ $sr->birth_cert_name ?: 'Download Document' }}
+                                    </a>
+                                    <small class="text-muted ml-2" style="font-size:11px;">Birth Certificate / Student ID</small>
+                                </td>
+                            </tr>
+                            @endif
                             <tr>
                                 <td class="font-weight-bold">Gender</td>
                                 <td>{{ $sr->user->gender }}</td>
