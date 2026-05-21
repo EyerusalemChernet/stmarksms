@@ -399,17 +399,6 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
     Route::post('/attendance', 'HRController@saveAttendance')->name('hr.attendance.save');
     Route::get('/workload', 'HRController@workload')->name('hr.workload');
 
-    /*************** Payroll *****************/
-    Route::get('/payroll',                'PayrollController@index')->name('hr.payroll');
-    Route::post('/payroll/generate',      'PayrollController@generate')->name('hr.payroll.generate');
-    Route::get('/payroll/{id}/edit',      'PayrollController@edit')->name('hr.payroll.edit');
-    Route::put('/payroll/{id}',           'PayrollController@update')->name('hr.payroll.update');
-    Route::post('/payroll/{id}/approve',  'PayrollController@approve')->name('hr.payroll.approve');
-    Route::post('/payroll/{id}/paid',     'PayrollController@markPaid')->name('hr.payroll.paid');
-    Route::post('/payroll/{id}/draft',    'PayrollController@revertToDraft')->name('hr.payroll.draft');
-    Route::post('/payroll/{id}/items',    'PayrollController@addItem')->name('hr.payroll.item.add');
-    Route::delete('/payroll/{id}/items',  'PayrollController@removeItem')->name('hr.payroll.item.remove');
-
     /*************** Payments (Legacy) *****************/
     Route::group(['prefix' => 'payments'], function(){
         Route::get('manage/{class_id?}', 'PaymentController@manage')->name('payments.manage');
@@ -483,6 +472,17 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
 
         // Workload
         Route::get('/workload', 'HRController@workload')->name('hr.workload');
+
+        // ── Payroll ───────────────────────────────────────────────────────────
+        Route::get('/payroll',                'PayrollController@index')->name('hr.payroll');
+        Route::post('/payroll/generate',      'PayrollController@generate')->name('hr.payroll.generate');
+        Route::get('/payroll/{id}/edit',      'PayrollController@edit')->name('hr.payroll.edit');
+        Route::put('/payroll/{id}',           'PayrollController@update')->name('hr.payroll.update');
+        Route::post('/payroll/{id}/approve',  'PayrollController@approve')->name('hr.payroll.approve');
+        Route::post('/payroll/{id}/paid',     'PayrollController@markPaid')->name('hr.payroll.paid');
+        Route::post('/payroll/{id}/draft',    'PayrollController@revertToDraft')->name('hr.payroll.draft');
+        Route::post('/payroll/{id}/items',    'PayrollController@addItem')->name('hr.payroll.item.add');
+        Route::delete('/payroll/{id}/items',  'PayrollController@removeItem')->name('hr.payroll.item.remove');
 
         // ── Contracts ────────────────────────────────────────────────────────
         Route::get('/contracts', 'HRController@contracts')->name('hr.contracts');

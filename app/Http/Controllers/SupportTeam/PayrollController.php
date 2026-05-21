@@ -93,13 +93,23 @@ class PayrollController extends Controller
 
     public function edit($id)
     {
+        \Log::error("Edit payroll called with ID: '{$id}' (type: " . gettype($id) . ")");
+        
+        if (empty($id)) {
+            \Log::error("Payroll ID is empty!");
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Invalid payroll ID. Please click the edit button for a specific payroll record.");
+        }
+
         $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
             ->find($id);
 
+        \Log::debug("Query result for ID {$id}: " . ($payroll ? "Found" : "Not found"));
+
         if (!$payroll) {
-            \Log::error("Payroll not found with ID: {$id}");
+            \Log::error("Payroll not found with ID: {$id}. Available payrolls: " . StaffPayroll::count());
             return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record #{$id} not found. Please generate payroll for the desired month first.");
+                ->with('flash_danger', "Payroll record #{$id} not found. Available records: " . StaffPayroll::count());
         }
 
         return view('pages.hr.payroll_edit', compact('payroll'));
