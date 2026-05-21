@@ -37,7 +37,7 @@ class StudentRecordCreate extends FormRequest
             'nal_id'        => 'required',
             'my_class_id'   => 'required',
             'section_id'    => 'required',
-            'my_parent_id'  => 'sometimes|nullable',
+            'my_parent_id'  => 'required',
             'religion'      => 'sometimes|nullable|string|max:50',
         ];
     }
@@ -65,13 +65,19 @@ class StudentRecordCreate extends FormRequest
             'dob.after'    => 'Student age cannot exceed 25 years. Please verify the date of birth.',
             'dob.required' => 'Date of Birth is required.',
             'dob.date'     => 'Date of Birth must be a valid date.',
+            'my_parent_id.required' => 'A parent or guardian must be assigned to the student.',
         ];
     }
 
     protected function getValidatorInstance()
     {
         $input = $this->all();
-        $input['my_parent_id'] = $input['my_parent_id'] ? Qs::decodeHash($input['my_parent_id']) : null;
+        // Decode the hashed parent ID; keep null if not provided (required rule will catch it)
+        if (!empty($input['my_parent_id'])) {
+            $input['my_parent_id'] = Qs::decodeHash($input['my_parent_id']) ?: null;
+        } else {
+            $input['my_parent_id'] = null;
+        }
         $this->getInputSource()->replace($input);
         return parent::getValidatorInstance();
     }

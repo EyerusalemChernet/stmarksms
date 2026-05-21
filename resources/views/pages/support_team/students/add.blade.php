@@ -311,13 +311,28 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="field-label">Parent</label>
-                                <select name="my_parent_id" class="form-input">
+                                <label class="field-label">Parent / Guardian <span class="req">*</span></label>
+                                <select name="my_parent_id" id="f-parent" class="form-input">
                                     <option value="">-- Choose --</option>
                                     @foreach($parents as $p)
-                                        <option value="{{ Qs::hash($p->id) }}" {{ old('my_parent_id')==Qs::hash($p->id) ? 'selected':'' }}>{{ $p->name }}</option>
+                                        <option value="{{ Qs::hash($p->id) }}" {{ old('my_parent_id')==Qs::hash($p->id) ? 'selected':'' }}>
+                                            {{ $p->name }}{{ $p->phone ? ' — '.$p->phone : '' }}
+                                        </option>
                                     @endforeach
                                 </select>
+                                <div class="error-msg" id="err-parent">Parent / Guardian is required.</div>
+                                @if($parents->isEmpty())
+                                <small style="color:#ef4444;font-size:11px;">
+                                    <i class="bi bi-exclamation-triangle mr-1"></i>
+                                    No parent accounts exist yet.
+                                    <a href="{{ route('users.index') }}" target="_blank">Create a parent account first →</a>
+                                </small>
+                                @else
+                                <small style="font-size:11px;color:#9ca3af;">
+                                    Parent must have an account in the system. If not found,
+                                    <a href="{{ route('users.index') }}" target="_blank">add them under Users</a>.
+                                </small>
+                                @endif
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -576,6 +591,7 @@ function validateStep2() {
     check('f-class',   'err-class');
     check('section_id','err-section');
     check('f-year',    'err-year');
+    check('f-parent',  'err-parent');
     return ok;
 }
 
