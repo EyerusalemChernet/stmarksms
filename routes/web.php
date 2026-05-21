@@ -587,6 +587,6 @@ Route::group(['namespace' => 'MyParent', 'middleware' => 'my_parent'], function 
 
 
 // ── Recruitment Module Routes - Resume Download ──────────────────────────────
-Route::middleware(['auth', 'role:super_admin|admin'])->prefix('hr/recruitment')->group(function () {
+Route::middleware(['auth', 'admin_or_super_admin'])->namespace('SupportTeam')->prefix('hr/recruitment')->group(function () {
     Route::get('/applications/{applicationId}/download-resume', 'RecruitmentController@downloadResume')->name('hr.recruitment.applications.download-resume');
 });

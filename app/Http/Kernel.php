@@ -64,6 +64,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'admin' => \App\Http\Middleware\Custom\Admin::class,
         'super_admin' => \App\Http\Middleware\Custom\SuperAdmin::class,
+        'admin_or_super_admin' => \App\Http\Middleware\Custom\AdminOrSuperAdmin::class,
         'teamSA' => \App\Http\Middleware\Custom\TeamSA::class,
         'teamSAT' => \App\Http\Middleware\Custom\TeamSAT::class,
         'teamAccount' => \App\Http\Middleware\Custom\TeamAccount::class,
