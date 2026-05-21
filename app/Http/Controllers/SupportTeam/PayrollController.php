@@ -42,6 +42,11 @@ class PayrollController extends Controller
             ->get()
             ->keyBy('employee_id');
 
+        \Log::debug("Payroll index - Month: {$month}, Status: {$status}, Found payrolls: " . $payrolls->count());
+        foreach ($payrolls as $emp_id => $pr) {
+            \Log::debug("  - Employee ID: {$emp_id}, Payroll ID: {$pr->id}, Status: {$pr->status}");
+        }
+
         $statusCounts = array_merge(
             ['draft' => 0, 'approved' => 0, 'paid' => 0],
             StaffPayroll::where('month', $month)
@@ -71,7 +76,11 @@ class PayrollController extends Controller
     {
         $req->validate(['month' => 'required|date_format:Y-m']);
 
+        \Log::info("Starting payroll generation for {$req->month}");
+        
         $result = $this->payrollService->generateBulk($req->month, $this->attendanceService);
+
+        \Log::info("Payroll generation result: generated={$result['generated']}, skipped={$result['skipped']}");
 
         $msg = "Payroll generated for {$req->month}. "
              . "{$result['generated']} record(s) created, {$result['skipped']} skipped (already existed).";
@@ -88,8 +97,9 @@ class PayrollController extends Controller
             ->find($id);
 
         if (!$payroll) {
+            \Log::error("Payroll not found with ID: {$id}");
             return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
+                ->with('flash_danger', "Payroll record #{$id} not found. Please generate payroll for the desired month first.");
         }
 
         return view('pages.hr.payroll_edit', compact('payroll'));
