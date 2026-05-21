@@ -76,7 +76,7 @@ class PayrollController extends Controller
         $msg = "Payroll generated for {$req->month}. "
              . "{$result['generated']} record(s) created, {$result['skipped']} skipped (already existed).";
 
-        return redirect()->route('hr.payroll', ['month' => $req->month])
+        return redirect()->route('hr.payroll', ['month' => $req->month, 'status' => 'all'])
             ->with('flash_success', $msg);
     }
 
