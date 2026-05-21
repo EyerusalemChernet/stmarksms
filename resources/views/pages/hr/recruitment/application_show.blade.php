@@ -32,6 +32,24 @@
             </div>
         </div>
 
+        {{-- Resume --}}
+        @if($application->hasResume())
+        <div class="card mb-3 border-success">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0"><i class="bi bi-file-earmark-pdf mr-1"></i>Resume</h6>
+            </div>
+            <div class="card-body">
+                <p class="small mb-2">
+                    <strong>File:</strong> {{ $application->resume_file_name }}
+                </p>
+                <a href="{{ route('hr.recruitment.applications.download-resume', $application->id) }}"
+                   class="btn btn-sm btn-success">
+                    <i class="bi bi-download mr-1"></i>Download Resume
+                </a>
+            </div>
+        </div>
+        @endif
+
         @if($application->cover_letter)
         <div class="card mb-3">
             <div class="card-header bg-white"><h6 class="card-title mb-0">Cover Letter</h6></div>

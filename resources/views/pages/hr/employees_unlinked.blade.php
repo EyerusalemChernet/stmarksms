@@ -109,9 +109,16 @@
                             @csrf
                             <select name="user_id" class="form-control form-control-sm mr-2" style="width:200px;" required>
                                 <option value="">— Select User —</option>
-                                @foreach(\App\User::whereIn('user_type',['teacher','hr_manager','admin','super_admin'])->whereNotIn('id', \App\Models\Employee::whereNotNull('user_id')->pluck('user_id'))->orderBy('name')->get() as $u)
-                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->user_type }})</option>
-                                @endforeach
+                                @forelse($availableUsers as $u)
+                                    @php
+                                        $isLinked = \App\Models\Employee::where('user_id', $u->id)->exists();
+                                    @endphp
+                                    @if(!$isLinked)
+                                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->user_type }})</option>
+                                    @endif
+                                @empty
+                                    <option value="" disabled>No users available</option>
+                                @endforelse
                             </select>
                             <button type="submit" class="btn btn-xs btn-primary">
                                 <i class="bi bi-link mr-1"></i>Link

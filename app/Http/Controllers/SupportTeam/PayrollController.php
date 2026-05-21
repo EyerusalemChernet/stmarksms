@@ -42,6 +42,11 @@ class PayrollController extends Controller
             ->get()
             ->keyBy('employee_id');
 
+        \Log::debug("Payroll index - Month: {$month}, Status: {$status}, Found payrolls: " . $payrolls->count());
+        foreach ($payrolls as $emp_id => $pr) {
+            \Log::debug("  - Employee ID: {$emp_id}, Payroll ID: {$pr->id}, Status: {$pr->status}");
+        }
+
         $statusCounts = array_merge(
             ['draft' => 0, 'approved' => 0, 'paid' => 0],
             StaffPayroll::where('month', $month)
@@ -71,12 +76,16 @@ class PayrollController extends Controller
     {
         $req->validate(['month' => 'required|date_format:Y-m']);
 
+        \Log::info("Starting payroll generation for {$req->month}");
+        
         $result = $this->payrollService->generateBulk($req->month, $this->attendanceService);
+
+        \Log::info("Payroll generation result: generated={$result['generated']}, skipped={$result['skipped']}");
 
         $msg = "Payroll generated for {$req->month}. "
              . "{$result['generated']} record(s) created, {$result['skipped']} skipped (already existed).";
 
-        return redirect()->route('hr.payroll', ['month' => $req->month])
+        return redirect()->route('hr.payroll', ['month' => $req->month, 'status' => 'all'])
             ->with('flash_success', $msg);
     }
 
@@ -85,7 +94,13 @@ class PayrollController extends Controller
     public function edit($id)
     {
         $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
-            ->findOrFail($id);
+            ->find($id);
+
+        if (!$payroll) {
+            \Log::error("Payroll not found with ID: {$id}");
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Payroll record #{$id} not found. Please generate payroll for the desired month first.");
+        }
 
         return view('pages.hr.payroll_edit', compact('payroll'));
     }
@@ -94,12 +109,17 @@ class PayrollController extends Controller
 
     public function update(Request $req, $id)
     {
+        $payroll = StaffPayroll::find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Payroll record not found.');
+        }
+
         $req->validate([
             'base_salary' => 'required|numeric|min:0',
             'notes'       => 'nullable|string|max:500',
         ]);
-
-        $payroll = StaffPayroll::findOrFail($id);
 
         if (!$payroll->isDraft()) {
             return back()->with('flash_danger', 'Only draft payrolls can be edited.');
@@ -119,14 +139,19 @@ class PayrollController extends Controller
 
     public function addItem(Request $req, $id)
     {
+        $payroll = StaffPayroll::find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Payroll record not found.');
+        }
+
         $req->validate([
             'type'   => 'required|in:earning,deduction',
             'label'  => 'required|string|max:100',
             'amount' => 'required|numeric|min:0.01',
             'note'   => 'nullable|string|max:255',
         ]);
-
-        $payroll = StaffPayroll::findOrFail($id);
 
         try {
             $this->payrollService->addItem(
@@ -147,9 +172,14 @@ class PayrollController extends Controller
 
     public function removeItem(Request $req, $id)
     {
-        $req->validate(['item_id' => 'required|integer|exists:payroll_items,id']);
+        $payroll = StaffPayroll::find($id);
 
-        $payroll = StaffPayroll::findOrFail($id);
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Payroll record not found.');
+        }
+
+        $req->validate(['item_id' => 'required|integer|exists:payroll_items,id']);
 
         try {
             $this->payrollService->removeItem($payroll, (int) $req->item_id);
@@ -164,7 +194,12 @@ class PayrollController extends Controller
 
     public function approve($id)
     {
-        $payroll = StaffPayroll::findOrFail($id);
+        $payroll = StaffPayroll::find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Payroll record not found.');
+        }
 
         try {
             $this->payrollService->approve($payroll, auth()->id());
@@ -179,7 +214,12 @@ class PayrollController extends Controller
 
     public function markPaid($id)
     {
-        $payroll = StaffPayroll::findOrFail($id);
+        $payroll = StaffPayroll::find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Payroll record not found.');
+        }
 
         try {
             $this->payrollService->markPaid($payroll, auth()->id());
@@ -194,7 +234,12 @@ class PayrollController extends Controller
 
     public function revertToDraft($id)
     {
-        $payroll = StaffPayroll::findOrFail($id);
+        $payroll = StaffPayroll::find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Payroll record not found.');
+        }
 
         try {
             $this->payrollService->revertToDraft($payroll);

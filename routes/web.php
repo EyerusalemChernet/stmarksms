@@ -606,3 +606,9 @@ Route::group(['namespace' => 'MyParent', 'middleware' => 'my_parent'], function 
     Route::get('/parent/child/{student_id}/timeline', 'MyController@timeline')->name('parent.timeline');
     Route::get('/my_children', 'MyController@children')->name('my_children'); // legacy redirect
 });
+
+
+// ── Recruitment Module Routes - Resume Download ──────────────────────────────
+Route::middleware(['auth'])->namespace('SupportTeam')->prefix('hr/recruitment')->group(function () {
+    Route::get('/applications/{applicationId}/download-resume', 'RecruitmentController@downloadResume')->name('hr.recruitment.applications.download-resume');
+});

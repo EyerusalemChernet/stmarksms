@@ -1,0 +1,144 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║         EMPLOYEE QUALIFICATION CERTIFICATE UPLOAD - QUICK REFERENCE       ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─ SETUP (Choose One) ─────────────────────────────────────────────────────┐
+│                                                                            │
+│  ⭐ RECOMMENDED - Browser Setup:                                          │
+│     1. Open: http://127.0.0.1:8000/quick-setup.php                       │
+│     2. Wait for "✅ Setup Complete!" message                              │
+│     3. Press Ctrl+F5 to refresh browser                                   │
+│                                                                            │
+│  OR - Command Line Setup:                                                 │
+│     1. Open Command Prompt                                                │
+│     2. Run: setup-qualifications.bat                                      │
+│     3. Wait for completion                                                │
+│     4. Press Ctrl+F5 to refresh browser                                   │
+│                                                                            │
+│  OR - PowerShell Setup:                                                   │
+│     1. Open PowerShell                                                    │
+│     2. Run: powershell -ExecutionPolicy Bypass -File setup-qualifications.ps1
+│     3. Wait for completion                                                │
+│     4. Press Ctrl+F5 to refresh browser                                   │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ USING THE FEATURE ──────────────────────────────────────────────────────┐
+│                                                                            │
+│  UPLOAD A CERTIFICATE:                                                    │
+│     1. Go to: HR → Employees                                              │
+│     2. Click on an employee name                                          │
+│     3. Click "Edit Profile" button                                        │
+│     4. Scroll to "Qualifications" section                                 │
+│     5. Fill in: Degree, Field of Study, Institution, Graduation Year     │
+│     6. Click "Choose file" and select a certificate                       │
+│     7. Click "Save Changes"                                               │
+│                                                                            │
+│  VIEW CERTIFICATES:                                                       │
+│     1. Go to: HR → Employees                                              │
+│     2. Click on an employee name                                          │
+│     3. Scroll to "Qualifications" section                                 │
+│     4. Click the certificate link to download                             │
+│                                                                            │
+│  EDIT QUALIFICATIONS:                                                     │
+│     1. Go to: HR → Employees → Select Employee                            │
+│     2. Click "Edit Profile"                                               │
+│     3. Modify the qualification details                                   │
+│     4. Upload a new certificate if needed                                 │
+│     5. Click "Save Changes"                                               │
+│                                                                            │
+│  DELETE QUALIFICATIONS:                                                   │
+│     1. From Edit Profile: Click "Remove" button                           │
+│     2. From Profile View: Click trash icon in Qualifications table        │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ SUPPORTED FILE FORMATS ─────────────────────────────────────────────────┐
+│                                                                            │
+│  ✅ PDF (.pdf)                                                            │
+│  ✅ Word Documents (.doc, .docx)                                          │
+│  ✅ Images (.jpg, .jpeg, .png)                                            │
+│  ❌ Maximum file size: 5MB                                                │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ TROUBLESHOOTING ────────────────────────────────────────────────────────┐
+│                                                                            │
+│  ❌ Feature not showing?                                                  │
+│     → Clear browser cache: Ctrl+Shift+Delete                              │
+│     → Refresh: Ctrl+F5                                                    │
+│     → Run setup again: http://127.0.0.1:8000/quick-setup.php              │
+│                                                                            │
+│  ❌ File upload fails?                                                    │
+│     → Check file size (max 5MB)                                           │
+│     → Check file format (PDF, DOC, DOCX, JPG, PNG)                        │
+│     → Try a different file                                                │
+│                                                                            │
+│  ❌ Downloaded file corrupted?                                            │
+│     → Re-upload the file                                                  │
+│     → Try a different format                                              │
+│                                                                            │
+│  ❌ Still not working?                                                    │
+│     → Check logs: type storage\logs\laravel.log                           │
+│     → Run setup again                                                     │
+│     → See: CERTIFICATE_UPLOAD_FIX.md                                      │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ DOCUMENTATION ──────────────────────────────────────────────────────────┐
+│                                                                            │
+│  📖 SETUP_README.md                                                       │
+│     → Quick 2-minute setup guide                                          │
+│                                                                            │
+│  📖 QUALIFICATION_UPLOAD_GUIDE.md                                         │
+│     → Complete user guide with all features                               │
+│                                                                            │
+│  📖 CERTIFICATE_UPLOAD_FIX.md                                             │
+│     → Technical details and troubleshooting                               │
+│                                                                            │
+│  📖 IMPLEMENTATION_SUMMARY.md                                             │
+│     → Complete implementation overview                                    │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ QUICK COMMANDS ─────────────────────────────────────────────────────────┐
+│                                                                            │
+│  Run setup:                                                               │
+│     php artisan migrate --force                                           │
+│     php artisan cache:clear                                               │
+│     php artisan config:clear                                              │
+│     php artisan view:clear                                                │
+│     php artisan route:clear                                               │
+│     php artisan storage:link                                              │
+│                                                                            │
+│  Check migration status:                                                  │
+│     php artisan migrate:status                                            │
+│                                                                            │
+│  View logs:                                                               │
+│     type storage\logs\laravel.log                                         │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ KEY FEATURES ───────────────────────────────────────────────────────────┐
+│                                                                            │
+│  ✅ Upload certificates (PDF, DOC, DOCX, JPG, PNG)                       │
+│  ✅ Download certificates                                                 │
+│  ✅ Edit qualifications                                                   │
+│  ✅ Delete qualifications                                                 │
+│  ✅ Secure file storage                                                   │
+│  ✅ Organized by employee ID                                              │
+│  ✅ Automatic file naming                                                 │
+│  ✅ File validation                                                       │
+│  ✅ Size limits (5MB max)                                                 │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║  STATUS: ✅ READY TO USE                                                  ║
+║                                                                            ║
+║  NEXT STEP: Run http://127.0.0.1:8000/quick-setup.php                    ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝

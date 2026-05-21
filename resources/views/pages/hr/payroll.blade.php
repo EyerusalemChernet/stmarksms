@@ -119,6 +119,7 @@
                         <span class="badge badge-{{ $pr->statusBadgeClass() }}">{{ ucfirst($pr->status) }}</span>
                     </td>
                     <td>
+                        @if($pr)
                         <a href="{{ route('hr.payroll.edit', $pr->id) }}" class="btn btn-xs btn-primary">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -138,6 +139,9 @@
                                 <i class="bi bi-cash"></i>
                             </button>
                         </form>
+                        @endif
+                        @else
+                        <span class="text-muted small">Not generated</span>
                         @endif
                     </td>
                     @else

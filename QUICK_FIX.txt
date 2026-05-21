@@ -1,0 +1,123 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║              QUICK FIX - CERTIFICATE NOT SHOWING IN PROFILE               ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+PROBLEM:
+  ✅ Certificate uploads successfully
+  ❌ Certificate does NOT appear in profile with download button
+
+SOLUTION (3 Steps):
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1: Clear Caches
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open Command Prompt and run:
+
+  cd c:\laragon\www\stmarksms
+  php artisan cache:clear
+  php artisan config:clear
+  php artisan view:clear
+  php artisan route:clear
+
+Wait for all commands to complete.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 2: Refresh Browser
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Press: Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 3: Test Again
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Go to: HR → Employees
+2. Click on any employee
+3. Click "Edit Profile"
+4. Scroll to "Qualifications"
+5. Upload a certificate
+6. Click "Save Changes"
+7. Go back to profile
+8. Scroll to "Qualifications"
+9. Certificate should now appear with download button ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IF STILL NOT WORKING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Run diagnostic:
+  http://127.0.0.1:8000/diagnose-certificates.php
+
+This will check:
+  ✓ Database migration
+  ✓ Storage directory
+  ✓ Storage link
+  ✓ Model methods
+  ✓ View files
+  ✓ Controller methods
+  ✓ Recent errors
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMMON FIXES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If diagnostic shows errors:
+
+1. Storage link missing:
+   php artisan storage:link
+
+2. Directory not writable:
+   icacls storage /grant:r "%username%":F /t
+
+3. Migration not run:
+   php artisan migrate --force
+
+4. Still not working:
+   php artisan storage:link
+   php artisan cache:clear
+   php artisan config:clear
+   php artisan view:clear
+   php artisan route:clear
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT WAS FIXED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Added hidden ID field to qualifications form
+   File: resources/views/pages/hr/profile_edit.blade.php
+
+2. Improved controller to preserve certificate paths
+   File: app/Http/Controllers/SupportTeam/HRController.php
+
+3. Created diagnostic script
+   File: diagnose-certificates.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DOCUMENTATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Read: FIX_CERTIFICATE_NOT_SHOWING.md
+
+For complete details and troubleshooting.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STATUS: ✅ FIXED
+
+Try the 3-step solution above. It should work now!
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║                    FOLLOW THE 3 STEPS ABOVE TO FIX IT                     ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝

@@ -1,0 +1,123 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║                    PHP NOT FOUND - QUICK FIX                              ║
+║                                                                            ║
+║              The issue: PHP is not in your system PATH                    ║
+║              The solution: Use one of the methods below                   ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+⚡ FASTEST METHOD (30 seconds)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open browser and go to:
+   http://127.0.0.1:8000/quick-setup.php
+
+Wait for "✅ Setup Complete!" message
+
+Then:
+   1. Press Ctrl+F5 to refresh browser
+   2. Go to HR → Contract Management
+   3. Done! ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🖥️ METHOD 2: Using Batch File (1 minute)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Open Command Prompt (NOT PowerShell)
+   - Press Win + R
+   - Type: cmd
+   - Press Enter
+
+Step 2: Navigate to project
+   cd c:\laragon\www\stmarksms
+
+Step 3: Run batch file
+   clear-caches.bat
+
+Step 4: Wait for completion
+
+Step 5: Refresh browser (Ctrl+F5)
+
+Step 6: Go to HR → Contract Management
+
+Done! ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔵 METHOD 3: Using PowerShell Script (1 minute)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: You're already in PowerShell, so just run:
+   powershell -ExecutionPolicy Bypass -File clear-caches.ps1
+
+Step 2: Wait for completion
+
+Step 3: Refresh browser (Ctrl+F5)
+
+Step 4: Go to HR → Contract Management
+
+Done! ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⌨️ METHOD 4: Manual Commands (2 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In PowerShell, run these commands one by one:
+
+C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan cache:clear
+
+C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan config:clear
+
+C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan view:clear
+
+C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan route:clear
+
+Then:
+   1. Refresh browser (Ctrl+F5)
+   2. Go to HR → Contract Management
+   3. Done! ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ WHAT YOU'LL SEE AFTER CLEARING CACHE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When you go to HR → Contract Management and click "Renew Contract":
+
+✅ Confirmation dialog appears
+✅ Shows readable date format (e.g., "May 18, 2026")
+✅ Shows both ISO and readable formats
+✅ Max date validation (can't set more than 10 years)
+✅ Consistent 60-day filter
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 RECOMMENDED: Use Method 1 (Browser Setup)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+It's the fastest and doesn't require any command line:
+
+   http://127.0.0.1:8000/quick-setup.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For more details, see:
+   FIX_PHP_NOT_FOUND.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CHOOSE ONE METHOD AND FOLLOW THE STEPS!
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║         FASTEST: http://127.0.0.1:8000/quick-setup.php                   ║
+║                                                                            ║
+║         ALTERNATIVE: Run clear-caches.bat in Command Prompt               ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
