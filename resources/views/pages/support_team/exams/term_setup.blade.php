@@ -217,7 +217,7 @@
 
         {{-- Auto-Promotion --}}
         @if(Qs::userIsSuperAdmin())
-        <div class="ts-card">
+        <div class="ts-card" id="auto-promotion">
             <div class="ts-card-header">
                 <div class="d-flex align-items-center" style="gap:8px;">
                     <i class="bi bi-arrow-up-circle" style="color:#10b981;font-size:16px;"></i>

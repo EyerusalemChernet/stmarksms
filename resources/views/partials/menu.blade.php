@@ -60,11 +60,15 @@
                                 @endforeach
                             </ul>
                         </li>
-                        <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.promotion','students.promotion_manage']) ? 'nav-item-expanded' : '' }}">
+                        <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.promotion','students.promotion_manage','promotion_rules.index','term_setup.index']) ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link"><i class="bi bi-arrow-up-circle mr-1"></i>Promotion</a>
                             <ul class="nav nav-group-sub">
                                 <li class="nav-item"><a href="{{ route('students.promotion') }}" class="nav-link {{ Route::is('students.promotion') ? 'active' : '' }}">Promote Students</a></li>
                                 <li class="nav-item"><a href="{{ route('students.promotion_manage') }}" class="nav-link {{ Route::is('students.promotion_manage') ? 'active' : '' }}">Manage Promotions</a></li>
+                                @if(Qs::userIsSuperAdmin())
+                                <li class="nav-item"><a href="{{ route('promotion_rules.index') }}" class="nav-link {{ Route::is('promotion_rules.*') ? 'active' : '' }}">Promotion Rules</a></li>
+                                <li class="nav-item"><a href="{{ route('term_setup.index') }}#auto-promotion" class="nav-link {{ Route::is('term_setup.index') ? 'active' : '' }}">Auto-Promotion</a></li>
+                                @endif
                             </ul>
                         </li>
                         <li class="nav-item"><a href="{{ route('students.graduated') }}" class="nav-link {{ Route::is('students.graduated') ? 'active' : '' }}"><i class="bi bi-mortarboard mr-1"></i>Graduated</a></li>
@@ -188,7 +192,6 @@
                 {{-- Settings --}}
                 <li class="sidebar-section-label">Settings</li>
                 <li class="nav-item"><a href="{{ route('rules.index') }}" class="nav-link {{ Route::is('rules.index') ? 'active' : '' }}"><i class="bi bi-sliders"></i><span>Rules Engine</span></a></li>
-                <li class="nav-item"><a href="{{ route('promotion_rules.index') }}" class="nav-link {{ Route::is('promotion_rules.*') ? 'active' : '' }}"><i class="bi bi-arrow-up-circle"></i><span>Promotion Rules</span></a></li>
                 <li class="nav-item"><a href="{{ route('audit.index') }}" class="nav-link {{ Route::is('audit.index') ? 'active' : '' }}"><i class="bi bi-journal-text"></i><span>Audit Logs</span></a></li>
                 @if(Qs::userIsSuperAdmin())
                 <li class="nav-item"><a href="{{ route('settings') }}" class="nav-link {{ Route::is('settings') ? 'active' : '' }}"><i class="bi bi-gear"></i><span>System Settings</span></a></li>

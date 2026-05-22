@@ -32,45 +32,50 @@
 <div class="alert alert-danger border-0 mb-3">{{ session('flash_danger') }}</div>
 @endif
 
-{{-- Rules grouped by type --}}
 @php
-    $grouped = $rules->groupBy('rule_type');
-    $typeColors = [
-        'min_overall_average'    => ['bg'=>'#dbeafe','color'=>'#1d4ed8'],
-        'core_subject_min_score' => ['bg'=>'#ede9fe','color'=>'#6d28d9'],
-        'max_failed_subjects'    => ['bg'=>'#fee2e2','color'=>'#991b1b'],
-        'min_attendance_rate'    => ['bg'=>'#d1fae5','color'=>'#065f46'],
-        'fee_clearance_required' => ['bg'=>'#fef3c7','color'=>'#92400e'],
-        'discipline_restriction' => ['bg'=>'#fce7f3','color'=>'#9d174d'],
-        'conditional_promotion'  => ['bg'=>'#f0fdf4','color'=>'#166534'],
-    ];
+$typeColors = [
+    'min_overall_average'    => ['bg'=>'#dbeafe','color'=>'#1d4ed8'],
+    'core_subject_min_score' => ['bg'=>'#ede9fe','color'=>'#6d28d9'],
+    'max_failed_subjects'    => ['bg'=>'#fee2e2','color'=>'#991b1b'],
+    'min_attendance_rate'    => ['bg'=>'#d1fae5','color'=>'#065f46'],
+    'fee_clearance_required' => ['bg'=>'#fef3c7','color'=>'#92400e'],
+    'discipline_restriction' => ['bg'=>'#fce7f3','color'=>'#9d174d'],
+    'conditional_promotion'  => ['bg'=>'#f0fdf4','color'=>'#166534'],
+];
 @endphp
 
 @forelse($rules as $rule)
-<div class="rule-card {{ !$rule->is_active ? 'inactive' : '' }}">
+@php
+    $bg    = $typeColors[$rule->rule_type]['bg']    ?? '#f1f5f9';
+    $color = $typeColors[$rule->rule_type]['color'] ?? '#475569';
+@endphp
+<div class="rule-card {{ $rule->is_active ? '' : 'inactive' }}">
     <div class="d-flex align-items-start justify-content-between" style="gap:12px;">
 
-        {{-- Icon + name --}}
+        {{-- Icon + info --}}
         <div class="d-flex align-items-start" style="gap:12px;flex:1;min-width:0;">
-            <div style="width:40px;height:40px;border-radius:10px;background:{{ $typeColors[$rule->rule_type]['bg'] ?? '#f1f5f9' }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="bi {{ $rule->ruleIcon() }}" style="font-size:18px;color:{{ $typeColors[$rule->rule_type]['color'] ?? '#475569' }};"></i>
+            <div style="width:40px;height:40px;border-radius:10px;background:{{ $bg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="bi {{ $rule->ruleIcon() }}" style="font-size:18px;color:{{ $color }};"></i>
             </div>
             <div style="flex:1;min-width:0;">
                 <div class="d-flex align-items-center flex-wrap" style="gap:8px;margin-bottom:4px;">
                     <strong style="font-size:14px;color:#1e293b;">{{ $rule->name }}</strong>
-                    <span class="rule-type-badge" style="background:{{ $typeColors[$rule->rule_type]['bg'] ?? '#f1f5f9' }};color:{{ $typeColors[$rule->rule_type]['color'] ?? '#475569' }};">
+                    <span class="rule-type-badge" style="background:{{ $bg }};color:{{ $color }};">
                         {{ $rule->ruleTypeLabel() }}
                     </span>
                     <span class="scope-badge">{{ $rule->scopeLabel() }}</span>
                 </div>
 
-                {{-- Threshold display --}}
                 @if($rule->hasThreshold() && $rule->threshold_value !== null)
                 <div style="font-size:13px;color:#475569;margin-bottom:4px;">
                     <i class="bi bi-funnel mr-1"></i>
-                    Condition: <strong>{{ $rule->operatorLabel() }} {{ $rule->threshold_value }}
-                    @if(in_array($rule->rule_type, ['min_overall_average','core_subject_min_score','min_attendance_rate','conditional_promotion']))%@endif
-                    @if($rule->rule_type === 'max_failed_subjects') subjects@endif
+                    Condition: <strong>
+                        {{ $rule->operatorLabel() }} {{ $rule->threshold_value }}
+                        @if(in_array($rule->rule_type, ['min_overall_average','core_subject_min_score','min_attendance_rate','conditional_promotion']))
+                            %
+                        @elseif($rule->rule_type === 'max_failed_subjects')
+                            subjects
+                        @endif
                     </strong>
                 </div>
                 @endif
@@ -81,27 +86,23 @@
             </div>
         </div>
 
-        {{-- Status + actions --}}
+        {{-- Actions --}}
         <div class="d-flex align-items-center" style="gap:8px;flex-shrink:0;">
-            {{-- Active toggle --}}
             <form method="POST" action="{{ route('promotion_rules.toggle', $rule->id) }}" class="d-inline">
                 @csrf @method('PATCH')
-                <button type="submit" class="btn btn-xs {{ $rule->is_active ? 'btn-success' : 'btn-outline-secondary' }}"
-                        title="{{ $rule->is_active ? 'Click to deactivate' : 'Click to activate' }}">
+                <button type="submit" class="btn btn-xs {{ $rule->is_active ? 'btn-success' : 'btn-outline-secondary' }}">
                     <span class="status-dot" style="background:{{ $rule->is_active ? '#10b981' : '#94a3b8' }};"></span>
                     {{ $rule->is_active ? 'Active' : 'Inactive' }}
                 </button>
             </form>
 
-            {{-- Edit --}}
             <button type="button" class="btn btn-xs btn-outline-secondary"
                     onclick="openEditModal({{ $rule->id }}, @json($rule))">
                 <i class="bi bi-pencil"></i>
             </button>
 
-            {{-- Delete --}}
             <form method="POST" action="{{ route('promotion_rules.destroy', $rule->id) }}" class="d-inline"
-                  onsubmit="return confirm('Delete rule \'{{ $rule->name }}\'?')">
+                  onsubmit="return confirm('Delete rule {{ addslashes($rule->name) }}?')">
                 @csrf @method('DELETE')
                 <button type="submit" class="btn btn-xs btn-outline-danger">
                     <i class="bi bi-trash"></i>
@@ -117,7 +118,7 @@
 </div>
 @endforelse
 
-{{-- ── Create / Edit Modal ──────────────────────────────────────────────── --}}
+{{-- Modal --}}
 <div id="rule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px;">
     <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.2);">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -138,8 +139,8 @@
                 <label style="font-size:13px;font-weight:600;">Rule Type <span class="text-danger">*</span></label>
                 <select name="rule_type" id="f-rule-type" required class="form-control" onchange="onRuleTypeChange()">
                     <option value="">— Select type —</option>
-                    @foreach($ruleTypes as $val => $label)
-                    <option value="{{ $val }}">{{ $label }}</option>
+                    @foreach($ruleTypes as $rtVal => $rtLabel)
+                    <option value="{{ $rtVal }}">{{ $rtLabel }}</option>
                     @endforeach
                 </select>
             </div>
@@ -150,8 +151,8 @@
                         <label style="font-size:13px;font-weight:600;">Operator</label>
                         <select name="condition_operator" id="f-operator" class="form-control">
                             <option value="">— None —</option>
-                            @foreach($operators as $val => $label)
-                            <option value="{{ $val }}">{{ $label }}</option>
+                            @foreach($operators as $opVal => $opLabel)
+                            <option value="{{ $opVal }}">{{ $opLabel }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -179,8 +180,8 @@
                 <label style="font-size:13px;font-weight:600;">Class</label>
                 <select name="scope_class_id" class="form-control">
                     <option value="">— Select class —</option>
-                    @foreach($classes as $c)
-                    <option value="{{ $c->id }}">{{ $c->name }}</option>
+                    @foreach($classes as $cls)
+                    <option value="{{ $cls->id }}">{{ $cls->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -189,15 +190,16 @@
                 <label style="font-size:13px;font-weight:600;">Department</label>
                 <select name="scope_department_id" class="form-control">
                     <option value="">— Select department —</option>
-                    @foreach($departments as $d)
-                    <option value="{{ $d->id }}">{{ $d->name }}</option>
+                    @foreach($departments as $dept)
+                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
                     @endforeach
                 </select>
             </div>
 
             <div id="scope-year-row" class="form-group mb-3" style="display:none;">
                 <label style="font-size:13px;font-weight:600;">Academic Year</label>
-                <input type="text" name="scope_year" class="form-control" placeholder="e.g. {{ $currentYear }}" value="{{ $currentYear }}">
+                <input type="text" name="scope_year" class="form-control"
+                       placeholder="e.g. {{ $currentYear }}" value="{{ $currentYear }}">
             </div>
 
             <div class="form-group mb-4">
@@ -226,68 +228,49 @@ function openCreateModal() {
     document.getElementById('method-field').innerHTML = '';
     document.getElementById('type-group').style.display = '';
     document.getElementById('f-rule-type').disabled = false;
-    // Reset fields
     ['f-name','f-threshold','f-description'].forEach(function(id){ document.getElementById(id).value = ''; });
     document.getElementById('f-rule-type').value = '';
     document.getElementById('f-operator').value = '';
     document.getElementById('f-scope-type').value = 'school';
-    onScopeChange();
-    onRuleTypeChange();
+    onScopeChange(); onRuleTypeChange();
     document.getElementById('rule-modal').style.display = 'flex';
 }
 
 function openEditModal(id, rule) {
     document.getElementById('modal-title').textContent = 'Edit Rule';
-    var baseUrl = '{{ url('super_admin/promotion-rules') }}/' + id;
-    document.getElementById('rule-form').action = baseUrl;
+    document.getElementById('rule-form').action = '{{ url('super_admin/promotion-rules') }}/' + id;
     document.getElementById('method-field').innerHTML = '<input type="hidden" name="_method" value="PUT">';
-    // Hide type selector (can't change type after creation)
     document.getElementById('type-group').style.display = 'none';
-
     document.getElementById('f-name').value        = rule.name || '';
     document.getElementById('f-operator').value    = rule.condition_operator || '';
     document.getElementById('f-threshold').value   = rule.threshold_value || '';
     document.getElementById('f-scope-type').value  = rule.scope_type || 'school';
     document.getElementById('f-description').value = rule.description || '';
-
-    // Scope selectors
     onScopeChange();
-    if (rule.scope_type === 'class' && rule.scope_class_id) {
+    if (rule.scope_type === 'class' && rule.scope_class_id)
         document.querySelector('[name=scope_class_id]').value = rule.scope_class_id;
-    }
-    if (rule.scope_type === 'department' && rule.scope_department_id) {
+    if (rule.scope_type === 'department' && rule.scope_department_id)
         document.querySelector('[name=scope_department_id]').value = rule.scope_department_id;
-    }
-    if (rule.scope_type === 'year' && rule.scope_year) {
+    if (rule.scope_type === 'year' && rule.scope_year)
         document.querySelector('[name=scope_year]').value = rule.scope_year;
-    }
-
     onRuleTypeChange(rule.rule_type);
     document.getElementById('rule-modal').style.display = 'flex';
 }
 
-function closeModal() {
-    document.getElementById('rule-modal').style.display = 'none';
-}
-
-document.getElementById('rule-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-});
+function closeModal() { document.getElementById('rule-modal').style.display = 'none'; }
+document.getElementById('rule-modal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
 
 function onScopeChange() {
-    var scope = document.getElementById('f-scope-type').value;
-    document.getElementById('scope-class-row').style.display = scope === 'class'      ? '' : 'none';
-    document.getElementById('scope-dept-row').style.display  = scope === 'department' ? '' : 'none';
-    document.getElementById('scope-year-row').style.display  = scope === 'year'       ? '' : 'none';
+    var s = document.getElementById('f-scope-type').value;
+    document.getElementById('scope-class-row').style.display = s==='class'      ? '' : 'none';
+    document.getElementById('scope-dept-row').style.display  = s==='department' ? '' : 'none';
+    document.getElementById('scope-year-row').style.display  = s==='year'       ? '' : 'none';
 }
 
 function onRuleTypeChange(typeOverride) {
     var type = typeOverride || document.getElementById('f-rule-type').value;
-    var noThreshold = ['fee_clearance_required', 'discipline_restriction'];
-    var show = type && !noThreshold.includes(type);
-    document.getElementById('threshold-row').style.display = show ? '' : 'none';
-
-    // Update threshold label
+    var noThreshold = ['fee_clearance_required','discipline_restriction'];
+    document.getElementById('threshold-row').style.display = (type && !noThreshold.includes(type)) ? '' : 'none';
     var labels = {
         'min_overall_average':    'Minimum Average (%)',
         'core_subject_min_score': 'Minimum Score (%)',
@@ -295,8 +278,7 @@ function onRuleTypeChange(typeOverride) {
         'min_attendance_rate':    'Minimum Attendance (%)',
         'conditional_promotion':  'Minimum Average for Conditional (%)',
     };
-    var lbl = labels[type] || 'Threshold Value';
-    document.getElementById('threshold-label').textContent = lbl;
+    document.getElementById('threshold-label').textContent = labels[type] || 'Threshold Value';
 }
 </script>
 @endsection
