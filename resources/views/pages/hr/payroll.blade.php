@@ -60,6 +60,88 @@
     @endforeach
 </div>
 
+{{-- Advanced Reports Summary --}}
+@if(isset($reports) && isset($reports['summary']))
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-bar-chart mr-1"></i>Financial Summary</h6></div>
+            <div class="card-body small">
+                <table class="table table-sm mb-0">
+                    <tr><td>Total Base Salary</td><td class="text-right font-weight-bold">{{ number_format($reports['summary']['financial_summary']['total_base_salary'], 2) }}</td></tr>
+                    <tr><td>Total Allowances</td><td class="text-right text-success">{{ number_format($reports['summary']['financial_summary']['total_allowances'], 2) }}</td></tr>
+                    <tr><td>Total Deductions</td><td class="text-right text-danger">{{ number_format($reports['summary']['financial_summary']['total_deductions'], 2) }}</td></tr>
+                    <tr><td><strong>Total Net Pay</strong></td><td class="text-right font-weight-bold">{{ number_format($reports['summary']['financial_summary']['total_net_pay'], 2) }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-calculator mr-1"></i>Tax & Pension</h6></div>
+            <div class="card-body small">
+                <table class="table table-sm mb-0">
+                    <tr><td>Total Income Tax</td><td class="text-right">{{ number_format($reports['summary']['tax_and_deductions']['total_income_tax'], 2) }}</td></tr>
+                    <tr><td>Employee Pension (7%)</td><td class="text-right">{{ number_format($reports['summary']['tax_and_deductions']['total_employee_pension'], 2) }}</td></tr>
+                    <tr><td>Employer Pension (11%)</td><td class="text-right text-muted">{{ number_format($reports['summary']['tax_and_deductions']['total_employer_pension'], 2) }}</td></tr>
+                    <tr><td><strong>Employees</strong></td><td class="text-right font-weight-bold">{{ $reports['summary']['total_employees'] }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Attendance Summary --}}
+@if(isset($reports['attendance']))
+<div class="card mb-3">
+    <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-calendar3 mr-1"></i>Attendance Summary</h6></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 text-center">
+                <h5 class="text-success">{{ $reports['attendance']['total_present_days'] }}</h5>
+                <small>Total Present Days</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h5 class="text-danger">{{ $reports['attendance']['total_absent_days'] }}</h5>
+                <small>Total Absent Days</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h5 class="text-info">{{ $reports['attendance']['total_leave_days'] }}</h5>
+                <small>Total Leave Days</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h5 class="text-warning">{{ $reports['attendance']['employees_with_absence'] }}</h5>
+                <small>Employees with Absence</small>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- Overtime Summary --}}
+@if(isset($reports['overtime']))
+<div class="card mb-3">
+    <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-clock-history mr-1"></i>Overtime Summary</h6></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <h5 class="text-primary">{{ $reports['overtime']['total_overtime_hours'] }}</h5>
+                <small>Total Overtime Hours</small>
+            </div>
+            <div class="col-md-4 text-center">
+                <h5 class="text-success">{{ number_format($reports['overtime']['total_overtime_pay'], 2) }}</h5>
+                <small>Total Overtime Pay</small>
+            </div>
+            <div class="col-md-4 text-center">
+                <h5 class="text-info">{{ $reports['overtime']['employees_with_overtime'] }}</h5>
+                <small>Employees with Overtime</small>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+@endif
+
 {{-- Payroll table --}}
 <div class="card">
     <div class="card-header bg-white">
@@ -119,7 +201,6 @@
                         <span class="badge badge-{{ $pr->statusBadgeClass() }}">{{ ucfirst($pr->status) }}</span>
                     </td>
                     <td>
-                        @if($pr)
                         <a href="{{ route('hr.payroll.edit', $pr->id) }}" class="btn btn-xs btn-primary">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -139,9 +220,6 @@
                                 <i class="bi bi-cash"></i>
                             </button>
                         </form>
-                        @endif
-                        @else
-                        <span class="text-muted small">Not generated</span>
                         @endif
                     </td>
                     @else

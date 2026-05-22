@@ -107,13 +107,13 @@
             <div class="col-md-3">
                 <div class="card text-center p-2">
                     <h5 class="text-success mb-0">+{{ number_format($payroll->allowances, 2) }}</h5>
-                    <small class="text-muted">Manual Earnings</small>
+                    <small class="text-muted">Allowances</small>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card text-center p-2">
                     <h5 class="text-danger mb-0">-{{ number_format($payroll->deductions, 2) }}</h5>
-                    <small class="text-muted">Total Deductions</small>
+                    <small class="text-muted">Deductions</small>
                 </div>
             </div>
             <div class="col-md-3">
@@ -123,11 +123,79 @@
                 </div>
             </div>
         </div>
+
+        {{-- Advanced Analytics --}}
+        @if(isset($earnings) && isset($deductions))
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-white"><h6 class="card-title mb-0">Gross Pay</h6></div>
+                    <div class="card-body text-center">
+                        <h4 class="text-success">{{ number_format($payroll->base_salary + $payroll->allowances, 2) }}</h4>
+                        <small class="text-muted">Before deductions</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-white"><h6 class="card-title mb-0">Tax Rate</h6></div>
+                    <div class="card-body text-center">
+                        <h4 class="text-danger">{{ $tax_rate }}%</h4>
+                        <small class="text-muted">Effective tax rate</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-white"><h6 class="card-title mb-0">Processing</h6></div>
+                    <div class="card-body text-center">
+                        <h4 class="text-info">{{ $processing_time ?? 'Pending' }}</h4>
+                        <small class="text-muted">Time to approval</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Earnings Breakdown --}}
+        @if(count($earnings) > 0)
+        <div class="card mb-3">
+            <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-plus-circle text-success mr-1"></i>Earnings Breakdown</h6></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    @foreach($earnings as $label => $amount)
+                    <tr>
+                        <td>{{ ucfirst(str_replace('_', ' ', $label)) }}</td>
+                        <td class="text-right text-success font-weight-bold">{{ number_format($amount, 2) }}</td>
+                    </tr>
+                    @endforeach
+                </table>
+            </div>
+        </div>
+        @endif
+
+        {{-- Deductions Breakdown --}}
+        @if(count($deductions) > 0)
+        <div class="card mb-3">
+            <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-dash-circle text-danger mr-1"></i>Deductions Breakdown</h6></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    @foreach($deductions as $label => $amount)
+                    <tr>
+                        <td>{{ ucfirst(str_replace('_', ' ', $label)) }}</td>
+                        <td class="text-right text-danger font-weight-bold">{{ number_format($amount, 2) }}</td>
+                    </tr>
+                    @endforeach
+                </table>
+            </div>
+        </div>
+        @endif
+        @endif
+
         <div class="alert alert-light border py-2 mb-3 small">
             <i class="bi bi-calculator mr-1"></i>
             <strong>Formula:</strong>
-            Net Pay = (Base Salary {{ $payroll->allowances > 0 ? '+ Manual Earnings' : '' }})
-            − (Tax + Pension{{ $payroll->deductions - $payroll->income_tax - $payroll->employee_pension > 0 ? ' + Manual Deductions' : '' }})
+            Net Pay = (Base Salary {{ $payroll->allowances > 0 ? '+ Allowances' : '' }})
+            − (Deductions)
             = <strong>{{ $payroll->currency }} {{ number_format($payroll->net_pay, 2) }}</strong>
         </div>
 
