@@ -404,7 +404,10 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
     /*************** Payroll *****************/
     Route::get('/payroll',                'PayrollController@index')->name('hr.payroll');
     Route::post('/payroll/generate',      'PayrollController@generate')->name('hr.payroll.generate');
+    Route::get('/payroll/{id}',           'PayrollController@show')->name('hr.payroll.show');
     Route::get('/payroll/{id}/edit',      'PayrollController@edit')->name('hr.payroll.edit');
+    Route::get('/payroll/{id}/pdf',       'PayrollController@pdf')->name('hr.payroll.pdf');
+    Route::get('/payroll/{id}/export',    'PayrollController@export')->name('hr.payroll.export');
     Route::put('/payroll/{id}',           'PayrollController@update')->name('hr.payroll.update');
     Route::post('/payroll/{id}/approve',  'PayrollController@approve')->name('hr.payroll.approve');
     Route::post('/payroll/{id}/paid',     'PayrollController@markPaid')->name('hr.payroll.paid');

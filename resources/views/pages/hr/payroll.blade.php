@@ -199,30 +199,55 @@
                         <span class="badge badge-{{ $pr->statusBadgeClass() }}">{{ ucfirst($pr->status) }}</span>
                     </td>
                     <td>
-                        <!-- DEBUG: Employee {{ $emp->id }}, Payroll exists: {{ $pr ? 'yes' : 'no' }}, Payroll ID: {{ $pr?->id ?? 'NULL' }} -->
-                        @if($pr && $pr->id)
-                            <a href="{{ route('hr.payroll.edit', $pr->id) }}" class="btn btn-xs btn-primary" title="Edit">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            @if($pr->isDraft())
-                            <form action="{{ route('hr.payroll.approve', $pr->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-xs btn-info" title="Approve"
-                                        onclick="return confirm('Approve this payroll?')">
-                                    <i class="bi bi-check"></i>
-                                </button>
-                            </form>
-                            @elseif($pr->isApproved())
-                            <form action="{{ route('hr.payroll.paid', $pr->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-xs btn-success" title="Mark Paid"
-                                        onclick="return confirm('Mark as paid?')">
-                                    <i class="bi bi-cash"></i>
-                                </button>
-                            </form>
+                        @if($pr)
+                            @php
+                                $payroll_id = is_numeric($pr->id) ? (int)$pr->id : null;
+                            @endphp
+                            
+                            @if($payroll_id)
+                                <!-- View payroll details -->
+                                <a href="{{ route('hr.payroll.show', $payroll_id) }}" class="btn btn-xs btn-info" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                
+                                <!-- PDF download -->
+                                <a href="{{ route('hr.payroll.pdf', $payroll_id) }}" class="btn btn-xs btn-danger" target="_blank" title="Download PDF">
+                                    <i class="bi bi-file-pdf"></i>
+                                </a>
+                                
+                                <!-- CSV export -->
+                                <a href="{{ route('hr.payroll.export', $payroll_id) }}" class="btn btn-xs btn-success" title="Export CSV">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                
+                                <!-- Edit payroll -->
+                                <a href="{{ route('hr.payroll.edit', $payroll_id) }}" class="btn btn-xs btn-primary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                
+                                <!-- Workflow actions -->
+                                @if($pr->isDraft())
+                                <form action="{{ route('hr.payroll.approve', $payroll_id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-xs btn-warning" title="Approve"
+                                            onclick="return confirm('Approve this payroll?')">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                </form>
+                                @elseif($pr->isApproved())
+                                <form action="{{ route('hr.payroll.paid', $payroll_id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-xs btn-success" title="Mark Paid"
+                                            onclick="return confirm('Mark as paid?')">
+                                        <i class="bi bi-cash"></i>
+                                    </button>
+                                </form>
+                                @endif
+                            @else
+                                <span class="text-danger small">⚠ Invalid ID</span>
                             @endif
                         @else
-                            <span class="text-muted small">{{ $pr ? '(No ID)' : '—' }}</span>
+                            <span class="text-muted small">—</span>
                         @endif
                     </td>
                     @else

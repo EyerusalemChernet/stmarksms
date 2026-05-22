@@ -117,43 +117,82 @@ class PayrollController extends Controller
 
     public function edit($id = null)
     {
-        // Debug: Log all request details
-        \Log::info("PayrollController@edit - Debug Info", [
-            'id_param' => $id,
+        // ── Step 1: Validate ID parameter ────────────────────────────────────
+        $original_id = $id;
+        
+        \Log::info("PayrollController@edit START", [
+            'raw_id' => $id,
             'id_type' => gettype($id),
             'id_empty' => empty($id),
             'url' => request()->fullUrl(),
-            'path' => request()->path(),
             'route_params' => request()->route()->parameters(),
-            'all_params' => request()->all(),
         ]);
         
+        // Try multiple sources to get the ID
         if (empty($id)) {
-            // Try to get ID from URL directly
-            $id_from_url = request()->route('id');
-            \Log::error("Payroll edit: Empty ID - trying alternate sources", [
-                'id_param' => $id,
-                'id_from_route' => $id_from_url,
-                'route_params' => request()->route()->parameters(),
-                'segment_3' => request()->segment(3),
-            ]);
+            $id = request()->route('id') ?? request()->segment(3) ?? request()->get('payroll_id');
             
-            if (empty($id_from_url)) {
+            if (empty($id)) {
+                \Log::error("PayrollController@edit FAILED - NO ID", [
+                    'attempts' => [
+                        'parameter' => $original_id,
+                        'route' => request()->route('id'),
+                        'segment' => request()->segment(3),
+                        'query' => request()->get('payroll_id'),
+                    ]
+                ]);
+                
                 return redirect()->route('hr.payroll')
-                    ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
+                    ->with('flash_danger', "Invalid request: No payroll ID provided. Please select a payroll from the list.");
             }
-            $id = $id_from_url;
         }
+        
+        // ── Step 2: Validate ID is numeric ───────────────────────────────────
+        if (!is_numeric($id) || (int)$id <= 0) {
+            \Log::error("PayrollController@edit INVALID ID", ['id' => $id, 'numeric' => is_numeric($id)]);
+            
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Invalid payroll ID: {$id}. Please select a valid payroll from the list.");
+        }
+        
+        $id = (int)$id;
+        
+        // ── Step 3: Fetch payroll with relationships ─────────────────────────
+        $payroll = StaffPayroll::with([
+            'employee.employmentDetails.department',
+            'employee.employmentDetails.position',
+            'items',
+            'approvedBy'
+        ])->find($id);
 
-        $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
-            ->find($id);
-
-        \Log::info("Payroll lookup result", ['id' => $id, 'found' => $payroll ? 'yes' : 'no']);
+        \Log::info("PayrollController@edit LOOKUP", [
+            'id_requested' => $id,
+            'payroll_found' => $payroll ? 'yes' : 'no',
+            'payroll_data' => $payroll ? [
+                'id' => $payroll->id,
+                'employee_id' => $payroll->employee_id,
+                'month' => $payroll->month,
+                'status' => $payroll->status,
+                'employee_name' => $payroll->employee->full_name ?? 'N/A',
+            ] : null,
+        ]);
 
         if (!$payroll) {
-            \Log::warning("Payroll not found for ID: $id");
+            \Log::warning("PayrollController@edit NOT FOUND", ['id' => $id]);
+            
+            // Try to provide helpful context
+            $recent = StaffPayroll::latest()->limit(3)->pluck('id')->toArray();
+            
             return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
+                ->with('flash_danger', "Payroll record #{$id} not found. The payroll may have been deleted or doesn't exist yet. Please generate payroll for the desired month.");
+        }
+        
+        // ── Step 4: Validate payroll has employee ────────────────────────────
+        if (!$payroll->employee) {
+            \Log::error("PayrollController@edit NO EMPLOYEE", ['payroll_id' => $id, 'employee_id' => $payroll->employee_id]);
+            
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Payroll record is corrupted: associated employee not found. Contact system administrator.");
         }
 
         // ── Validate payroll integrity ───────────────────────────────────────
@@ -182,12 +221,15 @@ class PayrollController extends Controller
 
     public function update(Request $req, $id)
     {
-        $payroll = StaffPayroll::find($id);
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Invalid payroll ID.');
+        }
 
-        if (!$payroll) {
+        $payroll = StaffPayroll::findOr((int)$id, function() {
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', 'Payroll record not found.');
-        }
+        });
 
         $req->validate([
             'base_salary' => 'required|numeric|min:0',
@@ -212,7 +254,11 @@ class PayrollController extends Controller
 
     public function addItem(Request $req, $id)
     {
-        $payroll = StaffPayroll::find($id);
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return back()->with('flash_danger', 'Invalid payroll ID.');
+        }
+
+        $payroll = StaffPayroll::find((int)$id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -245,7 +291,11 @@ class PayrollController extends Controller
 
     public function removeItem(Request $req, $id)
     {
-        $payroll = StaffPayroll::find($id);
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return back()->with('flash_danger', 'Invalid payroll ID.');
+        }
+
+        $payroll = StaffPayroll::find((int)$id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -267,7 +317,11 @@ class PayrollController extends Controller
 
     public function approve($id)
     {
-        $payroll = StaffPayroll::find($id);
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return back()->with('flash_danger', 'Invalid payroll ID.');
+        }
+
+        $payroll = StaffPayroll::find((int)$id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -287,7 +341,11 @@ class PayrollController extends Controller
 
     public function markPaid($id)
     {
-        $payroll = StaffPayroll::find($id);
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return back()->with('flash_danger', 'Invalid payroll ID.');
+        }
+
+        $payroll = StaffPayroll::find((int)$id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -307,7 +365,11 @@ class PayrollController extends Controller
 
     public function revertToDraft($id)
     {
-        $payroll = StaffPayroll::find($id);
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return back()->with('flash_danger', 'Invalid payroll ID.');
+        }
+
+        $payroll = StaffPayroll::find((int)$id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -405,4 +467,151 @@ class PayrollController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    // ── SHOW (Detail View) ────────────────────────────────────────────────────
+
+    public function show($id)
+    {
+        // Validate ID
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Invalid payroll ID.');
+        }
+
+        $id = (int)$id;
+
+        // Fetch payroll
+        $payroll = StaffPayroll::with([
+            'employee.employmentDetails.department',
+            'employee.employmentDetails.position',
+            'items',
+            'approvedBy'
+        ])->find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Payroll record #{$id} not found.");
+        }
+
+        // Get analytics
+        $earnings = $payroll->getEarningsBreakdown();
+        $deductions = $payroll->getDeductionsBreakdown();
+        $tax_rate = $payroll->getEffectiveTaxRate();
+        $processing_time = $payroll->getProcessingTime();
+        $status_info = $payroll->getStatusInfo();
+
+        return view('pages.hr.payroll_show', compact(
+            'payroll', 'earnings', 'deductions', 'tax_rate', 'processing_time', 'status_info'
+        ));
+    }
+
+    // ── PDF EXPORT ────────────────────────────────────────────────────────────
+
+    public function pdf($id)
+    {
+        // Validate ID
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Invalid payroll ID.');
+        }
+
+        $id = (int)$id;
+
+        // Fetch payroll
+        $payroll = StaffPayroll::with([
+            'employee.employmentDetails.department',
+            'items',
+            'approvedBy'
+        ])->find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Payroll record #{$id} not found.");
+        }
+
+        // Get analytics
+        $earnings = $payroll->getEarningsBreakdown();
+        $deductions = $payroll->getDeductionsBreakdown();
+        $tax_rate = $payroll->getEffectiveTaxRate();
+
+        // Generate PDF
+        $pdf = PDF::loadView('pages.hr.payroll_pdf', compact(
+            'payroll', 'earnings', 'deductions', 'tax_rate'
+        ));
+
+        return $pdf->setPaper('a4', 'portrait')->download(
+            "payroll_{$payroll->employee->employee_code}_{$payroll->month}.pdf"
+        );
+    }
+
+    // ── CSV EXPORT (Single Payroll) ───────────────────────────────────────────
+
+    public function export($id)
+    {
+        // Validate ID
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Invalid payroll ID.');
+        }
+
+        $id = (int)$id;
+
+        // Fetch payroll
+        $payroll = StaffPayroll::with(['employee', 'items'])->find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Payroll record #{$id} not found.");
+        }
+
+        $filename = "payroll_{$payroll->employee->employee_code}_{$payroll->month}.csv";
+        $headers  = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($payroll) {
+            $h = fopen('php://output', 'w');
+            
+            // Header
+            fputcsv($h, ["Payroll Details — {$payroll->month}"]);
+            fputcsv($h, []);
+            
+            // Employee Info
+            fputcsv($h, ["Employee", $payroll->employee->full_name]);
+            fputcsv($h, ["Code", $payroll->employee->employee_code]);
+            fputcsv($h, ["Department", $payroll->employee->employmentDetails?->department?->name ?? '—']);
+            fputcsv($h, ["Month", $payroll->month]);
+            fputcsv($h, ["Status", ucfirst($payroll->status)]);
+            fputcsv($h, []);
+            
+            // Financial Summary
+            fputcsv($h, ["Base Salary", $payroll->base_salary]);
+            fputcsv($h, ["Allowances", $payroll->allowances]);
+            fputcsv($h, ["Gross Pay", $payroll->base_salary + $payroll->allowances]);
+            fputcsv($h, []);
+            
+            // Deductions
+            fputcsv($h, ["Income Tax", $payroll->income_tax]);
+            fputcsv($h, ["Employee Pension (7%)", $payroll->employee_pension]);
+            fputcsv($h, ["Other Deductions", $payroll->deductions - $payroll->income_tax - $payroll->employee_pension]);
+            fputcsv($h, ["Total Deductions", $payroll->deductions]);
+            fputcsv($h, []);
+            
+            // Net Pay
+            fputcsv($h, ["Net Pay", $payroll->net_pay]);
+            fputcsv($h, []);
+            
+            // Attendance
+            fputcsv($h, ["Present Days", $payroll->present_days]);
+            fputcsv($h, ["Absent Days", $payroll->absent_days]);
+            fputcsv($h, ["Leave Days", $payroll->leave_days]);
+            fputcsv($h, ["Overtime Hours", $payroll->overtime_hours]);
+            
+            fclose($h);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }
+
