@@ -9,6 +9,9 @@ use App\Models\PayrollItem;
 use App\Models\StaffPayroll;
 use App\Services\AttendanceService;
 use App\Services\PayrollService;
+use App\Services\PayrollCalculator;
+use App\Services\PayrollValidator;
+use App\Services\PayrollReport;
 use Illuminate\Http\Request;
 use PDF;
 
@@ -30,6 +33,7 @@ class PayrollController extends Controller
     {
         $month  = $req->get('month', now()->format('Y-m'));
         $status = $req->get('status', 'all');
+        $report_type = $req->get('report', 'summary');
 
         $employees = Employee::where('status', 'active')
             ->with(['employmentDetails.department', 'employmentDetails.position'])
@@ -51,10 +55,20 @@ class PayrollController extends Controller
                 ->toArray()
         );
 
+        // ── Use advanced reporting ────────────────────────────────────────────
+        $report = new PayrollReport($month, $payrolls);
+        $reports = [
+            'summary' => $report->getSummaryReport(),
+            'attendance' => $report->getAttendanceReport(),
+            'departments' => $report->getDepartmentReport(),
+            'overtime' => $report->getOvertimeReport(),
+            'compliance' => $report->getComplianceReport(),
+        ];
+
         // ── Export ───────────────────────────────────────────────────────────
         if ($req->get('export') === 'pdf') {
             $pdf = PDF::loadView('pages.hr.exports.payroll_pdf',
-                compact('employees', 'payrolls', 'month', 'status', 'statusCounts'));
+                compact('employees', 'payrolls', 'month', 'status', 'statusCounts', 'reports'));
             return $pdf->setPaper('a4', 'landscape')->download("payroll_{$month}.pdf");
         }
 
@@ -62,7 +76,7 @@ class PayrollController extends Controller
             return $this->exportCsv($employees, $payrolls, $month);
         }
 
-        return view('pages.hr.payroll', compact('employees', 'month', 'payrolls', 'status', 'statusCounts'));
+        return view('pages.hr.payroll', compact('employees', 'month', 'payrolls', 'status', 'statusCounts', 'reports', 'report_type'));
     }
 
     // ── GENERATE ─────────────────────────────────────────────────────────────
@@ -85,9 +99,37 @@ class PayrollController extends Controller
     public function edit($id)
     {
         $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
+<<<<<<< HEAD
             ->findOrFail($id);
+=======
+            ->find($id);
 
-        return view('pages.hr.payroll_edit', compact('payroll'));
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
+        }
+>>>>>>> a0b22f9 (Integrate advanced payroll system into PayrollController with validation, calculations, and reporting)
+
+        // ── Validate payroll integrity ───────────────────────────────────────
+        $validator = new PayrollValidator();
+        $validation = $validator->validatePayrollIntegrity($payroll);
+        $warnings = $validator->getWarnings();
+
+        // ── Calculate breakdown ──────────────────────────────────────────────
+        $calculator = new PayrollCalculator($payroll->employee, $payroll->month);
+        $calculations = $calculator->getCalculations();
+
+        // ── Get analytics ────────────────────────────────────────────────────
+        $earnings = $payroll->getEarningsBreakdown();
+        $deductions = $payroll->getDeductionsBreakdown();
+        $tax_rate = $payroll->getEffectiveTaxRate();
+        $processing_time = $payroll->getProcessingTime();
+        $status_info = $payroll->getStatusInfo();
+
+        return view('pages.hr.payroll_edit', compact(
+            'payroll', 'validation', 'warnings', 'calculations',
+            'earnings', 'deductions', 'tax_rate', 'processing_time', 'status_info'
+        ));
     }
 
     // ── UPDATE BASE SALARY / NOTES ────────────────────────────────────────────
@@ -203,6 +245,37 @@ class PayrollController extends Controller
         }
 
         return back()->with('flash_success', 'Payroll reverted to draft.');
+    }
+
+    // ── ADVANCED REPORTS ────────────────────────────────────────────────────
+
+    public function reports(Request $req)
+    {
+        $month = $req->get('month', now()->format('Y-m'));
+        $report_type = $req->get('type', 'summary');
+
+        $payrolls = StaffPayroll::where('month', $month)
+            ->with(['employee', 'employee.employmentDetails.department', 'approvedBy'])
+            ->get();
+
+        $report = new PayrollReport($month, $payrolls);
+
+        $report_data = match($report_type) {
+            'attendance' => $report->getAttendanceReport(),
+            'departments' => $report->getDepartmentReport(),
+            'overtime' => $report->getOvertimeReport(),
+            'compliance' => $report->getComplianceReport(),
+            'comparison' => $report->getComparisonReport(now()->subMonth()->format('Y-m')),
+            default => $report->getSummaryReport(),
+        };
+
+        if ($req->get('export') === 'json') {
+            return response()->json($report_data);
+        }
+
+        return view('pages.hr.payroll_reports', compact(
+            'month', 'report_type', 'report_data', 'payrolls'
+        ));
     }
 
     // ── CSV EXPORT ────────────────────────────────────────────────────────────
