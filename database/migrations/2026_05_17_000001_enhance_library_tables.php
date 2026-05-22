@@ -29,34 +29,37 @@ class EnhanceLibraryTables extends Migration
         });
 
         Schema::table('book_requests', function (Blueprint $table) {
-            if (!Schema::hasColumn('book_requests', 'due_date'))
-                $table->date('due_date')->nullable()->after('issued_at');
-            if (!Schema::hasColumn('book_requests', 'overdue_fine'))
-                $table->decimal('overdue_fine', 8, 2)->default(0)->after('due_date');
-            if (!Schema::hasColumn('book_requests', 'notes'))
-                $table->text('notes')->nullable()->after('overdue_fine');
+            // Add columns in correct order with proper after references
             if (!Schema::hasColumn('book_requests', 'requested_at'))
-                $table->timestamp('requested_at')->nullable()->after('notes');
+                $table->timestamp('requested_at')->nullable();
             if (!Schema::hasColumn('book_requests', 'issued_at'))
-                $table->timestamp('issued_at')->nullable()->after('requested_at');
+                $table->timestamp('issued_at')->nullable();
             if (!Schema::hasColumn('book_requests', 'returned_at'))
-                $table->timestamp('returned_at')->nullable()->after('issued_at');
+                $table->timestamp('returned_at')->nullable();
+            if (!Schema::hasColumn('book_requests', 'due_date'))
+                $table->date('due_date')->nullable();
+            if (!Schema::hasColumn('book_requests', 'overdue_fine'))
+                $table->decimal('overdue_fine', 8, 2)->default(0);
+            if (!Schema::hasColumn('book_requests', 'notes'))
+                $table->text('notes')->nullable();
         });
     }
 
     public function down(): void
     {
         Schema::table('books', function (Blueprint $table) {
-            $table->dropColumn(array_filter(
-                ['isbn','publisher','published_year','cover_image','subject_area','due_days'],
-                fn($c) => Schema::hasColumn('books', $c)
-            ));
+            $columnsToDrop = [];
+            foreach(['isbn','publisher','published_year','cover_image','subject_area','due_days'] as $c) {
+                if (Schema::hasColumn('books', $c)) $columnsToDrop[] = $c;
+            }
+            if (!empty($columnsToDrop)) $table->dropColumn($columnsToDrop);
         });
         Schema::table('book_requests', function (Blueprint $table) {
-            $table->dropColumn(array_filter(
-                ['due_date','overdue_fine','notes'],
-                fn($c) => Schema::hasColumn('book_requests', $c)
-            ));
+            $columnsToDrop = [];
+            foreach(['due_date','overdue_fine','notes','requested_at','issued_at','returned_at'] as $c) {
+                if (Schema::hasColumn('book_requests', $c)) $columnsToDrop[] = $c;
+            }
+            if (!empty($columnsToDrop)) $table->dropColumn($columnsToDrop);
         });
     }
 }

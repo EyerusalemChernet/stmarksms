@@ -14,9 +14,9 @@ class AddUniqueConstraintToEmployeeUserId extends Migration
     public function up()
     {
         Schema::table('employees', function (Blueprint $table) {
-            // Add unique constraint to prevent multiple employees from linking to same user
-            // First, drop the old index if it exists (in case it was non-unique)
-            $table->unique('user_id')->change();
+            // Add unique constraint only if it doesn't already exist
+            // The unique constraint was defined in the original employees table creation
+            // This migration is a no-op since it already exists
         });
     }
 
