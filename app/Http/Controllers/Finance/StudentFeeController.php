@@ -290,6 +290,9 @@ class StudentFeeController extends Controller
 
     protected function findInvoice($id): StudentFeeInvoice
     {
+        $id = Qs::decodeHash($id);
+        abort_if($id === '' || $id === null, 404);
+
         return StudentFeeInvoice::findOrFail($id);
     }
 
@@ -309,6 +312,8 @@ class StudentFeeController extends Controller
         return view('pages.finance.fees.payments', compact('payments','total_today','total_month'));
     }
     public function receipt($id) {
+        $id = Qs::decodeHash($id);
+        abort_if($id === '' || $id === null, 404);
         $payment = FeePayment::with(['student','invoice.fee_structure.category','invoice.fee_structure.my_class','collector'])->findOrFail($id);
         $settings = \App\Models\Setting::pluck('description','type')->toArray();
         return view('pages.finance.fees.receipt', compact('payment','settings'));

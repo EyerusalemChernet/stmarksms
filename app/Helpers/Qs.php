@@ -130,12 +130,12 @@ class Qs
             return $toString ? '' : [];
         }
 
-        $date = date('dMY').'CJ';
-        $hash = new Hashids($date, 14);
-        $decoded = $hash->decode((string) $str);
-
-        if (!empty($decoded)) {
-            return $toString ? implode(',', $decoded) : $decoded;
+        foreach (['CJ', 'SMS'] as $suffix) {
+            $hash = new Hashids(date('dMY') . $suffix, 14);
+            $decoded = $hash->decode((string) $str);
+            if (!empty($decoded)) {
+                return $toString ? implode(',', $decoded) : $decoded;
+            }
         }
 
         // Route model binding may have already decoded; accept plain numeric IDs
