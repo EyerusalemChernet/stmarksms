@@ -56,14 +56,25 @@ class PayrollController extends Controller
         );
 
         // ── Use advanced reporting ────────────────────────────────────────────
-        $report = new PayrollReport($month, $payrolls);
-        $reports = [
-            'summary' => $report->getSummaryReport(),
-            'attendance' => $report->getAttendanceReport(),
-            'departments' => $report->getDepartmentReport(),
-            'overtime' => $report->getOvertimeReport(),
-            'compliance' => $report->getComplianceReport(),
-        ];
+        try {
+            $report = new PayrollReport($month, $payrolls);
+            $reports = [
+                'summary' => $report->getSummaryReport(),
+                'attendance' => $report->getAttendanceReport(),
+                'departments' => $report->getDepartmentReport(),
+                'overtime' => $report->getOvertimeReport(),
+                'compliance' => $report->getComplianceReport(),
+            ];
+        } catch (\Exception $e) {
+            // If reporting fails, provide empty reports
+            $reports = [
+                'summary' => null,
+                'attendance' => null,
+                'departments' => null,
+                'overtime' => null,
+                'compliance' => null,
+            ];
+        }
 
         // ── Export ───────────────────────────────────────────────────────────
         if ($req->get('export') === 'pdf') {
@@ -98,10 +109,15 @@ class PayrollController extends Controller
 
     public function edit($id)
     {
+        \Log::info("PayrollController@edit called with ID: $id");
+        
         $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
             ->find($id);
 
+        \Log::info("Payroll lookup result: " . ($payroll ? "Found" : "Not Found"));
+
         if (!$payroll) {
+            \Log::warning("Payroll not found for ID: $id");
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
         }

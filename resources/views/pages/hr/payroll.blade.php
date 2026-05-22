@@ -61,7 +61,7 @@
 </div>
 
 {{-- Advanced Reports Summary --}}
-@if(isset($reports) && isset($reports['summary']))
+@if(isset($reports) && isset($reports['summary']) && $reports['summary'] !== null)
 <div class="row mb-3">
     <div class="col-md-6">
         <div class="card">
@@ -92,7 +92,7 @@
 </div>
 
 {{-- Attendance Summary --}}
-@if(isset($reports['attendance']))
+@if(isset($reports['attendance']) && $reports['attendance'] !== null)
 <div class="card mb-3">
     <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-calendar3 mr-1"></i>Attendance Summary</h6></div>
     <div class="card-body">
@@ -119,7 +119,7 @@
 @endif
 
 {{-- Overtime Summary --}}
-@if(isset($reports['overtime']))
+@if(isset($reports['overtime']) && $reports['overtime'] !== null)
 <div class="card mb-3">
     <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-clock-history mr-1"></i>Overtime Summary</h6></div>
     <div class="card-body">
