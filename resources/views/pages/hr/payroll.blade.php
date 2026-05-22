@@ -37,12 +37,12 @@
 
         <div class="ml-auto d-flex" style="gap:6px;">
             <a href="{{ route('hr.payroll', array_merge(request()->query(), ['export'=>'pdf'])) }}"
-               class="btn btn-sm btn-danger">
-                <i class="bi bi-file-pdf mr-1"></i>PDF
+               class="btn btn-sm btn-danger" title="Download payroll list as PDF">
+                <i class="bi bi-file-pdf mr-1"></i>Export PDF
             </a>
             <a href="{{ route('hr.payroll', array_merge(request()->query(), ['export'=>'csv'])) }}"
-               class="btn btn-sm btn-success">
-                <i class="bi bi-file-spreadsheet mr-1"></i>CSV
+               class="btn btn-sm btn-success" title="Download payroll list as CSV">
+                <i class="bi bi-file-spreadsheet mr-1"></i>Export CSV
             </a>
         </div>
     </div>
@@ -201,22 +201,12 @@
                     <td>
                         @if($pr && $pr->id)
                             <!-- View payroll details -->
-                            <a href="{{ route('hr.payroll.show', $pr->id) }}" class="btn btn-xs btn-info" title="View">
+                            <a href="{{ route('hr.payroll.show', $pr->id) }}" class="btn btn-xs btn-info" title="View payroll details">
                                 <i class="bi bi-eye"></i>
                             </a>
                             
-                            <!-- PDF download -->
-                            <a href="{{ route('hr.payroll.pdf', $pr->id) }}" class="btn btn-xs btn-danger" target="_blank" title="PDF">
-                                <i class="bi bi-file-pdf"></i>
-                            </a>
-                            
-                            <!-- CSV export -->
-                            <a href="{{ route('hr.payroll.export', $pr->id) }}" class="btn btn-xs btn-success" title="Export">
-                                <i class="bi bi-download"></i>
-                            </a>
-                            
                             <!-- Edit payroll -->
-                            <a href="{{ route('hr.payroll.edit', $pr->id) }}" class="btn btn-xs btn-primary" title="Edit">
+                            <a href="{{ route('hr.payroll.edit', $pr->id) }}" class="btn btn-xs btn-primary" title="Edit payroll">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             
