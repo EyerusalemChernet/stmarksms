@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 
 class UserController extends Controller
@@ -43,6 +44,55 @@ class UserController extends Controller
         $teacherType = $ut->firstWhere('title', 'teacher');
         $d['teacher_type_hash'] = $teacherType ? Qs::hash($teacherType->id) : '';
         return view('pages.support_team.users.index', $d);
+    }
+
+    /**
+     * Show user creation form with optional employee data prefill
+     * Used by HR module to create users for existing employees
+     */
+    public function create(Request $req)
+    {
+        $ut = $this->user->getAllTypes();
+        $ut2 = $ut->where('level', '>', 2);
+
+        $d['user_types'] = Qs::userIsAdmin() ? $ut2 : $ut;
+        $d['states'] = $this->loc->getStates();
+        $d['nationals'] = $this->loc->getAllNationals();
+        $d['blood_groups'] = $this->user->getBloodGroups();
+        $d['departments'] = Department::orderBy('name')->get();
+        $d['employee_id'] = null;
+        $d['employee'] = null;
+        $d['prefill'] = [];
+        $d['teacher_type_hash'] = '';
+        
+        $teacherType = $ut->firstWhere('title', 'teacher');
+        $d['teacher_type_hash'] = $teacherType ? Qs::hash($teacherType->id) : '';
+
+        // If employee_id is provided, prefill form data
+        if ($req->has('employee_id')) {
+            $employeeId = Qs::decodeHash($req->get('employee_id'));
+            $employee = \App\Models\Employee::findOrFail($employeeId);
+            
+            // Only allow linking to unlinked employees
+            if ($employee->user_id) {
+                return back()->with('flash_danger', 
+                    "Employee {$employee->employee_code} already has a linked user account.");
+            }
+
+            $d['employee_id'] = $employee->id;
+            $d['employee'] = $employee;
+            // Prefill form with employee data
+            $d['prefill'] = [
+                'name' => $employee->full_name,
+                'email' => $employee->email,
+                'phone' => $employee->phone,
+                'phone2' => $employee->phone2,
+                'address' => $employee->address,
+                'gender' => $employee->gender,
+            ];
+        }
+
+        return view('pages.support_team.users.create', $d);
     }
 
     public function edit($id)
@@ -114,6 +164,32 @@ class UserController extends Controller
         /* AUTO-CREATE EMPLOYEE RECORD for HR self-service portal */
         if ($user_is_staff) {
             \App\Services\EmployeeProfileService::createFromUser($user);
+        }
+
+        /* LINK TO EMPLOYEE if employee_id provided (from HR module) */
+        if ($req->has('employee_id')) {
+            $employeeId = $req->get('employee_id');
+            $employee = \App\Models\Employee::findOrFail($employeeId);
+            
+            // Verify employee is not already linked
+            if ($employee->user_id) {
+                return back()->with('pop_error', 
+                    "Employee {$employee->employee_code} is already linked to a user account.");
+            }
+            
+            // Link the user to employee
+            $employee->update(['user_id' => $user->id]);
+            
+            // Log the action
+            \App\Models\AuditLog::log('employee_link', 'employees', 
+                "Linked employee {$employee->employee_code} to user {$user->name} ({$user->username})");
+            
+            // Return success message with employee code
+            return Qs::json(
+                "User account created and linked to employee {$employee->employee_code}.",
+                true,
+                route('hr.employees.unlinked') // Redirect back to unlinked list
+            );
         }
 
         return Qs::jsonStoreOk();

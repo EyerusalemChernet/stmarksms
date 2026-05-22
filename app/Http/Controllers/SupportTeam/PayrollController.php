@@ -46,6 +46,14 @@ class PayrollController extends Controller
             ->get()
             ->keyBy('employee_id');
 
+        \Log::info("Payroll index debug", [
+            'month' => $month,
+            'status' => $status,
+            'total_employees' => $employees->count(),
+            'total_payrolls' => $payrolls->count(),
+            'payroll_keys' => $payrolls->keys()->toArray(),
+        ]);
+
         $statusCounts = array_merge(
             ['draft' => 0, 'approved' => 0, 'paid' => 0],
             StaffPayroll::where('month', $month)
@@ -109,12 +117,18 @@ class PayrollController extends Controller
 
     public function edit($id)
     {
-        \Log::info("PayrollController@edit called with ID: $id");
+        \Log::info("PayrollController@edit - Raw ID parameter", ['id' => $id, 'type' => gettype($id), 'is_empty' => empty($id)]);
         
+        if (empty($id)) {
+            \Log::error("Payroll edit: Empty ID received", ['id' => $id, 'route_params' => request()->route()->parameters()]);
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
+        }
+
         $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
             ->find($id);
 
-        \Log::info("Payroll lookup result: " . ($payroll ? "Found" : "Not Found"));
+        \Log::info("Payroll lookup result", ['id' => $id, 'found' => $payroll ? 'yes' : 'no']);
 
         if (!$payroll) {
             \Log::warning("Payroll not found for ID: $id");

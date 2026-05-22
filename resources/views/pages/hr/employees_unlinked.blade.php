@@ -95,7 +95,8 @@
                     <th>Code</th>
                     <th>Name</th>
                     <th>Department</th>
-                    <th>Link to User</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -105,30 +106,46 @@
                     <td class="font-weight-bold">{{ $emp->full_name }}</td>
                     <td>{{ $emp->employmentDetails?->department?->name ?? '—' }}</td>
                     <td>
-                        <form action="{{ route('hr.employees.link_user', $emp->id) }}" method="POST" class="form-inline">
-                            @csrf
-                            <select name="user_id" class="form-control form-control-sm mr-2" style="width:200px;" required>
-                                <option value="">— Select User —</option>
-                                @forelse($availableUsers as $u)
-                                    @php
-                                        $isLinked = \App\Models\Employee::where('user_id', $u->id)->exists();
-                                    @endphp
-                                    @if(!$isLinked)
-                                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->user_type }})</option>
-                                    @endif
-                                @empty
-                                    <option value="" disabled>No users available</option>
-                                @endforelse
-                            </select>
-                            <button type="submit" class="btn btn-xs btn-primary">
-                                <i class="bi bi-link mr-1"></i>Link
-                            </button>
-                        </form>
+                        <span class="badge badge-{{ $emp->statusBadgeClass() }}">
+                            {{ ucfirst($emp->status) }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex" style="gap: 6px;">
+                            <!-- Create New User Account Button (Admin/SuperAdmin only) -->
+                            @if(auth()->user()->user_type === 'super_admin' || auth()->user()->user_type === 'admin')
+                            <a href="{{ route('users.create', ['employee_id' => Qs::hash($emp->id)]) }}" 
+                               class="btn btn-xs btn-info" title="Create new user account for this employee">
+                                <i class="bi bi-person-plus mr-1"></i>Create Account
+                            </a>
+                            @endif
+
+                            <!-- Link Existing User Account -->
+                            <form action="{{ route('hr.employees.link_user', $emp->id) }}" method="POST" class="form-inline">
+                                @csrf
+                                <select name="user_id" class="form-control form-control-sm mr-1" style="width:150px;" required>
+                                    <option value="">— Link User —</option>
+                                    @forelse($availableUsers as $u)
+                                        @php
+                                            $isLinked = \App\Models\Employee::where('user_id', $u->id)->exists();
+                                        @endphp
+                                        @if(!$isLinked)
+                                            <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                        @endif
+                                    @empty
+                                        <option value="" disabled>No users available</option>
+                                    @endforelse
+                                </select>
+                                <button type="submit" class="btn btn-xs btn-primary">
+                                    <i class="bi bi-link mr-1"></i>Link
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="4" class="text-center text-success py-4">
+                    <td colspan="5" class="text-center text-success py-4">
                         <i class="bi bi-check-circle mr-1"></i>
                         All employee records are linked to user accounts.
                     </td>
