@@ -59,7 +59,20 @@
 </div>
 @endif
 
-{{-- ── Children Cards ───────────────────────────────────────────────────── --}}
+@if(isset($familyInfo) && ($familyInfo['sibling_eligible'] || $familyInfo['employee_eligible']))
+<div class="alert alert-success mb-3" style="font-size:13px;">
+  <i class="bi bi-percent mr-2"></i>
+  <strong>Automatic fee discounts active for your family.</strong>
+  @if($familyInfo['employee_eligible'])
+    Employee child discount: <strong>{{ $familyInfo['employee_pct'] }}%</strong>
+  @elseif($familyInfo['sibling_eligible'])
+    Sibling discount ({{ $familyInfo['children_count'] }} children): <strong>{{ $familyInfo['sibling_pct'] }}%</strong>
+  @endif
+  — applied automatically on invoices. <a href="{{ route('parent.fees') }}" class="alert-link">View school fees</a>
+</div>
+@endif
+
+{{-- Children Cards --}}
 @forelse($childData as $cd)
 @php $sr = $cd['sr']; @endphp
 
@@ -109,6 +122,29 @@
     {{-- Stats row --}}
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
 
+            {{-- Fees --}}
+            <div class="col-md-3 mb-3">
+                <div class="card border h-100">
+                    <div class="card-body text-center py-3">
+                        <i class="icon-coin-dollar icon-2x {{ $cd['unpaid'] > 0 ? 'text-danger' : 'text-success' }} mb-2"></i>
+                        @if($cd['unpaid'] > 0)
+                            <h4 class="text-danger">ETB {{ number_format($cd['fee_balance'], 0) }}</h4>
+                            <small class="text-muted">{{ $cd['unpaid'] }} unpaid invoice(s)</small>
+                            @if($cd['fee_discount'] > 0)
+                            <div class="mt-1"><span class="badge badge-success">Discount applied</span></div>
+                            @endif
+                            @if($cd['discount_type'])
+                            <div class="mt-1"><small class="text-muted">{{ \App\Services\DiscountService::discountTypeLabel($cd['discount_type']) }}</small></div>
+                            @endif
+                        @else
+                            <h4 class="text-success"><i class="icon-checkmark3"></i></h4>
+                            <small class="text-muted">All Fees Cleared</small>
+                        @endif
+                        <div class="mt-2">
+                            <a href="{{ route('parent.fees') }}" class="btn btn-xs btn-outline-primary">View Fees</a>
+                        </div>
+                    </div>
+                </div>
         {{-- Attendance --}}
         <div style="padding:20px;border-right:1px solid #f1f5f9;text-align:center;">
             @php $attColor = $cd['att_pct'] >= 75 ? '#10b981' : '#ef4444'; $attBg = $cd['att_pct'] >= 75 ? '#d1fae5' : '#fee2e2'; @endphp

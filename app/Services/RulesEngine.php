@@ -7,7 +7,7 @@ use App\Models\AttendanceSession;
 use App\Models\BookRequest;
 use App\Models\Exam;
 use App\Models\MyClass;
-use App\Models\PaymentRecord;
+use App\Services\FeeUnificationService;
 use App\Models\Receipt;
 use App\Models\Rule;
 use App\Models\Section;
@@ -35,7 +35,7 @@ class RulesEngine
 
     public static function hasUnpaidFees(int $student_id): bool
     {
-        return PaymentRecord::where('student_id', $student_id)->where('paid', 0)->exists();
+        return FeeUnificationService::hasUnpaidFees($student_id);
     }
 
     public static function evaluate(Rule $rule, float $actual): bool
@@ -304,15 +304,18 @@ class RulesEngine
             ];
         }
 
-        $pr      = PaymentRecord::with('payment')->find($pr_id);
-        if (!$pr) return ['valid' => false, 'message' => 'Payment record not found.'];
+        try {
+            $invoice = FeeUnificationService::ensureInvoiceForPaymentRecord($pr_id);
+        } catch (\Throwable $e) {
+            return ['valid' => false, 'message' => 'Payment record not found.'];
+        }
 
-        $balance = $pr->payment->amount - $pr->amt_paid;
+        $balance = (float) $invoice->balance;
 
         if ($amount_to_pay > $balance) {
             return [
                 'valid'   => false,
-                'message' => "Payment of ₦{$amount_to_pay} exceeds the outstanding balance of ₦{$balance}. Please enter an amount not greater than the balance.",
+                'message' => "Payment of ETB {$amount_to_pay} exceeds the outstanding balance of ETB {$balance}. Please enter an amount not greater than the balance.",
             ];
         }
 

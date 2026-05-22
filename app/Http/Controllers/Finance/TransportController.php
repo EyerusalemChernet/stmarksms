@@ -13,7 +13,7 @@ class TransportController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('hr_manager');
+        $this->middleware('finance_access');
     }
 
     public function index()

@@ -72,6 +72,8 @@ class Kernel extends HttpKernel
         'examIsLocked' => \App\Http\Middleware\Custom\ExamIsLocked::class,
         'my_parent' => \App\Http\Middleware\Custom\MyParent::class,
         'teacher'   => \App\Http\Middleware\Custom\Teacher::class,
+        'accountant' => \App\Http\Middleware\Custom\Accountant::class,
+        'finance_access' => \App\Http\Middleware\Custom\FinanceAccess::class,
         'force.password.change' => \App\Http\Middleware\Custom\ForcePasswordChange::class,
     ];
 }

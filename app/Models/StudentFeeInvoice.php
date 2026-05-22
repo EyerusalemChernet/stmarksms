@@ -11,6 +11,7 @@ class StudentFeeInvoice extends Model
         'original_amount', 'discount', 'discount_reason',
         'fine', 'fine_reason', 'net_amount', 'amount_paid',
         'balance', 'status', 'due_date',
+        'chapa_ref', 'chapa_status', 'legacy_payment_record_id',
     ];
 
     public function student()
@@ -28,7 +29,11 @@ class StudentFeeInvoice extends Model
         return $this->hasMany(FeePayment::class, 'invoice_id');
     }
 
-    // Recalculate and sync balance/status after a payment
+    public function legacyPaymentRecord()
+    {
+        return $this->belongsTo(PaymentRecord::class, 'legacy_payment_record_id');
+    }
+
     public function syncStatus()
     {
         $paid = $this->payments()->sum('amount');
@@ -36,5 +41,10 @@ class StudentFeeInvoice extends Model
         $this->balance     = max(0, $this->net_amount - $paid);
         $this->status      = $paid <= 0 ? 'unpaid' : ($this->balance <= 0 ? 'paid' : 'partial');
         $this->save();
+    }
+
+    public function isPayable(): bool
+    {
+        return $this->balance > 0 && !in_array($this->chapa_status, ['pending'], true);
     }
 }

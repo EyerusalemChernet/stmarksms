@@ -10,6 +10,12 @@ Route::post('/change-password', 'Auth\ChangePasswordController@update')->name('p
 Route::get('/privacy-policy', 'HomeController@privacy_policy')->name('privacy_policy');
 Route::get('/terms-of-use', 'HomeController@terms_of_use')->name('terms_of_use');
 
+Route::get('/session-test', function () {
+    $count = session('test_count', 0) + 1;
+    session(['test_count' => $count]);
+    return "Session test count: " . $count . ". CSRF token: " . csrf_token();
+});
+
 // Public ICS feed ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â no auth so Google Calendar can subscribe to it
 Route::get('/calendar/ics', 'CalendarController@icsPublicFeed')->name('calendar.ics');
 
@@ -249,6 +255,13 @@ Route::group(['namespace' => 'SuperAdmin','middleware' => 'super_admin', 'prefix
     Route::get('/settings', 'SettingController@index')->name('settings');
     Route::put('/settings', 'SettingController@update')->name('settings.update');
 
+    Route::get('/finance-permissions', 'FinancePermissionController@index')->name('finance.permissions.index');
+    Route::put('/finance-permissions', 'FinancePermissionController@update')->name('finance.permissions.update');
+
+    Route::get('/trash', 'TrashController@index')->name('trash.index');
+    Route::put('/trash/{type}/{id}', 'TrashController@restore')->name('trash.restore');
+    Route::delete('/trash/{type}/{id}', 'TrashController@destroy')->name('trash.destroy');
+
     Route::get('/rules', 'RuleController@index')->name('rules.index');
     Route::post('/rules', 'RuleController@store')->name('rules.store');
     Route::put('/rules/{id}', 'RuleController@update')->name('rules.update');
@@ -339,8 +352,8 @@ Route::group(['middleware' => 'auth'], function(){
 
 
 
-/************************ FINANCE MODULE (hr_manager only) ****************************/
-Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' => 'finance'], function(){
+/************************ FINANCE MODULE (accountant / admin) ****************************/
+Route::group(['namespace' => 'Finance', 'middleware' => ['auth', 'finance_access'], 'prefix' => 'finance'], function(){
 
     // --- Student Fees ---
     Route::group(['prefix' => 'fees'], function() {
@@ -348,6 +361,8 @@ Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' =
         Route::post('/categories', 'StudentFeeController@storeCategory')->name('fees.categories.store');
         Route::put('/categories/{id}', 'StudentFeeController@updateCategory')->name('fees.categories.update');
         Route::delete('/categories/{id}', 'StudentFeeController@destroyCategory')->name('fees.categories.destroy');
+        
+        Route::redirect('/discounts-setup', '/finance/discounts/rules')->name('fees.discounts_setup');
 
         Route::get('/structures', 'StudentFeeController@structures')->name('fees.structures');
         Route::post('/structures', 'StudentFeeController@storeStructure')->name('fees.structures.store');
@@ -356,6 +371,7 @@ Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' =
         Route::post('/bulk-assign', 'StudentFeeController@assignFee')->name('fees.bulk_assign');
 
         Route::get('/invoices', 'StudentFeeController@invoices')->name('fees.invoices');
+        Route::post('/invoices/generate', 'StudentFeeController@assignFee')->name('fees.invoices.generate');
         Route::get('/invoice/{id}', 'StudentFeeController@invoiceDetail')->name('fees.invoice');
         Route::post('/pay/{id}', 'StudentFeeController@recordPayment')->name('fees.pay');
         Route::post('/discount/{id}', 'StudentFeeController@applyDiscount')->name('fees.discount');
@@ -367,6 +383,20 @@ Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' =
         Route::get('/report', 'StudentFeeController@report')->name('fees.report');
     });
 
+    // --- Discount Requests & Rule Proposals ---
+    Route::group(['prefix' => 'discounts'], function() {
+        // Global discount rule proposals MUST come before /{id} dynamic routes
+        Route::get('/rules', 'DiscountRequestController@ruleIndex')->name('discount_rules.index');
+        Route::post('/rules', 'DiscountRequestController@ruleStore')->name('discount_rules.store')->middleware('super_admin');
+
+        // Individual invoice discount requests (dynamic {id} routes AFTER static ones)
+        Route::get('/', 'DiscountRequestController@index')->name('discount_requests.index');
+        Route::get('/create/{invoice_id}', 'DiscountRequestController@create')->name('discount_requests.create');
+        Route::post('/{invoice_id}', 'DiscountRequestController@store')->name('discount_requests.store');
+        Route::post('/{id}/approve', 'DiscountRequestController@approve')->name('discount_requests.approve')->withoutMiddleware('accountant');
+        Route::post('/{id}/reject', 'DiscountRequestController@reject')->name('discount_requests.reject')->withoutMiddleware('accountant');
+    });
+
     // --- Expenses ---
     Route::group(['prefix' => 'expenses'], function() {
         Route::get('/', 'ExpenseController@index')->name('expenses.index');
@@ -374,6 +404,8 @@ Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' =
         Route::post('/', 'ExpenseController@store')->name('expenses.store');
         Route::get('/{id}/edit', 'ExpenseController@edit')->name('expenses.edit');
         Route::put('/{id}', 'ExpenseController@update')->name('expenses.update');
+        Route::post('/{id}/approve', 'ExpenseController@approve')->name('expenses.approve')->withoutMiddleware('accountant');
+        Route::post('/{id}/reject', 'ExpenseController@reject')->name('expenses.reject')->withoutMiddleware('accountant');
         Route::delete('/{id}', 'ExpenseController@destroy')->name('expenses.destroy');
         Route::get('/export/csv', 'ExpenseController@exportCsv')->name('expenses.csv');
 
@@ -393,6 +425,13 @@ Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' =
         Route::post('/payments', 'TransportController@storePayment')->name('transport.pay');
     });
 
+    // --- Penalty Rules ---
+    Route::group(['prefix' => 'penalties'], function() {
+        Route::get('/', 'PenaltyRuleController@index')->name('penalties.index');
+        Route::post('/update', 'PenaltyRuleController@update')->name('penalties.update')->middleware('super_admin');
+        Route::post('/apply-now', 'PenaltyRuleController@applyNow')->name('penalties.apply_now')->middleware('super_admin');
+    });
+
     // --- Financial Reports ---
     Route::group(['prefix' => 'reports'], function() {
         Route::get('/', 'FinanceReportController@index')->name('finance.reports');
@@ -400,10 +439,15 @@ Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' =
         Route::get('/expenses', 'FinanceReportController@expenses')->name('reports.expenses');
         Route::get('/profit-loss', 'FinanceReportController@profitLoss')->name('reports.profit_loss');
         Route::get('/outstanding', 'FinanceReportController@outstanding')->name('reports.outstanding');
+        Route::get('/salary', 'FinanceReportController@salary')->name('reports.salary');
     });
 
     // --- Income ---
     Route::group(['prefix' => 'income'], function() {
+        // Admin approval actions MUST come before /{id} dynamic routes
+        Route::post('/{id}/approve', 'IncomeController@approve')->name('finance.income.approve')->withoutMiddleware('accountant');
+        Route::post('/{id}/reject',  'IncomeController@reject') ->name('finance.income.reject') ->withoutMiddleware('accountant');
+
         Route::get('/', 'IncomeController@index')->name('finance.income.index');
         Route::get('/create', 'IncomeController@create')->name('finance.income.create');
         Route::post('/', 'IncomeController@store')->name('finance.income.store');
@@ -411,6 +455,30 @@ Route::group(['namespace' => 'Finance', 'middleware' => 'hr_manager', 'prefix' =
         Route::put('/{id}', 'IncomeController@update')->name('finance.income.update');
         Route::delete('/{id}', 'IncomeController@destroy')->name('finance.income.destroy');
     });
+
+    // --- Payments module ---
+    Route::group(['prefix' => 'payments'], function () {
+        Route::get('/history', 'StudentFeeController@payments')->name('payments.history');
+        Route::get('/chapa', 'ChapaPaymentController@history')->name('payments.chapa');
+        Route::get('/refunds', 'FinanceGovernanceController@refunds')->name('payments.refunds');
+        Route::get('/reconciliation', 'FinanceGovernanceController@reconciliation')->name('payments.reconciliation');
+        Route::get('/receipts', 'FinanceGovernanceController@receiptsIndex')->name('payments.receipts');
+    });
+
+    // --- Governance (Super Admin / configuration) ---
+    Route::group(['prefix' => 'governance'], function () {
+        Route::get('/audit-logs', 'FinanceGovernanceController@auditLogs')->name('finance.audit.index');
+        Route::get('/transaction-logs', 'FinanceGovernanceController@transactionLogs')->name('finance.transactions.index');
+        Route::get('/restore', 'FinanceGovernanceController@restoreIndex')->name('finance.restore.index');
+        Route::get('/chapa-settings', 'FinanceGovernanceController@chapaSettings')->name('finance.chapa.settings');
+    });
+
+    Route::get('/settings', 'FinanceSettingController@index')->name('finance.settings.index');
+    Route::post('/settings/expense-category', 'FinanceSettingController@storeExpenseCategory')->name('finance.settings.expense_cat');
+    Route::post('/settings/expense-category/{id}/delete', 'FinanceSettingController@destroyExpenseCategory')->name('finance.settings.expense_cat_del');
+    Route::post('/settings/income-category', 'FinanceSettingController@storeIncomeCategory')->name('finance.settings.income_cat');
+    Route::post('/settings/income-category/{id}/delete', 'FinanceSettingController@destroyIncomeCategory')->name('finance.settings.income_cat_del');
+    Route::post('/settings/late-fee-rules', 'FinanceSettingController@updateLateFeeRules')->name('finance.settings.late_fee');
 
     // --- Finance Dashboard ---
     Route::get('/dashboard', 'FinanceDashboardController@index')->name('finance.dashboard');
@@ -443,18 +511,20 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
     Route::post('/payroll/{id}/items',    'PayrollController@addItem')->name('hr.payroll.item.add');
     Route::delete('/payroll/{id}/items',  'PayrollController@removeItem')->name('hr.payroll.item.remove');
 
-    /*************** Payments (Legacy) *****************/
-    Route::group(['prefix' => 'payments'], function(){
-        Route::get('manage/{class_id?}', 'PaymentController@manage')->name('payments.manage');
-        Route::get('invoice/{id}/{year?}', 'PaymentController@invoice')->name('payments.invoice');
-        Route::get('receipts/{id}', 'PaymentController@receipts')->name('payments.receipts');
+    /*************** Payments (Legacy → unified finance) *****************/
+    Route::group(['namespace' => 'Finance', 'prefix' => 'payments'], function () {
+        Route::get('manage/{class_id?}', 'LegacyPaymentRedirectController@manage')->name('payments.manage');
+        Route::get('invoice/{id}/{year?}', 'LegacyPaymentRedirectController@invoice')->name('payments.invoice');
+        Route::get('receipts/{id}', 'LegacyPaymentRedirectController@receipts')->name('payments.receipts');
+        Route::post('select_year', 'LegacyPaymentRedirectController@selectYear')->name('payments.select_year');
+        Route::post('select_class', 'LegacyPaymentRedirectController@selectClass')->name('payments.select_class');
+    });
+    Route::group(['prefix' => 'payments'], function () {
         Route::get('pdf_receipts/{id}', 'PaymentController@pdf_receipts')->name('payments.pdf_receipts');
-        Route::post('select_year', 'PaymentController@select_year')->name('payments.select_year');
-        Route::post('select_class', 'PaymentController@select_class')->name('payments.select_class');
         Route::delete('reset_record/{id}', 'PaymentController@reset_record')->name('payments.reset_record');
         Route::post('pay_now/{id}', 'PaymentController@pay_now')->name('payments.pay_now');
     });
-    Route::resource('payments', 'PaymentController');
+    Route::resource('payments', 'Finance\LegacyPaymentRedirectController');
 
     /*************** HR *****************/
     Route::prefix('hr')->middleware(['auth', 'hr_manager'])->group(function(){
@@ -610,9 +680,34 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'auth'], function(){
     Route::post('/chapa/callback', 'ChapaController@callback')->name('chapa.callback');
 });
 
+/************************ CHAPA — FINANCE MODULE ****************************/
+Route::group(['namespace' => 'Finance', 'middleware' => 'auth', 'prefix' => 'chapa'], function(){
+    // Fee invoice payment (hr_manager + my_parent)
+    Route::post('/fee/{invoice_id}',        'ChapaPaymentController@initiateFeePay')->name('chapa.fee.pay');
+    Route::get('/fee/return/{invoice_id}',  'ChapaPaymentController@returnFeePay')->name('chapa.fee.return');
+
+    // Salary payment (admin / super_admin / hr_manager)
+    Route::post('/salary/{payroll_id}',       'ChapaPaymentController@initiateSalaryPay')->name('chapa.salary.pay');
+    Route::get('/salary/return/{payroll_id}', 'ChapaPaymentController@returnSalaryPay')->name('chapa.salary.return');
+
+    // Expense payment (admin / super_admin / hr_manager)
+    Route::post('/expense/{expense_id}',       'ChapaPaymentController@initiateExpensePay')->name('chapa.expense.pay');
+    Route::get('/expense/return/{expense_id}', 'ChapaPaymentController@returnExpensePay')->name('chapa.expense.return');
+
+    // Transaction history
+    Route::get('/history', 'ChapaPaymentController@history')->name('chapa.history');
+});
+
+// Webhook — no auth, no CSRF (excluded in VerifyCsrfToken)
+Route::post('/chapa/webhook', '\App\Http\Controllers\Finance\ChapaPaymentController@webhook')->name('chapa.webhook');
+
 /************************ PARENT ****************************/
 Route::group(['namespace' => 'MyParent', 'middleware' => 'my_parent'], function () {
     Route::get('/parent/dashboard', 'MyController@dashboard')->name('parent.dashboard');
+    Route::get('/parent/fees', 'ParentFeeController@index')->name('parent.fees');
+    Route::get('/parent/fees/invoice/{id}', 'ParentFeeController@show')->name('parent.fee');
+    Route::post('/parent/fees/invoice/{id}/chapa', '\App\Http\Controllers\Finance\ChapaPaymentController@initiateFeePay')->name('parent.fee.chapa');
+    Route::get('/parent/fees/invoice/{id}/chapa/return', '\App\Http\Controllers\Finance\ChapaPaymentController@returnFeePay')->name('parent.fee.chapa.return');
     Route::get('/parent/child/{student_id}', 'MyController@childDetail')->name('parent.child');
     Route::get('/parent/child/{student_id}/timeline', 'MyController@timeline')->name('parent.timeline');
     Route::get('/my_children', 'MyController@children')->name('my_children'); // legacy redirect

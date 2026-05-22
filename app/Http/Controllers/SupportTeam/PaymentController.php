@@ -137,27 +137,53 @@ class PaymentController extends Controller
             'amt_paid' => 'required|numeric'
         ], [], ['amt_paid' => 'Amount Paid']);
 
+        $pr_id = Qs::decodeHash($pr_id);
         $validation = RulesEngine::validatePayment($pr_id, (float) $req->amt_paid);
         if (!$validation['valid']) {
             return Qs::json($validation['message'], false);
         }
 
-        $pr = $this->pay->findRecord($pr_id);
-        $payment = $this->pay->find($pr->payment_id);
-        $d['amt_paid'] = $amt_p = $pr->amt_paid + $req->amt_paid;
-        $d['balance'] = $bal = $payment->amount - $amt_p;
-        $d['paid'] = $bal < 1 ? 1 : 0;
+        $invoice = \App\Services\FeeUnificationService::ensureInvoiceForPaymentRecord($pr_id);
+        $method  = $req->input('payment_method', 'cash');
+        $allowed = ['cash', 'bank_transfer', 'mobile_money', 'chapa'];
+        if (!in_array($method, $allowed, true)) {
+            $method = 'cash';
+        }
 
-        $this->pay->updateRecord($pr_id, $d);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($invoice, $req, $method, $pr_id) {
+            \App\Models\FeePayment::create([
+                'receipt_no'      => 'REC-' . strtoupper(substr(uniqid(), -8)),
+                'invoice_id'      => $invoice->id,
+                'student_id'      => $invoice->student_id,
+                'collected_by'    => auth()->id(),
+                'amount'          => $req->amt_paid,
+                'installment_no'  => $invoice->payments()->count() + 1,
+                'payment_method'  => $method,
+                'transaction_ref' => $req->input('transaction_ref'),
+                'notes'           => 'Recorded via legacy payment screen',
+                'paid_at'         => now(),
+            ]);
+            $invoice->refresh()->syncStatus();
 
-        $d2['amt_paid'] = $req->amt_paid;
-        $d2['balance'] = $bal;
-        $d2['pr_id'] = $pr_id;
-        $d2['year'] = $this->year;
-        $d2['payment_method'] = $req->input('payment_method', 'cash');
+            $pr = $this->pay->findRecord($pr_id);
+            $payment = $this->pay->find($pr->payment_id);
+            $amt_p = $pr->amt_paid + $req->amt_paid;
+            $bal   = $payment->amount - $amt_p;
+            $this->pay->updateRecord($pr_id, [
+                'amt_paid' => $amt_p,
+                'balance'  => max(0, $bal),
+                'paid'     => $bal < 1 ? 1 : 0,
+            ]);
+            $this->pay->createReceipt([
+                'amt_paid'        => $req->amt_paid,
+                'balance'         => max(0, $bal),
+                'pr_id'           => $pr_id,
+                'year'            => $this->year,
+                'payment_method'  => $method,
+            ]);
+        });
 
-        $this->pay->createReceipt($d2);
-        AuditLog::log('payment', 'payments', "Payment of {$req->amt_paid} recorded for PR#{$pr_id}");
+        AuditLog::log('payment', 'finance', "Payment of {$req->amt_paid} recorded for invoice #{$invoice->id} (legacy PR#{$pr_id})");
         return Qs::jsonUpdateOk();
     }
 

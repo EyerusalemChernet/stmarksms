@@ -19,7 +19,7 @@ class FinanceDashboardController extends Controller
 
         $d['total_fees_collected'] = FeePayment::whereYear('paid_at', $year)->sum('amount');
         $d['total_pending']        = StudentFeeInvoice::where('session', $session)->whereIn('status',['unpaid','partial'])->sum('balance');
-        $d['total_expenses']       = Expense::where('year', $session)->sum('amount');
+        $d['total_expenses']       = Expense::where('year', $session)->approved()->sum('amount');
         $d['other_income']         = Income::where('year', $session)->sum('amount');
         $d['net_balance']          = $d['total_fees_collected'] + $d['other_income'] - $d['total_expenses'];
 
@@ -35,7 +35,7 @@ class FinanceDashboardController extends Controller
         $mexp = array_fill(0, 12, 0);
         $monthExprExp = DB::getDriverName() === 'sqlite' ? 'strftime("%m", expense_date) + 0' : 'MONTH(expense_date)';
         $erows = Expense::selectRaw($monthExprExp.' as m, SUM(amount) as total')
-                    ->whereYear('expense_date', $year)->groupBy('m')->get();
+                    ->approved()->whereYear('expense_date', $year)->groupBy('m')->get();
         foreach ($erows as $r) $mexp[$r->m - 1] = (float)$r->total;
         $d['monthly_expenses'] = $mexp;
 
