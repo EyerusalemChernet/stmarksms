@@ -115,49 +115,17 @@ class PayrollController extends Controller
 
     // ── EDIT / VIEW ───────────────────────────────────────────────────────────
 
-    public function edit($id = null)
+    public function edit($id)
     {
-        // ── Step 1: Validate ID parameter ────────────────────────────────────
-        $original_id = $id;
-        
-        \Log::info("PayrollController@edit START", [
-            'raw_id' => $id,
-            'id_type' => gettype($id),
-            'id_empty' => empty($id),
-            'url' => request()->fullUrl(),
-            'route_params' => request()->route()->parameters(),
-        ]);
-        
-        // Try multiple sources to get the ID
-        if (empty($id)) {
-            $id = request()->route('id') ?? request()->segment(3) ?? request()->get('payroll_id');
-            
-            if (empty($id)) {
-                \Log::error("PayrollController@edit FAILED - NO ID", [
-                    'attempts' => [
-                        'parameter' => $original_id,
-                        'route' => request()->route('id'),
-                        'segment' => request()->segment(3),
-                        'query' => request()->get('payroll_id'),
-                    ]
-                ]);
-                
-                return redirect()->route('hr.payroll')
-                    ->with('flash_danger', "Invalid request: No payroll ID provided. Please select a payroll from the list.");
-            }
-        }
-        
-        // ── Step 2: Validate ID is numeric ───────────────────────────────────
+        // Validate ID
         if (!is_numeric($id) || (int)$id <= 0) {
-            \Log::error("PayrollController@edit INVALID ID", ['id' => $id, 'numeric' => is_numeric($id)]);
-            
             return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Invalid payroll ID: {$id}. Please select a valid payroll from the list.");
+                ->with('flash_danger', 'Invalid payroll ID.');
         }
-        
+
         $id = (int)$id;
         
-        // ── Step 3: Fetch payroll with relationships ─────────────────────────
+        // Fetch payroll with relationships
         $payroll = StaffPayroll::with([
             'employee.employmentDetails.department',
             'employee.employmentDetails.position',
@@ -165,32 +133,13 @@ class PayrollController extends Controller
             'approvedBy'
         ])->find($id);
 
-        \Log::info("PayrollController@edit LOOKUP", [
-            'id_requested' => $id,
-            'payroll_found' => $payroll ? 'yes' : 'no',
-            'payroll_data' => $payroll ? [
-                'id' => $payroll->id,
-                'employee_id' => $payroll->employee_id,
-                'month' => $payroll->month,
-                'status' => $payroll->status,
-                'employee_name' => $payroll->employee->full_name ?? 'N/A',
-            ] : null,
-        ]);
-
         if (!$payroll) {
-            \Log::warning("PayrollController@edit NOT FOUND", ['id' => $id]);
-            
-            // Try to provide helpful context
-            $recent = StaffPayroll::latest()->limit(3)->pluck('id')->toArray();
-            
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', "Payroll record #{$id} not found. The payroll may have been deleted or doesn't exist yet. Please generate payroll for the desired month.");
         }
         
-        // ── Step 4: Validate payroll has employee ────────────────────────────
+        // Validate payroll has employee
         if (!$payroll->employee) {
-            \Log::error("PayrollController@edit NO EMPLOYEE", ['payroll_id' => $id, 'employee_id' => $payroll->employee_id]);
-            
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', "Payroll record is corrupted: associated employee not found. Contact system administrator.");
         }
