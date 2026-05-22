@@ -115,14 +115,34 @@ class PayrollController extends Controller
 
     // ── EDIT / VIEW ───────────────────────────────────────────────────────────
 
-    public function edit($id)
+    public function edit($id = null)
     {
-        \Log::info("PayrollController@edit - Raw ID parameter", ['id' => $id, 'type' => gettype($id), 'is_empty' => empty($id)]);
+        // Debug: Log all request details
+        \Log::info("PayrollController@edit - Debug Info", [
+            'id_param' => $id,
+            'id_type' => gettype($id),
+            'id_empty' => empty($id),
+            'url' => request()->fullUrl(),
+            'path' => request()->path(),
+            'route_params' => request()->route()->parameters(),
+            'all_params' => request()->all(),
+        ]);
         
         if (empty($id)) {
-            \Log::error("Payroll edit: Empty ID received", ['id' => $id, 'route_params' => request()->route()->parameters()]);
-            return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
+            // Try to get ID from URL directly
+            $id_from_url = request()->route('id');
+            \Log::error("Payroll edit: Empty ID - trying alternate sources", [
+                'id_param' => $id,
+                'id_from_route' => $id_from_url,
+                'route_params' => request()->route()->parameters(),
+                'segment_3' => request()->segment(3),
+            ]);
+            
+            if (empty($id_from_url)) {
+                return redirect()->route('hr.payroll')
+                    ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
+            }
+            $id = $id_from_url;
         }
 
         $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
