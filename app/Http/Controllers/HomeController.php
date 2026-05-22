@@ -82,22 +82,22 @@ class HomeController extends Controller
             return view('pages.admin.dashboard', $d);
         }
 
-        // ── HR Manager dashboard ───────────────────────────────────────────────
-        if (Qs::userIsHRManager()) {
+        // ── Accountant → finance dashboard ─────────────────────────────────────
+        if (Qs::userIsAccountant() && !Qs::userIsHRManager()) {
+            return redirect()->route('finance.dashboard');
+        }
+
+        // ── HR Manager dashboard (hr_manager role only; admin uses admin dashboard) ──
+        if (Qs::userIsHRManagerOnly()) {
             $users = $this->user->getAll();
             $d['total_staff']    = $users->whereIn('user_type', ['admin', 'teacher', 'hr_manager', 'super_admin'])->count();
             $d['total_teachers'] = $users->where('user_type', 'teacher')->count();
 
             $today = now()->toDateString();
-            $d['staff_present_today'] = \App\Models\StaffAttendance::where('date', $today)->whereIn('status', ['present', 'late'])->count();
-            $d['staff_absent_today']  = \App\Models\StaffAttendance::where('date', $today)->where('status', 'absent')->count();
+            $d['staff_present_today'] = StaffAttendance::where('date', $today)->whereIn('status', ['present', 'late'])->count();
+            $d['staff_absent_today']  = StaffAttendance::where('date', $today)->where('status', 'absent')->count();
 
-            $d['total_collected']  = PaymentRecord::where('paid', 1)->sum('amt_paid');
-            $d['total_outstanding'] = PaymentRecord::where('paid', 0)->sum(\Illuminate\Support\Facades\DB::raw('COALESCE(balance, 0)'));
-            $d['students_unpaid']  = PaymentRecord::where('paid', 0)->distinct('student_id')->count('student_id');
-
-            $d['recent_payments'] = \App\Models\Receipt::with('pr.payment')
-                ->orderByDesc('created_at')->take(8)->get();
+            $d['pending_leave_requests'] = \App\Models\LeaveRequest::where('status', 'pending')->count();
 
             $d['announcements']   = $this->getAnnouncements($uid);
             $d['unread_messages'] = Message::where('receiver_id', $uid)->where('read', false)->count();

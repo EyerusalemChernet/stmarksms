@@ -60,8 +60,7 @@ class Qs
 
     public static function getTeamAccount()
     {
-        // Only hr_manager handles finance/HR — admin and super_admin are excluded by design
-        return ['hr_manager'];
+        return ['accountant', 'hr_manager'];
     }
 
     public static function getTeamSAT()
@@ -83,6 +82,18 @@ class Qs
     {
         return in_array(Auth::user()->user_type, ['hr_manager', 'admin', 'super_admin']);
     }
+
+    /** True only for the dedicated HR Manager role (not admin / super_admin). */
+    public static function userIsHRManagerOnly()
+    {
+        return Auth::check() && Auth::user()->user_type === 'hr_manager';
+    }
+
+    public static function userIsAccountant()
+    {
+        return in_array(Auth::user()->user_type, ['accountant', 'admin', 'super_admin']);
+    }
+
     public static function hash($id)
     {
         $date = date('dMY').'CJ';
@@ -114,10 +125,24 @@ class Qs
 
     public static function decodeHash($str, $toString = true)
     {
+        if ($str === null || $str === '') {
+            return $toString ? '' : [];
+        }
+
         $date = date('dMY').'CJ';
         $hash = new Hashids($date, 14);
-        $decoded = $hash->decode($str);
-        return $toString ? implode(',', $decoded) : $decoded;
+        $decoded = $hash->decode((string) $str);
+
+        if (!empty($decoded)) {
+            return $toString ? implode(',', $decoded) : $decoded;
+        }
+
+        // Route model binding may have already decoded; accept plain numeric IDs
+        if (is_numeric($str)) {
+            return $toString ? (string) $str : [(int) $str];
+        }
+
+        return $toString ? '' : [];
     }
 
     public static function userIsTeamAccount()
@@ -269,7 +294,30 @@ class Qs
 
     public static function getCurrentSession()
     {
-        return self::getSetting('current_session');
+        return self::financeYearForDate();
+    }
+
+    /** Academic session / finance year; falls back to calendar year from $date when unset. */
+    public static function financeYearForDate($date = null): string
+    {
+        $session = self::getSetting('current_session');
+        if (!empty($session)) {
+            return $session;
+        }
+
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('academic_years')) {
+                $active = \App\Models\AcademicYear::where('is_current', true)->value('name');
+                if (!empty($active)) {
+                    return $active;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Non-blocking fallback
+        }
+
+        $carbon = $date ? \Carbon\Carbon::parse($date) : now();
+        return $carbon->format('Y');
     }
 
     public static function getNextSession()

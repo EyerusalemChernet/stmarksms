@@ -1,6 +1,30 @@
 @extends('layouts.master')
-@section('page_title','Expenses')
+@section('page_title', $canApprove ? 'Expense Approvals' : 'Expenses')
 @section('content')
+
+@if(!$canApprove)
+<div class="alert alert-info mb-3" style="font-size:13px;">
+  <i class="bi bi-info-circle mr-1"></i>
+  Expenses you submit stay <strong>Pending</strong> until an administrator approves them. Approved expenses appear in reports and totals.
+</div>
+@endif
+
+{{-- Status tabs --}}
+<div class="mb-3">
+  <div class="btn-group" role="group">
+    <a href="{{ route('expenses.index') }}?status=pending{{ request()->except('status') ? '&'.http_build_query(request()->except(['status','page'])) : '' }}"
+       class="btn btn-sm {{ request('status') === 'pending' ? 'btn-warning' : 'btn-outline-secondary' }}">
+      Pending
+      @if($pendingCount > 0)<span class="badge badge-danger ml-1">{{ $pendingCount }}</span>@endif
+    </a>
+    <a href="{{ route('expenses.index') }}?status=approved{{ request()->except('status') ? '&'.http_build_query(request()->except(['status','page'])) : '' }}"
+       class="btn btn-sm {{ request('status') === 'approved' ? 'btn-success' : 'btn-outline-secondary' }}">Approved</a>
+    <a href="{{ route('expenses.index') }}?status=rejected{{ request()->except('status') ? '&'.http_build_query(request()->except(['status','page'])) : '' }}"
+       class="btn btn-sm {{ request('status') === 'rejected' ? 'btn-danger' : 'btn-outline-secondary' }}">Rejected</a>
+    <a href="{{ route('expenses.index', request()->except(['status','page'])) }}"
+       class="btn btn-sm {{ !request('status') ? 'btn-primary' : 'btn-outline-secondary' }}">All</a>
+  </div>
+</div>
 
 {{-- Summary --}}
 <div class="row mb-3">
@@ -16,6 +40,7 @@
 {{-- Filters --}}
 <div class="card mb-3"><div class="card-body py-2">
   <form method="GET" class="form-row align-items-end">
+    @if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
     <div class="col-md-2 col-6 mb-2">
       <label style="font-size:11px;color:#64748b;display:block">Search</label>
       <input type="text" name="search" class="form-control form-control-sm" value="{{ request('search') }}" placeholder="Title...">
@@ -68,6 +93,8 @@
           <th>Title</th>
           <th class="d-none d-md-table-cell">Category</th>
           <th>Amount</th>
+          <th class="d-none d-md-table-cell">By</th>
+          <th>Status</th>
           <th class="d-none d-md-table-cell">Recurring</th>
           <th></th>
         </tr>
@@ -78,23 +105,45 @@
           <td>{{ $exp->expense_date->format('d M Y') }}</td>
           <td>
             <strong>{{ $exp->title }}</strong>
-            @if($exp->description)<br><small class="text-muted">{{ Str::limit($exp->description,60) }}</small>@endif
+            @if($exp->description)<br><small class="text-muted">{{ \Illuminate\Support\Str::limit($exp->description,60) }}</small>@endif
           </td>
           <td class="d-none d-md-table-cell">{{ $exp->category->name ?? '-' }}</td>
           <td class="text-danger font-weight-bold">ETB {{ number_format($exp->amount,2) }}</td>
+          <td class="d-none d-md-table-cell">{{ $exp->creator->name ?? '-' }}</td>
+          <td>
+            @if($exp->status === 'pending')
+              <span class="badge badge-warning">Pending</span>
+            @elseif($exp->status === 'approved')
+              <span class="badge badge-success">Approved</span>
+              @if($exp->approver)<br><small class="text-muted">{{ $exp->approver->name }}</small>@endif
+            @else
+              <span class="badge badge-danger">Rejected</span>
+              @if($exp->rejection_reason)<br><small class="text-muted">{{ \Illuminate\Support\Str::limit($exp->rejection_reason,30) }}</small>@endif
+            @endif
+          </td>
           <td class="d-none d-md-table-cell">
             @if($exp->recurring)<span class="badge badge-info">{{ ucfirst($exp->recurrence_interval) }}</span>@else<span class="text-muted">-</span>@endif
           </td>
           <td class="text-nowrap">
-            <a href="{{ route('expenses.edit',$exp->id) }}" class="btn btn-warning btn-xs"><i class="bi bi-pencil"></i></a>
-            <form action="{{ route('expenses.destroy',$exp->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this expense?')">@csrf @method('DELETE')<button class="btn btn-danger btn-xs"><i class="bi bi-trash"></i></button></form>
+            @if($canApprove && $exp->isPending() && $exp->created_by !== Auth::id())
+              <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#approveExp{{ $exp->id }}" title="Approve"><i class="bi bi-check-lg"></i></button>
+              <button class="btn btn-danger btn-xs" data-toggle="modal" data-target="#rejectExp{{ $exp->id }}" title="Reject"><i class="bi bi-x-lg"></i></button>
+            @elseif($canApprove && $exp->isPending() && $exp->created_by === Auth::id())
+              <span class="badge badge-secondary" title="Cannot approve own expense">Self</span>
+            @elseif(!$canApprove && $exp->isPending())
+              <span class="badge badge-light text-muted"><i class="bi bi-hourglass-split"></i> Awaiting admin</span>
+            @endif
+            @if(($canApprove && !$exp->is_locked) || (!$canApprove && $exp->isPending() && $exp->created_by === Auth::id()))
+              <a href="{{ route('expenses.edit',$exp->id) }}" class="btn btn-warning btn-xs"><i class="bi bi-pencil"></i></a>
+              <form action="{{ route('expenses.destroy',$exp->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this expense?')">@csrf @method('DELETE')<button class="btn btn-danger btn-xs"><i class="bi bi-trash"></i></button></form>
+            @endif
             @if($exp->receipt_file)
             <a href="{{ asset('storage/'.$exp->receipt_file) }}" target="_blank" class="btn btn-light btn-xs"><i class="bi bi-paperclip"></i></a>
             @endif
           </td>
         </tr>
         @empty
-        <tr><td colspan="6" class="text-center text-muted py-4">No expenses found.</td></tr>
+        <tr><td colspan="8" class="text-center text-muted py-4">No expenses found.</td></tr>
         @endforelse
       </tbody>
     </table>
@@ -105,4 +154,37 @@
     </div>
   </div>
 </div>
+
+@if($canApprove)
+@foreach($expenses as $exp)
+@if($exp->isPending() && $exp->created_by !== Auth::id())
+<div class="modal fade" id="approveExp{{ $exp->id }}" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header bg-success text-white"><h5 class="modal-title"><i class="bi bi-check-circle mr-2"></i>Approve Expense</h5><button type="button" class="close text-white" data-dismiss="modal">&times;</button></div>
+    <form action="{{ route('expenses.approve', $exp->id) }}" method="POST">@csrf
+      <div class="modal-body">
+        <p class="mb-2"><strong>{{ $exp->title }}</strong> — <span class="text-danger">ETB {{ number_format($exp->amount,2) }}</span></p>
+        <p class="text-muted small mb-3">Submitted by {{ $exp->creator->name ?? 'Unknown' }} on {{ $exp->expense_date->format('d M Y') }}</p>
+        <div class="form-group mb-0"><label>Approval Note <small class="text-muted">(optional)</small></label><textarea name="approval_note" class="form-control" rows="2"></textarea></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-light btn-sm" data-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-circle mr-1"></i>Approve</button></div>
+    </form>
+  </div></div>
+</div>
+<div class="modal fade" id="rejectExp{{ $exp->id }}" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header bg-danger text-white"><h5 class="modal-title"><i class="bi bi-x-circle mr-2"></i>Reject Expense</h5><button type="button" class="close text-white" data-dismiss="modal">&times;</button></div>
+    <form action="{{ route('expenses.reject', $exp->id) }}" method="POST">@csrf
+      <div class="modal-body">
+        <p class="mb-2">Reject <strong>{{ $exp->title }}</strong> (ETB {{ number_format($exp->amount,2) }})</p>
+        <div class="form-group mb-0"><label>Rejection Reason *</label><textarea name="rejection_reason" class="form-control" rows="3" required placeholder="Explain why this expense is not approved..."></textarea></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-light btn-sm" data-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-x-circle mr-1"></i>Reject</button></div>
+    </form>
+  </div></div>
+</div>
+@endif
+@endforeach
+@endif
+
 @endsection

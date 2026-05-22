@@ -110,50 +110,58 @@
         </div>
     </div>
 
-    {{-- Fees --}}
-    <div class="col-md-6 mb-3">
+    {{-- School Fees --}}
+    <div class="col-md-12 mb-3">
         <div class="card h-100">
-            <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="icon-coin-dollar mr-2 text-danger"></i>Fee Status</h6></div>
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0"><i class="icon-coin-dollar mr-2 text-danger"></i>School Fee Invoices</h6>
+                <a href="{{ route('parent.fees') }}" class="btn btn-sm btn-primary">All Family Fees</a>
+            </div>
             <div class="card-body">
-                @if($unpaidFees->isEmpty())
-                    <div class="text-center text-success py-3"><i class="icon-checkmark-circle icon-2x mb-2"></i><p class="mb-0">All fees are cleared.</p></div>
+                @if($discountType)
+                <div class="alert alert-success py-2 mb-3" style="font-size:13px;">
+                    <i class="bi bi-check-circle mr-1"></i>
+                    <strong>{{ \App\Services\DiscountService::discountTypeLabel($discountType) }} discount</strong>
+                    applied automatically on eligible invoices (no request needed).
+                </div>
+                @endif
+                @if($feeInvoices->isEmpty())
+                    <p class="text-muted text-center py-3 mb-0">No fee invoices for this child yet.</p>
                 @else
-                    <div class="alert alert-warning py-2 mb-2"><i class="icon-warning2 mr-1"></i> {{ $unpaidFees->count() }} outstanding payment(s)</div>
-                    <table class="table table-sm table-bordered mb-2">
-                        <thead class="thead-light"><tr><th>Fee</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Pay Online</th></tr></thead>
-                        <tbody>
-                            @foreach($unpaidFees as $pr)
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0" style="font-size:13px;">
+                        <thead class="thead-light">
                             <tr>
-                                <td>{{ $pr->payment->title ?? '-' }}</td>
-                                <td>ETB {{ number_format($pr->payment->amount ?? 0) }}</td>
-                                <td>ETB {{ number_format($pr->amt_paid ?? 0) }}</td>
-                                <td class="text-danger">ETB {{ number_format(($pr->payment->amount ?? 0) - ($pr->amt_paid ?? 0)) }}</td>
-                                <td>
-                                    <form action="{{ route('chapa.initiate', $pr->id) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="btn btn-xs btn-warning">
-                                            <i class="bi bi-credit-card mr-1"></i>Pay via Chapa
-                                        </button>
-                                    </form>
+                                <th>Invoice</th><th>Fee</th><th>Original</th><th>Discount</th>
+                                <th>Penalty</th><th>Balance</th><th>Status</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($feeInvoices as $inv)
+                            <tr>
+                                <td><code style="font-size:11px">{{ $inv->invoice_no }}</code></td>
+                                <td>{{ optional($inv->fee_structure->category)->name ?? '-' }}</td>
+                                <td>ETB {{ number_format($inv->original_amount, 2) }}</td>
+                                <td class="text-success">
+                                    @if($inv->discount > 0)- ETB {{ number_format($inv->discount, 2) }}@else — @endif
                                 </td>
+                                <td class="text-warning">
+                                    @if($inv->fine > 0)+ ETB {{ number_format($inv->fine, 2) }}@else — @endif
+                                </td>
+                                <td class="{{ $inv->balance > 0 ? 'text-danger' : 'text-success' }}">
+                                    ETB {{ number_format($inv->balance, 2) }}
+                                </td>
+                                <td>
+                                    @if($inv->status === 'paid')<span class="badge badge-success">Paid</span>
+                                    @elseif($inv->status === 'partial')<span class="badge badge-warning">Partial</span>
+                                    @else<span class="badge badge-danger">Unpaid</span>@endif
+                                </td>
+                                <td><a href="{{ route('parent.fee', Qs::hash($inv->id)) }}" class="btn btn-xs btn-info">Details</a></td>
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
-                @endif
-                @if($paidFees->isNotEmpty())
-                <p class="font-weight-semibold mb-1 mt-2">Payment History:</p>
-                <table class="table table-sm table-bordered mb-0">
-                    <thead class="thead-light"><tr><th>Fee</th><th>Amount Paid</th></tr></thead>
-                    <tbody>
-                        @foreach($paidFees as $pr)
-                        <tr>
-                            <td>{{ $pr->payment->title ?? '-' }}</td>
-                            <td class="text-success">ETB {{ number_format($pr->amt_paid ?? 0) }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                </div>
                 @endif
             </div>
         </div>

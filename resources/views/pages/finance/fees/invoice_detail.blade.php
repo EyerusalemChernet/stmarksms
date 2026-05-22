@@ -57,7 +57,12 @@
         </table>
       </div>
     </div>
-    <a href="{{ route('fees.invoices') }}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left mr-1"></i>Back</a>
+    <a href="{{ route('fees.invoices') }}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left mr-1"></i>Back to Invoices</a>
+    @if($inv->balance > 0)
+    <a href="{{ route('discount_requests.create', Qs::hash($inv->id)) }}" class="btn btn-outline-info btn-sm ml-1">
+      <i class="bi bi-percent mr-1"></i>Request Discount
+    </a>
+    @endif
   </div>
   <div class="col-md-4">
     @if($inv->status !== 'paid')
@@ -65,8 +70,21 @@
       <div class="card-header bg-success text-white py-2"><h6 class="mb-0"><i class="bi bi-cash-coin mr-2"></i>Record Payment (Installment #{{ $installment_no }})</h6></div>
       <div class="card-body">
         <form action="{{ route('fees.pay', Qs::hash($inv->id)) }}" method="POST">@csrf
-          <div class="form-group"><label>Amount (ETB) *</label><input type="number" name="amount" class="form-control" step="0.01" min="1" max="{{ $inv->balance }}" required placeholder="Max: {{ number_format($inv->balance,2) }}"></div>
-          <div class="form-group"><label>Payment Method</label><select name="payment_method" class="form-control"><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="mobile_money">Mobile Money</option><option value="chapa">Chapa</option></select></div>
+          <div class="form-group">
+            <label>Amount (ETB) *</label>
+            <input type="number" name="amount" class="form-control @error('amount') is-invalid @enderror" step="0.01" min="0.01" max="{{ $inv->balance }}" value="{{ old('amount') }}" required placeholder="Max: {{ number_format($inv->balance, 2) }}">
+            @error('amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
+          <div class="form-group">
+            <label>Payment Method *</label>
+            <select name="payment_method" class="form-control @error('payment_method') is-invalid @enderror" required>
+              <option value="cash" {{ old('payment_method','cash')==='cash'?'selected':'' }}>Cash</option>
+              <option value="bank_transfer" {{ old('payment_method')==='bank_transfer'?'selected':'' }}>Bank Transfer</option>
+              <option value="mobile_money" {{ old('payment_method')==='mobile_money'?'selected':'' }}>Mobile Money</option>
+              <option value="chapa" {{ old('payment_method')==='chapa'?'selected':'' }}>Chapa</option>
+            </select>
+            @error('payment_method')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
           <div class="form-group"><label>Transaction Ref</label><input type="text" name="transaction_ref" class="form-control" placeholder="Optional"></div>
           <div class="form-group"><label>Notes</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
           <button type="submit" class="btn btn-success btn-block"><i class="bi bi-check-circle mr-1"></i>Record Payment</button>
@@ -77,9 +95,17 @@
     <div class="card mb-3 border-info">
       <div class="card-header py-2"><h6 class="mb-0"><i class="bi bi-percent mr-2 text-info"></i>Discount / Scholarship</h6></div>
       <div class="card-body">
-        <form action="{{ route('fees.discount',$inv->id) }}" method="POST">@csrf
-          <div class="form-group"><label>Discount (ETB)</label><input type="number" name="discount" class="form-control" step="0.01" min="0" value="{{ $inv->discount }}"></div>
-          <div class="form-group"><label>Reason</label><input type="text" name="discount_reason" class="form-control" value="{{ $inv->discount_reason }}" placeholder="e.g. Scholarship"></div>
+        <form action="{{ route('fees.discount', Qs::hash($inv->id)) }}" method="POST">@csrf
+          <div class="form-group">
+            <label>Discount (ETB) *</label>
+            <input type="number" name="discount" class="form-control @error('discount') is-invalid @enderror" step="0.01" min="0" max="{{ $inv->original_amount }}" value="{{ old('discount', $inv->discount) }}" required>
+            @error('discount')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
+          <div class="form-group">
+            <label>Reason *</label>
+            <input type="text" name="discount_reason" class="form-control @error('discount_reason') is-invalid @enderror" value="{{ old('discount_reason', $inv->discount_reason) }}" placeholder="e.g. Scholarship" required>
+            @error('discount_reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
           <button type="submit" class="btn btn-info btn-sm btn-block">Apply Discount</button>
         </form>
       </div>
@@ -87,9 +113,17 @@
     <div class="card border-warning">
       <div class="card-header py-2"><h6 class="mb-0"><i class="bi bi-exclamation-triangle mr-2 text-warning"></i>Late Fine</h6></div>
       <div class="card-body">
-        <form action="{{ route('fees.fine',$inv->id) }}" method="POST">@csrf
-          <div class="form-group"><label>Fine (ETB)</label><input type="number" name="fine" class="form-control" step="0.01" min="0" value="{{ $inv->fine }}"></div>
-          <div class="form-group"><label>Reason</label><input type="text" name="fine_reason" class="form-control" value="{{ $inv->fine_reason }}" placeholder="e.g. Late payment"></div>
+        <form action="{{ route('fees.fine', Qs::hash($inv->id)) }}" method="POST">@csrf
+          <div class="form-group">
+            <label>Fine (ETB) *</label>
+            <input type="number" name="fine" class="form-control @error('fine') is-invalid @enderror" step="0.01" min="0" value="{{ old('fine', $inv->fine) }}" required>
+            @error('fine')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
+          <div class="form-group">
+            <label>Reason *</label>
+            <input type="text" name="fine_reason" class="form-control @error('fine_reason') is-invalid @enderror" value="{{ old('fine_reason', $inv->fine_reason) }}" placeholder="e.g. Late payment" required>
+            @error('fine_reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
           <button type="submit" class="btn btn-warning btn-sm btn-block">Apply Fine</button>
         </form>
       </div>

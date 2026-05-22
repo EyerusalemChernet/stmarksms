@@ -27,8 +27,8 @@ class ReportController extends Controller
     {
         // Academic reports: admin, super_admin, teacher
         $this->middleware('teamSAT')->only(['index', 'students', 'attendance', 'academic', 'library']);
-        // Finance report: admin, super_admin, hr_manager only
-        $this->middleware('hr_manager')->only(['finance']);
+        // Finance report: admin, super_admin, hr_manager, accountant
+        $this->middleware('finance_access')->only(['finance']);
         $this->my_class = $my_class;
         $this->user     = $user;
     }

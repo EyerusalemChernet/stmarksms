@@ -15,7 +15,7 @@ class FinanceReportController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('hr_manager');
+        $this->middleware('finance_access');
     }
 
     public function index()
@@ -57,7 +57,7 @@ class FinanceReportController extends Controller
         $date_from = $req->get('date_from', now()->startOfMonth()->toDateString());
         $date_to   = $req->get('date_to', now()->toDateString());
 
-        $expenses = Expense::with('category')
+        $expenses = Expense::with('category')->approved()
             ->whereDate('expense_date', '>=', $date_from)
             ->whereDate('expense_date', '<=', $date_to)
             ->get();
@@ -85,7 +85,7 @@ class FinanceReportController extends Controller
         $date_to   = $req->get('date_to', now()->toDateString());
 
         $income   = FeePayment::whereDate('paid_at', '>=', $date_from)->whereDate('paid_at', '<=', $date_to)->sum('amount');
-        $expenses = Expense::whereDate('expense_date', '>=', $date_from)->whereDate('expense_date', '<=', $date_to)->sum('amount');
+        $expenses = Expense::approved()->whereDate('expense_date', '>=', $date_from)->whereDate('expense_date', '<=', $date_to)->sum('amount');
         $profit   = $income - $expenses;
 
         // Monthly breakdown
@@ -94,7 +94,7 @@ class FinanceReportController extends Controller
         for ($m = 1; $m <= 12; $m++) {
             $pad = str_pad($m, 2, '0', STR_PAD_LEFT);
             $incQ = FeePayment::whereYear('paid_at', now()->year);
-            $expQ = Expense::whereYear('expense_date', now()->year);
+            $expQ = Expense::approved()->whereYear('expense_date', now()->year);
             if ($isLite) {
                 $incQ->whereRaw("strftime('%m', paid_at) = ?", [$pad]);
                 $expQ->whereRaw("strftime('%m', expense_date) = ?", [$pad]);

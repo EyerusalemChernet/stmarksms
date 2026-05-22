@@ -4,7 +4,7 @@
 <div class="row">
   <div class="col-md-5">
     <div class="card mb-3">
-      <div class="card-header"><h6 class="mb-0"><i class="bi bi-diagram-3 mr-2"></i>Add Fee Structure &mdash; {{ $session }}</h6></div>
+      <div class="card-header"><h6 class="mb-0"><i class="bi bi-diagram-3 mr-2"></i>Add Fee Structure</h6></div>
       <div class="card-body">
         <form action="{{ route('fees.structures.store') }}" method="POST">@csrf
           <div class="form-group">
@@ -27,7 +27,7 @@
           </div>
           <div class="form-group">
             <label>Session *</label>
-            <input type="text" name="session" class="form-control" value="{{ $session }}" required>
+            <input type="text" name="session" class="form-control" value="{{ $formSession }}" required>
           </div>
           <div class="form-group">
             <label>Amount (ETB) *</label>
@@ -60,15 +60,16 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Assign to Class *</label>
-            <select name="my_class_id" class="form-control" required>
-              <option value="">-- Select --</option>
+            <label>Assign to Class</label>
+            <select name="my_class_id" class="form-control">
+              <option value="">Use structure's class</option>
               @foreach($classes as $c)
                 <option value="{{ $c->id }}">{{ $c->name }}</option>
               @endforeach
             </select>
+            <small class="text-muted">Generates invoices for all active students in the class.</small>
           </div>
-          <button class="btn btn-success btn-sm"><i class="bi bi-lightning mr-1"></i>Assign to All Students</button>
+          <button class="btn btn-success btn-sm"><i class="bi bi-lightning mr-1"></i>Generate Invoices for Class</button>
         </form>
       </div>
     </div>
@@ -76,7 +77,21 @@
 
   <div class="col-md-7">
     <div class="card">
-      <div class="card-header"><h6 class="mb-0"><i class="bi bi-list-ul mr-2"></i>Fee Structures</h6></div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+          <i class="bi bi-list-ul mr-2"></i>Fee Structures
+          <span class="badge badge-secondary ml-1">{{ $structures->count() }}</span>
+        </h6>
+        <form method="GET" action="{{ route('fees.structures') }}" class="form-inline">
+          <label class="mr-2">Filter:</label>
+          <select name="session" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+            <option value="" {{ !$sessionFilter ? 'selected' : '' }}>All Sessions</option>
+            @foreach($sessions as $s)
+              <option value="{{ $s }}" {{ $sessionFilter === $s ? 'selected' : '' }}>{{ $s }}</option>
+            @endforeach
+          </select>
+        </form>
+      </div>
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover mb-0">
@@ -107,7 +122,13 @@
                 </td>
               </tr>
               @empty
-              <tr><td colspan="7" class="text-center text-muted py-4">No fee structures yet.</td></tr>
+              <tr><td colspan="7" class="text-center text-muted py-4">
+                @if($sessionFilter)
+                  No fee structures for session {{ $sessionFilter }}.
+                @else
+                  No fee structures yet.
+                @endif
+              </td></tr>
               @endforelse
             </tbody>
           </table>

@@ -11,7 +11,10 @@ use App\Models\BookRequest;
 use App\Models\ExamRecord;
 use App\Models\Message;
 use App\Models\PaymentRecord;
+use App\Models\StudentFeeInvoice;
 use App\Repositories\StudentRepo;
+use App\Services\DiscountService;
+use App\Services\PenaltyService;
 use App\Services\RulesEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,6 +46,8 @@ class MyController extends Controller
         // Unread messages
         $unread = Message::where('receiver_id', $parentId)->where('read', false)->count();
 
+        $familyInfo = DiscountService::getFamilyInfoForParent($parentId);
+
         // Per-child summary data
         $childData = $children->map(function ($sr) use ($year) {
             $sid = $sr->user_id;
@@ -56,8 +61,20 @@ class MyController extends Controller
             // Latest exam result
             $latestExr = ExamRecord::where('student_id', $sid)->where('year', $year)->orderByDesc('id')->first();
 
-            // Outstanding fees
-            $unpaidCount = PaymentRecord::where('student_id', $sid)->where('paid', 0)->count();
+            // Outstanding school fee invoices
+            $feeInvoices = StudentFeeInvoice::where('student_id', $sid)
+                ->with('fee_structure.category')
+                ->orderByDesc('created_at')
+                ->get();
+            foreach ($feeInvoices as $inv) {
+                if (in_array($inv->status, ['unpaid', 'partial'], true)) {
+                    PenaltyService::syncPenaltyForInvoice($inv);
+                }
+            }
+            $unpaidCount   = $feeInvoices->whereIn('status', ['unpaid', 'partial'])->count();
+            $feeBalance    = $feeInvoices->sum('balance');
+            $feeDiscount   = $feeInvoices->sum('discount');
+            $discountType  = DiscountService::getDiscountTypeForStudent($sr);
 
             // Active library borrows
             $borrowed = BookRequest::where('user_id', $sid)->whereIn('status', ['pending', 'approved'])->with('book')->get();
@@ -68,13 +85,17 @@ class MyController extends Controller
                 'att_total'   => $total,
                 'att_present' => $present,
                 'latest_exr'  => $latestExr,
-                'unpaid'      => $unpaidCount,
-                'borrowed'    => $borrowed,
-                'blocked'     => RulesEngine::isResultBlocked($sid, $year),
+                'unpaid'         => $unpaidCount,
+                'fee_balance'    => $feeBalance,
+                'fee_discount'   => $feeDiscount,
+                'discount_type'  => $discountType,
+                'fee_invoices'   => $feeInvoices,
+                'borrowed'       => $borrowed,
+                'blocked'        => RulesEngine::isResultBlocked($sid, $year),
             ];
         });
 
-        return view('pages.parent.dashboard', compact('childData', 'announcements', 'unread', 'year'));
+        return view('pages.parent.dashboard', compact('childData', 'announcements', 'unread', 'year', 'familyInfo'));
     }
 
     /** Full child detail view for a parent */
@@ -105,7 +126,20 @@ class MyController extends Controller
         $examRecords = ExamRecord::where('student_id', $student_id)
             ->where('year', $year)->with('exam', 'my_class')->get();
 
-        // Fee status
+        // School fee invoices (new finance module)
+        $feeInvoices = StudentFeeInvoice::where('student_id', $student_id)
+            ->with(['fee_structure.category', 'fee_structure.my_class', 'payments'])
+            ->orderByDesc('created_at')
+            ->get();
+        foreach ($feeInvoices as $inv) {
+            if (in_array($inv->status, ['unpaid', 'partial'], true)) {
+                PenaltyService::syncPenaltyForInvoice($inv);
+            }
+        }
+        $familyInfo    = DiscountService::getFamilyInfoForParent($parentId);
+        $discountType  = DiscountService::getDiscountTypeForStudent($sr);
+
+        // Legacy fee records (if any)
         $unpaidFees = PaymentRecord::where('student_id', $student_id)->where('paid', 0)->with('payment')->get();
         $paidFees   = PaymentRecord::where('student_id', $student_id)->where('paid', 1)->with('payment')->get();
 
@@ -128,7 +162,8 @@ class MyController extends Controller
 
         return view('pages.parent.child_detail', compact(
             'sr', 'attRecords', 'attPct', 'total', 'present',
-            'examRecords', 'unpaidFees', 'paidFees',
+            'examRecords', 'feeInvoices', 'familyInfo', 'discountType',
+            'unpaidFees', 'paidFees',
             'borrowed', 'borrowHistory', 'messages',
             'timetable', 'blocked', 'year'
         ));
