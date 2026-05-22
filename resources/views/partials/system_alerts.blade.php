@@ -2,7 +2,7 @@
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\BookRequest;
-use App\Models\PaymentRecord;
+use App\Services\FeeUnificationService;
 use App\Services\RulesEngine;
 use App\Helpers\Qs;
 
@@ -22,7 +22,7 @@ $userType = Qs::getUserType();
             $total    = AttendanceRecord::whereIn('session_id', $sessions)->where('student_id', $child->user_id)->count();
             $present  = AttendanceRecord::whereIn('session_id', $sessions)->where('student_id', $child->user_id)->whereIn('status', ['present','late'])->count();
             $pct      = $total > 0 ? round(($present/$total)*100,1) : 100;
-            $unpaid   = PaymentRecord::where('student_id', $child->user_id)->where('paid', 0)->count();
+            $unpaid   = FeeUnificationService::countUnpaidInvoices($child->user_id);
         @endphp
         @if($pct < 75)
         <div class="alert alert-warning alert-dismissible border-0 mb-2 py-2">
@@ -36,7 +36,7 @@ $userType = Qs::getUserType();
             <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
             <i class="icon-coin-dollar mr-2"></i>
             <strong>{{ $child->user->name }}</strong> has <strong>{{ $unpaid }}</strong> outstanding fee payment(s).
-            <a href="{{ route('parent.child', $child->user_id) }}" class="alert-link ml-1">View Details</a>
+            <a href="{{ route('parent.fees') }}" class="alert-link ml-1">View Fees</a>
         </div>
         @endif
     @endforeach

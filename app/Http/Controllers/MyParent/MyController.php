@@ -10,7 +10,7 @@ use App\Models\AttendanceSession;
 use App\Models\BookRequest;
 use App\Models\ExamRecord;
 use App\Models\Message;
-use App\Models\PaymentRecord;
+use App\Models\FeePayment;
 use App\Models\StudentFeeInvoice;
 use App\Repositories\StudentRepo;
 use App\Services\DiscountService;
@@ -139,10 +139,6 @@ class MyController extends Controller
         $familyInfo    = DiscountService::getFamilyInfoForParent($parentId);
         $discountType  = DiscountService::getDiscountTypeForStudent($sr);
 
-        // Legacy fee records (if any)
-        $unpaidFees = PaymentRecord::where('student_id', $student_id)->where('paid', 0)->with('payment')->get();
-        $paidFees   = PaymentRecord::where('student_id', $student_id)->where('paid', 1)->with('payment')->get();
-
         // Library
         $borrowed = BookRequest::where('user_id', $student_id)
             ->whereIn('status', ['pending', 'approved'])->with('book')->get();
@@ -163,7 +159,6 @@ class MyController extends Controller
         return view('pages.parent.child_detail', compact(
             'sr', 'attRecords', 'attPct', 'total', 'present',
             'examRecords', 'feeInvoices', 'familyInfo', 'discountType',
-            'unpaidFees', 'paidFees',
             'borrowed', 'borrowHistory', 'messages',
             'timetable', 'blocked', 'year'
         ));
@@ -232,18 +227,16 @@ class MyController extends Controller
                 ]);
             });
 
-        // Payment events
-        PaymentRecord::where('student_id', $student_id)->with('payment')->get()
-            ->each(function ($pr) use (&$events) {
-                if ($pr->amt_paid > 0) {
-                    $events->push([
-                        'date'  => $pr->updated_at->toDateString(),
-                        'icon'  => 'icon-coin-dollar text-success',
-                        'title' => 'Payment Recorded',
-                        'body'  => ($pr->payment->title ?? 'Fee') . ' — ₦' . number_format($pr->amt_paid),
-                        'ts'    => $pr->updated_at,
-                    ]);
-                }
+        FeePayment::where('student_id', $student_id)->with('invoice.fee_structure.category')->get()
+            ->each(function ($pay) use (&$events) {
+                $events->push([
+                    'date'  => ($pay->paid_at ?? $pay->created_at)->toDateString(),
+                    'icon'  => 'icon-coin-dollar text-success',
+                    'title' => 'Fee Payment',
+                    'body'  => (optional($pay->invoice->fee_structure->category)->name ?? 'School fee')
+                        . ' — ETB ' . number_format($pay->amount, 2),
+                    'ts'    => $pay->paid_at ?? $pay->created_at,
+                ]);
             });
 
         // Announcements

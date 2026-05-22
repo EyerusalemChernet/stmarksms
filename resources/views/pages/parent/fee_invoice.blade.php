@@ -130,6 +130,18 @@
     </div>
     @endif
 
+    @if($invoice->balance > 0 && $invoice->chapa_status !== 'pending')
+    <form action="{{ route('parent.fee.chapa', Qs::hash($invoice->id)) }}" method="POST" class="mb-2">
+      @csrf
+      <button type="submit" class="btn btn-success btn-block">
+        <i class="bi bi-credit-card mr-1"></i> Pay ETB {{ number_format($invoice->balance, 2) }} with Chapa
+      </button>
+    </form>
+    @elseif($invoice->chapa_status === 'pending')
+    <div class="alert alert-warning py-2 mb-2" style="font-size:12px;">
+      <i class="bi bi-hourglass-split mr-1"></i> Online payment in progress. Refresh after completing payment on Chapa.
+    </div>
+    @endif
     <a href="{{ route('parent.fees') }}" class="btn btn-light btn-sm btn-block">Back to all fees</a>
   </div>
 </div>

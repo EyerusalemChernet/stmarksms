@@ -9,7 +9,9 @@ use App\Models\BookRequest;
 use App\Models\ExamRecord;
 use App\Models\MyClass;
 use App\Models\Payment;
-use App\Models\PaymentRecord;
+use App\Models\FeePayment;
+use App\Models\StudentFeeInvoice;
+use App\Models\StudentRecord;
 use App\Models\Promotion;
 use App\Models\Section;
 use App\Models\StudentRecord;
@@ -222,23 +224,36 @@ class ReportController extends Controller
         $year     = $req->get('year', Qs::getCurrentSession());
         $class_id = $req->get('class_id');
 
-        $totalCollected = PaymentRecord::where('paid', 1)
-            ->whereHas('payment', fn($q) => $q->where('year', $year))
-            ->sum('amt_paid');
+        $totalCollected = FeePayment::whereHas('invoice', fn($q) => $q->where('session', $year))->sum('amount');
 
-        $totalOutstanding = PaymentRecord::where('paid', 0)
-            ->whereHas('payment', fn($q) => $q->where('year', $year))
-            ->sum(DB::raw('COALESCE(balance, 0)'));
+        $totalOutstanding = StudentFeeInvoice::where('session', $year)
+            ->whereIn('status', ['unpaid', 'partial'])
+            ->sum('balance');
 
-        $totalStudentsPaid   = PaymentRecord::where('paid', 1)->whereHas('payment', fn($q) => $q->where('year', $year))->distinct('student_id')->count('student_id');
-        $totalStudentsUnpaid = PaymentRecord::where('paid', 0)->whereHas('payment', fn($q) => $q->where('year', $year))->distinct('student_id')->count('student_id');
+        $totalStudentsPaid = StudentFeeInvoice::where('session', $year)
+            ->where('status', 'paid')
+            ->distinct('student_id')
+            ->count('student_id');
+
+        $totalStudentsUnpaid = StudentFeeInvoice::where('session', $year)
+            ->whereIn('status', ['unpaid', 'partial'])
+            ->where('balance', '>', 0)
+            ->distinct('student_id')
+            ->count('student_id');
 
         $classQuery = MyClass::orderBy('name');
         if ($class_id) $classQuery->where('id', $class_id);
 
         $classes = $classQuery->get()->map(function ($cls) use ($year) {
-            $paid   = PaymentRecord::where('paid', 1)->whereHas('payment', fn($q) => $q->where('year', $year)->where('my_class_id', $cls->id))->sum('amt_paid');
-            $unpaid = PaymentRecord::where('paid', 0)->whereHas('payment', fn($q) => $q->where('year', $year)->where('my_class_id', $cls->id))->count();
+            $studentIds = StudentRecord::where('my_class_id', $cls->id)->pluck('user_id');
+            $paid = FeePayment::whereIn('student_id', $studentIds)
+                ->whereHas('invoice', fn($q) => $q->where('session', $year))
+                ->sum('amount');
+            $unpaid = StudentFeeInvoice::whereIn('student_id', $studentIds)
+                ->where('session', $year)
+                ->whereIn('status', ['unpaid', 'partial'])
+                ->where('balance', '>', 0)
+                ->count();
             $cls->paid_amount  = $paid;
             $cls->unpaid_count = $unpaid;
             return $cls;

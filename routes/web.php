@@ -454,18 +454,20 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
     Route::post('/payroll/{id}/items',    'PayrollController@addItem')->name('hr.payroll.item.add');
     Route::delete('/payroll/{id}/items',  'PayrollController@removeItem')->name('hr.payroll.item.remove');
 
-    /*************** Payments (Legacy) *****************/
-    Route::group(['prefix' => 'payments'], function(){
-        Route::get('manage/{class_id?}', 'PaymentController@manage')->name('payments.manage');
-        Route::get('invoice/{id}/{year?}', 'PaymentController@invoice')->name('payments.invoice');
-        Route::get('receipts/{id}', 'PaymentController@receipts')->name('payments.receipts');
+    /*************** Payments (Legacy → unified finance) *****************/
+    Route::group(['namespace' => 'Finance', 'prefix' => 'payments'], function () {
+        Route::get('manage/{class_id?}', 'LegacyPaymentRedirectController@manage')->name('payments.manage');
+        Route::get('invoice/{id}/{year?}', 'LegacyPaymentRedirectController@invoice')->name('payments.invoice');
+        Route::get('receipts/{id}', 'LegacyPaymentRedirectController@receipts')->name('payments.receipts');
+        Route::post('select_year', 'LegacyPaymentRedirectController@selectYear')->name('payments.select_year');
+        Route::post('select_class', 'LegacyPaymentRedirectController@selectClass')->name('payments.select_class');
+    });
+    Route::group(['prefix' => 'payments'], function () {
         Route::get('pdf_receipts/{id}', 'PaymentController@pdf_receipts')->name('payments.pdf_receipts');
-        Route::post('select_year', 'PaymentController@select_year')->name('payments.select_year');
-        Route::post('select_class', 'PaymentController@select_class')->name('payments.select_class');
         Route::delete('reset_record/{id}', 'PaymentController@reset_record')->name('payments.reset_record');
         Route::post('pay_now/{id}', 'PaymentController@pay_now')->name('payments.pay_now');
     });
-    Route::resource('payments', 'PaymentController');
+    Route::resource('payments', 'Finance\LegacyPaymentRedirectController');
 
     /*************** HR *****************/
     Route::prefix('hr')->middleware(['auth', 'hr_manager'])->group(function(){
@@ -608,6 +610,8 @@ Route::group(['namespace' => 'MyParent', 'middleware' => 'my_parent'], function 
     Route::get('/parent/dashboard', 'MyController@dashboard')->name('parent.dashboard');
     Route::get('/parent/fees', 'ParentFeeController@index')->name('parent.fees');
     Route::get('/parent/fees/invoice/{id}', 'ParentFeeController@show')->name('parent.fee');
+    Route::post('/parent/fees/invoice/{id}/chapa', '\App\Http\Controllers\Finance\ChapaPaymentController@initiateFeePay')->name('parent.fee.chapa');
+    Route::get('/parent/fees/invoice/{id}/chapa/return', '\App\Http\Controllers\Finance\ChapaPaymentController@returnFeePay')->name('parent.fee.chapa.return');
     Route::get('/parent/child/{student_id}', 'MyController@childDetail')->name('parent.child');
     Route::get('/parent/child/{student_id}/timeline', 'MyController@timeline')->name('parent.timeline');
     Route::get('/my_children', 'MyController@children')->name('my_children'); // legacy redirect

@@ -8,7 +8,7 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\ExamRecord;
 use App\Models\Message;
-use App\Models\PaymentRecord;
+use App\Models\StudentFeeInvoice;
 use App\Models\Receipt;
 use App\Models\StaffAttendance;
 use App\Models\Subject;
@@ -73,8 +73,8 @@ class HomeController extends Controller
             $d['attendance_pct'] = $totalRec > 0 ? round(($presentRec / $totalRec) * 100, 1) : 0;
             $d['total_sessions'] = $sessions->count();
 
-            $d['total_paid']   = PaymentRecord::where('paid', 1)->count();
-            $d['total_unpaid'] = PaymentRecord::where('paid', 0)->count();
+            $d['total_paid']   = StudentFeeInvoice::where('status', 'paid')->count();
+            $d['total_unpaid'] = StudentFeeInvoice::whereIn('status', ['unpaid', 'partial'])->where('balance', '>', 0)->count();
 
             $d['announcements']    = $this->getAnnouncements($uid);
             $d['unread_messages']  = Message::where('receiver_id', $uid)->where('read', false)->count();
