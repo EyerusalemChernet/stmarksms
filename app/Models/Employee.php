@@ -171,8 +171,17 @@ class Employee extends Model
     /** Photo URL — falls back to user photo, then default */
     public function getPhotoUrlAttribute(): string
     {
-        if ($this->photo) return $this->photo;
-        if ($this->user) return $this->user->photo;
+        // If employee has a custom photo, use it
+        if ($this->photo) {
+            return $this->photo;
+        }
+        
+        // If linked to a user with a photo, use user's photo
+        if ($this->user_id && $this->user && isset($this->user->photo) && $this->user->photo) {
+            return $this->user->photo;
+        }
+        
+        // Return default placeholder
         return asset('global_assets/images/user.png');
     }
 

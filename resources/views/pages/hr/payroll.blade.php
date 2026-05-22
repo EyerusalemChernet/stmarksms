@@ -173,7 +173,8 @@
                     <td>
                         <div class="d-flex align-items-center" style="gap:6px;">
                             <img src="{{ $emp->photo_url }}" width="26" height="26"
-                                 class="rounded-circle" style="object-fit:cover;">
+                                 class="rounded-circle" style="object-fit:cover;" 
+                                 onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';">
                             <a href="{{ route('hr.show', $emp->id) }}">{{ $emp->full_name }}</a>
                         </div>
                     </td>
