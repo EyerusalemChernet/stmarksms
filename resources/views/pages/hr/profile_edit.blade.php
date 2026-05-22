@@ -309,6 +309,39 @@
     </div>
 </form>
 
+{{-- Contract Renewal (shown when contract_end_date is set) --}}
+@if($ed && $ed->contract_end_date)
+<div class="card border-{{ $ed->isContractExpired() ? 'danger' : ($ed->isContractExpiringSoon(30) ? 'warning' : 'info') }} mt-2 mb-3">
+    <div class="card-header bg-{{ $ed->isContractExpired() ? 'danger' : ($ed->isContractExpiringSoon(30) ? 'warning' : 'info') }} text-white d-flex justify-content-between align-items-center">
+        <h6 class="card-title mb-0">
+            <i class="bi bi-file-earmark-text mr-1"></i>Contract Status:
+            <span class="badge badge-light text-dark ml-1">{{ $ed->contractStatusLabel() }}</span>
+        </h6>
+        <small>Expires: {{ $ed->contract_end_date->format('d M Y') }}</small>
+    </div>
+    <div class="card-body">
+        <form action="{{ route('hr.contracts.renew', $employee->id) }}" method="POST" class="form-inline" style="gap:10px;">
+            @csrf
+            <div>
+                <label class="font-weight-bold small d-block mb-1">New Contract End Date <span class="text-danger">*</span></label>
+                <input type="date" name="contract_end_date" class="form-control form-control-sm"
+                       min="{{ now()->addDay()->format('Y-m-d') }}" required>
+            </div>
+            <div>
+                <label class="font-weight-bold small d-block mb-1">Notes</label>
+                <input type="text" name="notes" class="form-control form-control-sm"
+                       placeholder="e.g. Renewed for 2025/26" style="width:220px;">
+            </div>
+            <div style="padding-top:22px;">
+                <button type="submit" class="btn btn-sm btn-success">
+                    <i class="bi bi-arrow-repeat mr-1"></i>Renew Contract
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
 {{-- Danger Zone --}}
 @if($employee->status !== 'terminated')
 <div class="card border-danger mt-2">

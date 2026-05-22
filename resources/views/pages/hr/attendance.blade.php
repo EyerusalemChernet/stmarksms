@@ -9,6 +9,29 @@
     </a>
 </div>
 
+{{-- Holiday alert for today --}}
+@if(isset($todayHoliday) && $todayHoliday)
+<div class="alert alert-warning d-flex align-items-center mb-3">
+    <i class="bi bi-calendar-event mr-2" style="font-size:1.2rem;"></i>
+    <div>
+        <strong>Today is a public holiday:</strong> {{ $todayHoliday }}.
+        Attendance marked today will still be recorded, but this day is excluded from payroll working-day calculations.
+    </div>
+</div>
+@endif
+
+{{-- Holidays in selected month --}}
+@if(isset($monthHolidays) && $monthHolidays->count() > 0)
+<div class="alert alert-info py-2 mb-3 small">
+    <i class="bi bi-info-circle mr-1"></i>
+    <strong>{{ $monthHolidays->count() }} public holiday(s) in {{ $month }}:</strong>
+    @foreach($monthHolidays as $h)
+        <span class="badge badge-light border ml-1">{{ $h->date->format('d M') }} — {{ $h->name }}</span>
+    @endforeach
+    — these days are excluded from payroll working-day calculations.
+</div>
+@endif
+
 {{-- Month summary tab --}}
 <div class="card mb-3">
     <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">
@@ -90,6 +113,53 @@
         No attendance records for {{ $month }} yet.
     </div>
     @endif
+</div>
+
+{{-- CSV Bulk Import --}}
+<div class="card mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="card-title mb-0">
+            <i class="bi bi-upload mr-1"></i>Bulk Import via CSV
+        </h6>
+        <a href="{{ route('hr.attendance.template') }}" class="btn btn-xs btn-outline-secondary">
+            <i class="bi bi-download mr-1"></i>Download Template
+        </a>
+    </div>
+    <div class="card-body">
+
+        @if(session('import_errors') && count(session('import_errors')) > 0)
+        <div class="alert alert-warning py-2 small">
+            <strong>Import warnings:</strong>
+            <ul class="mb-0 mt-1">
+                @foreach(session('import_errors') as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+
+        <form action="{{ route('hr.attendance.import') }}" method="POST" enctype="multipart/form-data"
+              class="form-inline flex-wrap" style="gap:10px;">
+            @csrf
+            <div>
+                <label class="font-weight-bold small d-block mb-1">CSV File <span class="text-danger">*</span></label>
+                <input type="file" name="csv_file" accept=".csv,.txt"
+                       class="form-control form-control-sm" style="width:280px;" required>
+            </div>
+            <div style="padding-top:22px;">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-upload mr-1"></i>Import
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-2 small text-muted">
+            <i class="bi bi-info-circle mr-1"></i>
+            CSV columns: <code>employee_code, date (YYYY-MM-DD), status (present/absent/late/leave), sign_in_time (HH:MM), sign_off_time (HH:MM), leave_type, remark</code>.
+            Download the template above for a ready-to-fill example.
+            Existing records for the same employee + date will be <strong>overwritten</strong>.
+        </div>
+    </div>
 </div>
 
 {{-- Daily marking form --}}

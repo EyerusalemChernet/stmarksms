@@ -81,6 +81,7 @@ class StaffPayroll extends Model
     {
         return match($this->status) {
             'draft'    => 'secondary',
+            'pending'  => 'warning',
             'approved' => 'info',
             'paid'     => 'success',
             default    => 'secondary',
@@ -88,6 +89,7 @@ class StaffPayroll extends Model
     }
 
     public function isDraft(): bool    { return $this->status === 'draft'; }
+    public function isPending(): bool  { return $this->status === 'pending'; }
     public function isApproved(): bool { return $this->status === 'approved'; }
     public function isPaid(): bool     { return $this->status === 'paid'; }
 

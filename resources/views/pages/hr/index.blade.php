@@ -5,6 +5,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0"><i class="bi bi-people-fill mr-2"></i>Employees</h5>
     <div>
+        <a href="{{ route('hr.index') }}" class="btn btn-sm btn-outline-secondary mr-2">
+            <i class="bi bi-speedometer2 mr-1"></i>Dashboard
+        </a>
         <a href="{{ route('hr.employees.create') }}" class="btn btn-sm btn-success mr-2">
             <i class="bi bi-person-plus mr-1"></i>Create Employee
         </a>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SupportTeam;
 
 use App\Helpers\Qs;
 use App\Http\Requests\UserRequest;
+use App\Models\Department;
 use App\Repositories\LocationRepo;
 use App\Repositories\MyClassRepo;
 use App\Repositories\UserRepo;
@@ -38,6 +39,9 @@ class UserController extends Controller
         $d['users'] = $this->user->getPTAUsers();
         $d['nationals'] = $this->loc->getAllNationals();
         $d['blood_groups'] = $this->user->getBloodGroups();
+        $d['departments'] = Department::orderBy('name')->get();
+        $teacherType = $ut->firstWhere('title', 'teacher');
+        $d['teacher_type_hash'] = $teacherType ? Qs::hash($teacherType->id) : '';
         return view('pages.support_team.users.index', $d);
     }
 
@@ -49,6 +53,7 @@ class UserController extends Controller
         $d['users'] = $this->user->getPTAUsers();
         $d['blood_groups'] = $this->user->getBloodGroups();
         $d['nationals'] = $this->loc->getAllNationals();
+        $d['departments'] = Department::orderBy('name')->get();
         return view('pages.support_team.users.edit', $d);
     }
 
@@ -60,6 +65,7 @@ class UserController extends Controller
         }
 
         $data['password'] = Hash::make('user');
+        $data['must_change_password'] = true; // force password change after reset
         $this->user->update($id, $data);
         return back()->with('flash_success', __('msg.pu_reset'));
     }
@@ -82,6 +88,7 @@ class UserController extends Controller
 
         $pass = $req->password ?: $user_type;
         $data['password'] = Hash::make($pass);
+        $data['must_change_password'] = true; // force password change on first login
 
         if($req->hasFile('photo')) {
             $photo = $req->file('photo');
@@ -104,6 +111,11 @@ class UserController extends Controller
             $d2['user_id'] = $user->id;
             $d2['code'] = $staff_id;
             $this->user->createStaffRecord($d2);
+        }
+
+        /* AUTO-CREATE EMPLOYEE RECORD for HR self-service portal */
+        if ($user_is_staff) {
+            \App\Services\EmployeeProfileService::createFromUser($user);
         }
 
         return Qs::jsonStoreOk();
@@ -172,13 +184,95 @@ class UserController extends Controller
 
     public function bulkTemplate()
     {
-        $headers = ['user_type','name','email','username','phone','gender','address','emp_date','password'];
-        $example = ['teacher','Abebe Kebede','abebe@email.com','abebe.kebede','0911234567','Male','Addis Ababa',date('Y-m-d'),'Teacher@123'];
+        // Staff bulk template (teachers, hr_managers, admins) — includes emp_date and department
+        $headers = ['user_type','name','email','username','phone','gender','dob','address','emp_date','department','password'];
+        $example = ['teacher','ABEBE KEBEDE','abebe@email.com','abebe.kebede','0911234567','Male','1990-05-12','Addis Ababa',date('Y-m-d'),'Mathematics','Teacher@123'];
         $csv = implode(',', $headers) . "\n" . implode(',', $example) . "\n";
         return response($csv, 200, [
             'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="users_bulk_template.csv"',
+            'Content-Disposition' => 'attachment; filename="staff_bulk_template.csv"',
         ]);
+    }
+
+    /** Parent-specific bulk CSV template — no emp_date, no department */
+    public function bulkTemplateParents()
+    {
+        $headers = ['name','email','phone','phone2','gender','dob','address','password'];
+        $example = ['TIGIST BEKELE','tigist@email.com','0911234567','0922345678','Female','1985-03-20','Addis Ababa','Parent@123'];
+        $csv = implode(',', $headers) . "\n" . implode(',', $example) . "\n";
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="parents_bulk_template.csv"',
+        ]);
+    }
+
+    /** Parent-specific bulk import — no staff record, no emp_date */
+    public function bulkImportParents(\Illuminate\Http\Request $req)
+    {
+        $req->validate(['csv_file' => 'required|file|mimes:csv,txt|max:5120']);
+
+        $file    = $req->file('csv_file');
+        $handle  = fopen($file->getRealPath(), 'r');
+        $headers = array_map('trim', fgetcsv($handle));
+
+        $imported = 0;
+        $errors   = [];
+        $row      = 1;
+
+        while (($line = fgetcsv($handle)) !== false) {
+            $row++;
+            if (empty(array_filter($line, fn($v) => trim($v) !== ''))) continue;
+            if (count($line) < count($headers)) {
+                $errors[] = "Row {$row}: Not enough columns — skipped.";
+                continue;
+            }
+
+            $data = array_combine($headers, array_map('trim', $line));
+
+            if (empty($data['name']) || strlen($data['name']) < 3) {
+                $errors[] = "Row {$row}: Name required (min 3 chars) — skipped."; continue;
+            }
+            if (!in_array($data['gender'] ?? '', ['Male', 'Female'])) {
+                $errors[] = "Row {$row}: Gender must be Male or Female — skipped."; continue;
+            }
+            if (!empty($data['email']) && \App\User::where('email', $data['email'])->exists()) {
+                $errors[] = "Row {$row}: Email '{$data['email']}' already exists — skipped."; continue;
+            }
+
+            $dobFormatted = null;
+            if (!empty($data['dob'])) {
+                try { $dobFormatted = \Carbon\Carbon::parse($data['dob'])->format('Y-m-d'); }
+                catch (\Exception $e) { $errors[] = "Row {$row}: Invalid DOB — skipped."; continue; }
+            }
+
+            $pass = !empty($data['password']) ? $data['password'] : 'parent';
+            $code = strtoupper(Str::random(10));
+
+            $this->user->create([
+                'name'                 => strtoupper(trim($data['name'])),
+                'email'                => !empty($data['email']) ? $data['email'] : null,
+                'phone'                => $data['phone'] ?? null,
+                'phone2'               => $data['phone2'] ?? null,
+                'dob'                  => $dobFormatted,
+                'gender'               => $data['gender'],
+                'address'              => !empty($data['address']) ? $data['address'] : 'N/A',
+                'user_type'            => 'parent',
+                'code'                 => $code,
+                'username'             => null,
+                'password'             => Hash::make($pass),
+                'must_change_password' => true,
+                'photo'                => Qs::getDefaultUserImage(),
+            ]);
+
+            $imported++;
+        }
+
+        fclose($handle);
+        \App\Models\AuditLog::log('bulk_import', 'users', "Bulk created {$imported} parent(s).");
+
+        $msg = "{$imported} parent(s) imported successfully.";
+        if ($errors) $msg .= ' ' . count($errors) . ' row(s) skipped.';
+        return response()->json(['ok' => $imported > 0, 'msg' => $msg, 'errors' => $errors]);
     }
 
     public function bulkImport(\Illuminate\Http\Request $req)
@@ -198,30 +292,58 @@ class UserController extends Controller
 
         while (($line = fgetcsv($handle)) !== false) {
             $row++;
+
+            // Skip completely empty rows
+            if (empty(array_filter($line, fn($v) => trim($v) !== ''))) continue;
+
             if (count($line) < count($headers)) {
                 $errors[] = "Row {$row}: Not enough columns — skipped.";
                 continue;
             }
+
             $data = array_combine($headers, array_map('trim', $line));
 
-            // Resolve user type
-            $typeKey  = strtolower($data['user_type'] ?? '');
-            $userType = $typeMap[$typeKey] ?? null;
-            if (!$userType) {
-                $errors[] = "Row {$row}: Unknown user type '{$data['user_type']}' — skipped.";
+            // ── Required: name ───────────────────────────────────────────────
+            if (empty($data['name']) || strlen($data['name']) < 3) {
+                $errors[] = "Row {$row}: Name is required (min 3 characters) — skipped.";
                 continue;
             }
 
-            // Skip duplicate email
+            // ── Required: gender ─────────────────────────────────────────────
+            if (!in_array($data['gender'] ?? '', ['Male', 'Female'])) {
+                $errors[] = "Row {$row}: Gender must be 'Male' or 'Female' — skipped.";
+                continue;
+            }
+
+            // ── Resolve user type ────────────────────────────────────────────
+            $typeKey  = strtolower($data['user_type'] ?? '');
+            $userType = $typeMap[$typeKey] ?? null;
+            if (!$userType) {
+                $errors[] = "Row {$row}: Unknown user type '{$data['user_type']}'. Valid: " . implode(', ', $typeMap->keys()->toArray()) . " — skipped.";
+                continue;
+            }
+
+            // ── Duplicate email check ────────────────────────────────────────
             if (!empty($data['email']) && \App\User::where('email', $data['email'])->exists()) {
                 $errors[] = "Row {$row}: Email '{$data['email']}' already exists — skipped.";
                 continue;
             }
 
-            // Skip duplicate username
+            // ── Duplicate username check ─────────────────────────────────────
             if (!empty($data['username']) && \App\User::where('username', $data['username'])->exists()) {
                 $errors[] = "Row {$row}: Username '{$data['username']}' already exists — skipped.";
                 continue;
+            }
+
+            // ── Validate DOB if provided ─────────────────────────────────────
+            $dobFormatted = null;
+            if (!empty($data['dob'])) {
+                try {
+                    $dobFormatted = \Carbon\Carbon::parse($data['dob'])->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$row}: Invalid date of birth '{$data['dob']}' — skipped.";
+                    continue;
+                }
             }
 
             $userTypeTitle = $userType->title;
@@ -235,16 +357,18 @@ class UserController extends Controller
             $code     = strtoupper(Str::random(10));
 
             $user = $this->user->create([
-                'name'      => ucwords($data['name'] ?? ''),
-                'email'     => !empty($data['email']) ? $data['email'] : null,
-                'username'  => $username,
-                'phone'     => $data['phone'] ?? null,
-                'gender'    => $data['gender'] ?? 'Male',
-                'address'   => $data['address'] ?? 'N/A',
-                'user_type' => $userTypeTitle,
-                'code'      => $code,
-                'password'  => Hash::make($pass),
-                'photo'     => Qs::getDefaultUserImage(),
+                'name'                 => strtoupper(trim($data['name'])),
+                'email'                => !empty($data['email']) ? $data['email'] : null,
+                'username'             => $username,
+                'phone'                => $data['phone'] ?? null,
+                'dob'                  => $dobFormatted,
+                'gender'               => $data['gender'],
+                'address'              => !empty($data['address']) ? $data['address'] : 'N/A',
+                'user_type'            => $userTypeTitle,
+                'code'                 => $code,
+                'password'             => Hash::make($pass),
+                'must_change_password' => true, // force password change on first login
+                'photo'                => Qs::getDefaultUserImage(),
             ]);
 
             if ($userIsStaff) {
@@ -253,6 +377,9 @@ class UserController extends Controller
                     'code'     => $staffId,
                     'emp_date' => $empDate,
                 ]);
+
+                /* AUTO-CREATE EMPLOYEE RECORD for HR self-service portal */
+                \App\Services\EmployeeProfileService::createFromUser($user);
             }
 
             $imported++;

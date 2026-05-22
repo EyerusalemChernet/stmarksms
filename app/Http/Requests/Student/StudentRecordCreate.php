@@ -20,14 +20,14 @@ class StudentRecordCreate extends FormRequest
             'year_admitted' => 'required|string',
             // Date of birth: student must be at least 3 and at most 25 years old
             'dob'           => [
-                'sometimes', 'nullable', 'date',
+                'required', 'date',
                 'before:' . now()->subYears(3)->format('Y-m-d'),
                 'after:'  . now()->subYears(25)->format('Y-m-d'),
             ],
             // Ethiopian mobile: 10 digits starting with 09
-            'phone'         => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
-            // Alternative phone (Guardian 2) — optional, same format
-            'phone2'        => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
+            'phone'         => ['sometimes', 'nullable', 'string', 'min:7', 'max:20'],
+            // Alternative phone — optional
+            'phone2'        => ['sometimes', 'nullable', 'string', 'min:7', 'max:20'],
             'email'         => 'sometimes|nullable|email|max:100|unique:users',
             'photo'         => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
             'address'       => 'required|string|min:6|max:120',
@@ -37,7 +37,7 @@ class StudentRecordCreate extends FormRequest
             'nal_id'        => 'required',
             'my_class_id'   => 'required',
             'section_id'    => 'required',
-            'my_parent_id'  => 'sometimes|nullable',
+            'my_parent_id'  => 'required',
             'religion'      => 'sometimes|nullable|string|max:50',
         ];
     }
@@ -61,17 +61,23 @@ class StudentRecordCreate extends FormRequest
     public function messages()
     {
         return [
-            'phone.regex'  => 'Phone number must be 10 digits starting with 09 (e.g., 0911434321).',
-            'phone2.regex' => 'Alternative phone must be 10 digits starting with 09 (e.g., 0911434321).',
             'dob.before'   => 'Student must be at least 3 years old.',
             'dob.after'    => 'Student age cannot exceed 25 years. Please verify the date of birth.',
+            'dob.required' => 'Date of Birth is required.',
+            'dob.date'     => 'Date of Birth must be a valid date.',
+            'my_parent_id.required' => 'A parent or guardian must be assigned to the student.',
         ];
     }
 
     protected function getValidatorInstance()
     {
         $input = $this->all();
-        $input['my_parent_id'] = $input['my_parent_id'] ? Qs::decodeHash($input['my_parent_id']) : null;
+        // Decode the hashed parent ID; keep null if not provided (required rule will catch it)
+        if (!empty($input['my_parent_id'])) {
+            $input['my_parent_id'] = Qs::decodeHash($input['my_parent_id']) ?: null;
+        } else {
+            $input['my_parent_id'] = null;
+        }
         $this->getInputSource()->replace($input);
         return parent::getValidatorInstance();
     }

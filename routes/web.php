@@ -2,6 +2,10 @@
 
 Auth::routes();
 
+// Force password change — must be outside the auth group so the middleware can redirect here
+Route::get('/change-password',  'Auth\ChangePasswordController@showForm')->name('password.change.form')->middleware('auth');
+Route::post('/change-password', 'Auth\ChangePasswordController@update')->name('password.change.update')->middleware('auth');
+
 //Route::get('/test', 'TestController@index')->name('test');
 Route::get('/privacy-policy', 'HomeController@privacy_policy')->name('privacy_policy');
 Route::get('/terms-of-use', 'HomeController@terms_of_use')->name('terms_of_use');
@@ -46,6 +50,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/payslips',             'MyProfileController@payslips')->name('my.payslips');
         Route::get('/payslips/{payrollId}', 'MyProfileController@payslip')->name('my.payslip');
         Route::get('/performance',          'MyProfileController@performance')->name('my.performance.self');
+        Route::get('/training',             'MyProfileController@training')->name('my.training');
         Route::get('/jobs',                 'MyProfileController@jobBoard')->name('my.job_board');
         Route::get('/jobs/{postingId}',     'MyProfileController@jobPosting')->name('my.job_posting');
         Route::get('/jobs/{postingId}/apply', 'MyProfileController@applyForm')->name('my.job_apply');
@@ -65,6 +70,8 @@ Route::group(['middleware' => 'auth'], function () {
             /* Bulk import */
             Route::get('bulk/template', 'StudentRecordController@bulkTemplate')->name('students.bulk.template')->middleware('teamSA');
             Route::post('bulk/import', 'StudentRecordController@bulkImport')->name('students.bulk.import')->middleware('teamSA');
+            /* Document download — super admin only */
+            Route::get('{sr_id}/document', 'StudentRecordController@downloadDocument')->name('students.document.download')->middleware('super_admin');
 
             /* Promotions */
             Route::post('promote_selector', 'PromotionController@selector')->name('students.promote_selector');
@@ -79,8 +86,10 @@ Route::group(['middleware' => 'auth'], function () {
         /*************** Users *****************/
         Route::group(['prefix' => 'users'], function(){
             Route::get('reset_pass/{id}', 'UserController@reset_pass')->name('users.reset_pass');
-        Route::post('bulk-import', 'UserController@bulkImport')->name('users.bulk.import')->middleware('teamSA');
-        Route::get('bulk-template', 'UserController@bulkTemplate')->name('users.bulk.template')->middleware('teamSA');
+            Route::post('bulk-import', 'UserController@bulkImport')->name('users.bulk.import')->middleware('teamSA');
+            Route::get('bulk-template', 'UserController@bulkTemplate')->name('users.bulk.template')->middleware('teamSA');
+            Route::post('bulk-import-parents', 'UserController@bulkImportParents')->name('users.bulk.import.parents')->middleware('teamSA');
+            Route::get('bulk-template-parents', 'UserController@bulkTemplateParents')->name('users.bulk.template.parents')->middleware('teamSA');
         });
 
         /*************** TimeTables *****************/
@@ -147,6 +156,7 @@ Route::group(['middleware' => 'auth'], function () {
             // FOR teamSAT
             Route::group(['middleware' => 'teamSAT'], function(){
                 Route::get('/', 'MarkController@index')->name('marks.index');
+                Route::get('progress/{exam_id}', 'MarkController@progress')->name('marks.progress');
                 Route::get('manage/{exam}/{class}/{section}/{subject}', 'MarkController@manage')->name('marks.manage');
                 Route::put('update/{exam}/{class}/{section}/{subject}', 'MarkController@update')->name('marks.update');
                 Route::put('comment_update/{exr_id}', 'MarkController@comment_update')->name('marks.comment_update');
@@ -154,6 +164,11 @@ Route::group(['middleware' => 'auth'], function () {
                 Route::post('selector', 'MarkController@selector')->name('marks.selector');
                 Route::get('bulk/{class?}/{section?}', 'MarkController@bulk')->name('marks.bulk');
                 Route::post('bulk', 'MarkController@bulk_select')->name('marks.bulk_select');
+
+                // Assessment components (configure the 30-mark breakdown)
+                Route::get('components/{exam}/{class}/{subject}',    'MarkController@getComponents')->name('marks.components.get');
+                Route::post('components/{exam}/{class}/{subject}',   'MarkController@saveComponents')->name('marks.components.save');
+                Route::delete('components/{exam}/{class}/{subject}', 'MarkController@clearComponents')->name('marks.components.clear');
             });
 
             Route::get('select_year/{id}', 'MarkController@year_selector')->name('marks.year_selector');
@@ -167,9 +182,24 @@ Route::group(['middleware' => 'auth'], function () {
         Route::resource('users', 'UserController');
         Route::resource('classes', 'MyClassController');
         Route::resource('sections', 'SectionController');
+
+        // Master subject catalog
+        Route::post('master-subjects',              'SubjectController@storeMaster')->name('master_subjects.store');
+        Route::put('master-subjects/{master}',      'SubjectController@updateMaster')->name('master_subjects.update');
+        Route::delete('master-subjects/{master}',   'SubjectController@destroyMaster')->name('master_subjects.destroy');
+        // Assign master subject to classes
+        Route::post('subjects/assign',              'SubjectController@assign')->name('subjects.assign');
+        // Legacy bulk route kept for backward compat (now unused but safe to keep)
+        Route::post('subjects/bulk',                'SubjectController@assign')->name('subjects.store_bulk');
         Route::resource('subjects', 'SubjectController');
+
         Route::resource('grades', 'GradeController');
         Route::resource('exams', 'ExamController');
+
+        // Term & Semester Setup
+        Route::get('term-setup',          'TermSetupController@index')->name('term_setup.index');
+        Route::post('term-setup/settings','TermSetupController@saveSettings')->name('term_setup.settings');
+        Route::post('term-setup/auto-promote','TermSetupController@autoPromote')->name('term_setup.auto_promote');
 
         /*************** Attendance *****************/
         Route::group(['prefix' => 'attendance'], function(){
@@ -192,6 +222,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('/', 'LibraryController@store')->name('library.store');
             Route::get('/bulk-template', 'LibraryController@bulkTemplate')->name('library.bulk.template');
             Route::post('/bulk-import', 'LibraryController@bulkImport')->name('library.bulk.import');
+            Route::get('/isbn-lookup', 'LibraryController@isbnLookup')->name('library.isbn.lookup');
             Route::get('/edit/{id}', 'LibraryController@edit')->name('library.edit');
             Route::put('/{id}', 'LibraryController@update')->name('library.update');
             Route::delete('/{id}', 'LibraryController@destroy')->name('library.destroy');
@@ -236,7 +267,29 @@ Route::group(['namespace' => 'SuperAdmin','middleware' => 'super_admin', 'prefix
     Route::put('/rules/{id}', 'RuleController@update')->name('rules.update');
     Route::delete('/rules/{id}', 'RuleController@destroy')->name('rules.destroy');
 
+    // Promotion Rules (configurable engine rules)
+    Route::get('/promotion-rules',              'PromotionRuleController@index')->name('promotion_rules.index');
+    Route::post('/promotion-rules',             'PromotionRuleController@store')->name('promotion_rules.store');
+    Route::put('/promotion-rules/{rule}',       'PromotionRuleController@update')->name('promotion_rules.update');
+    Route::patch('/promotion-rules/{rule}/toggle','PromotionRuleController@toggle')->name('promotion_rules.toggle');
+    Route::delete('/promotion-rules/{rule}',    'PromotionRuleController@destroy')->name('promotion_rules.destroy');
+
     Route::get('/audit-logs', 'AuditLogController@index')->name('audit.index');
+
+    Route::get('/departments', 'DepartmentController@index')->name('departments.index');
+    Route::post('/departments', 'DepartmentController@store')->name('departments.store');
+    Route::post('/departments/{department}/teachers', 'DepartmentController@addTeacher')->name('departments.teachers.add');
+    Route::delete('/departments/{department}/teachers/{user}', 'DepartmentController@removeTeacher')->name('departments.teachers.remove');
+
+    Route::get('/auto-timetable', 'AutoTimetableController@index')->name('auto_timetable.index');
+    Route::get('/auto-timetable/sections/{section}/subjects', 'AutoTimetableController@sectionSubjects')->name('auto_timetable.subjects');
+    Route::post('/auto-timetable/build-slots', 'AutoTimetableController@buildSlots')->name('auto_timetable.build_slots');
+    Route::post('/auto-timetable/preview', 'AutoTimetableController@preview')->name('auto_timetable.preview');
+    Route::post('/auto-timetable/load-saved', 'AutoTimetableController@loadSaved')->name('auto_timetable.load_saved');
+    Route::post('/auto-timetable/generate', 'AutoTimetableController@generate')->name('auto_timetable.generate');
+    Route::post('/auto-timetable/save-preview', 'AutoTimetableController@savePreview')->name('auto_timetable.save_preview');
+    Route::post('/auto-timetable/swap-cells', 'AutoTimetableController@swapCells')->name('auto_timetable.swap_cells');
+    Route::post('/auto-timetable/update-cell', 'AutoTimetableController@updateCell')->name('auto_timetable.update_cell');
 
 });
 
@@ -249,6 +302,10 @@ Route::group(['middleware' => 'auth'], function(){
     Route::get('/compose', 'CommunicationController@compose')->name('compose');
     Route::post('/messages', 'CommunicationController@sendMessage')->name('messages.send');
     Route::get('/messages/{message}', 'CommunicationController@readMessage')->name('messages.read');
+    Route::patch('/messages/{message}/read', 'CommunicationController@markRead')->name('messages.mark_read');
+    Route::patch('/messages/{message}/unread', 'CommunicationController@markUnread')->name('messages.mark_unread');
+    Route::patch('/messages/{message}/archive', 'CommunicationController@archiveMessage')->name('messages.archive');
+    Route::delete('/messages/{message}', 'CommunicationController@deleteMessage')->name('messages.delete');
 
     /************************ CALENDAR ****************************/
     Route::get('/calendar', 'CalendarController@index')->name('calendar.index');
@@ -471,12 +528,20 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
 
     /*************** HR *****************/
     Route::prefix('hr')->middleware(['auth', 'hr_manager'])->group(function(){
-        Route::get('/', 'HRController@index')->name('hr.index');
+        Route::get('/', 'HRController@dashboard')->name('hr.index');
+        Route::get('/staff', 'HRController@index')->name('hr.staff');
         Route::get('/staff/{hrId}', 'HRController@show')->name('hr.show');
 
         // Employee create
         Route::get('/employees/create', 'HRController@createEmployee')->name('hr.employees.create');
         Route::post('/employees', 'HRController@storeEmployee')->name('hr.employees.store');
+
+        // User ↔ Employee linking
+        Route::get('/employees/unlinked', 'HRController@unlinkedUsers')->name('hr.employees.unlinked');
+        Route::post('/employees/{hrId}/link-user', 'HRController@linkUser')->name('hr.employees.link_user');
+        Route::post('/employees/sync-from-user/{userId}', 'HRController@syncFromUser')->name('hr.employees.sync_user');
+        Route::post('/employees/sync-all', 'HRController@syncAllUsers')->name('hr.employees.sync_all');
+        Route::delete('/employees/{hrId}/unlink-user', 'HRController@unlinkUser')->name('hr.employees.unlink_user');
 
         // Employee profile
         Route::get('/employees/{hrId}/edit', 'HRController@editProfile')->name('hr.profile.edit');
@@ -513,12 +578,43 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
         // Attendance
         Route::get('/attendance', 'HRController@attendance')->name('hr.attendance');
         Route::post('/attendance', 'HRController@saveAttendance')->name('hr.attendance.save');
+        Route::post('/attendance/import', 'HRController@importAttendanceCsv')->name('hr.attendance.import');
+        Route::get('/attendance/template', 'HRController@downloadAttendanceTemplate')->name('hr.attendance.template');
         Route::get('/attendance/report/{hrId}', 'HRController@attendanceReport')->name('hr.attendance.report');
 
 
 
         // Workload
         Route::get('/workload', 'HRController@workload')->name('hr.workload');
+
+        // ── Contracts ────────────────────────────────────────────────────────
+        Route::get('/contracts', 'HRController@contracts')->name('hr.contracts');
+        Route::post('/employees/{hrId}/renew-contract', 'HRController@renewContract')->name('hr.contracts.renew');
+
+        // ── Ethiopian Holidays ────────────────────────────────────────────────
+        Route::get('/holidays', 'HRController@holidays')->name('hr.holidays');
+        Route::post('/holidays', 'HRController@storeHoliday')->name('hr.holidays.store');
+        Route::post('/holidays/seed', 'HRController@seedHolidays')->name('hr.holidays.seed');
+        Route::delete('/holidays/{hrId}', 'HRController@destroyHoliday')->name('hr.holidays.destroy');
+
+        // ── Training & Development ────────────────────────────────────────────
+        Route::prefix('training')->group(function () {
+            // Programs catalog
+            Route::get('/programs', 'TrainingController@programs')->name('hr.training.programs');
+            Route::post('/programs', 'TrainingController@storeProgram')->name('hr.training.programs.store');
+            Route::get('/programs/{hrId}/edit', 'TrainingController@editProgram')->name('hr.training.programs.edit');
+            Route::put('/programs/{hrId}', 'TrainingController@updateProgram')->name('hr.training.programs.update');
+            Route::delete('/programs/{hrId}', 'TrainingController@destroyProgram')->name('hr.training.programs.destroy');
+
+            // Enrollments
+            Route::get('/enrollments', 'TrainingController@enrollments')->name('hr.training.enrollments');
+            Route::post('/enroll', 'TrainingController@enroll')->name('hr.training.enroll');
+            Route::put('/enrollments/{hrId}', 'TrainingController@updateEnrollment')->name('hr.training.enrollments.update');
+            Route::delete('/enrollments/{hrId}', 'TrainingController@destroyEnrollment')->name('hr.training.enrollments.destroy');
+
+            // Per-employee history
+            Route::get('/employee/{employeeId}', 'TrainingController@employeeTraining')->name('hr.training.employee');
+        });
 
         // ── Recruitment ──────────────────────────────────────────────────────
         Route::prefix('recruitment')->group(function () {

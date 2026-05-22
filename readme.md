@@ -47,11 +47,11 @@ Open your browser at **http://127.0.0.1:8000**
 
 | Role | Username | Email | Password |
 |---|---|---|---|
-| Super Admin | `emnet` | `emnet@stmarksms.com` | `cj` |
-| Admin | `admin` | `admin@stmarksms.com` | `cj` |
-| Teacher | `teacher` | `teacher@stmarksms.com` | `cj` |
+| Super Admin | `emnet` | `emnet@stmarksms.com` | `stmark` |
+| Admin | `admin` | `admin@stmarksms.com` | `stmark` |
+| Teacher | `teacher` | `teacher@stmarksms.com` | `stmark` |
 | HR Manager | `hr` | `hr@stmarksms.com` | `hr123` |
-| Parent | `parent` | `parent@stmarksms.com` | `cj` |
+| Parent | `parent` | `parent@stmarksms.com` | `stmark` |
 
 You can log in with either the **username** or the **email** — both work.
 
@@ -108,7 +108,92 @@ AI features:
 - **Performance Insights** — at-risk detection, top performers, most improved
 - **Dropout Early Warning** — attendance risk scoring aligned with MoE 75% requirement
 
-## Troubleshooting
+## Email / SMTP Setup (Direct Messaging)
+
+When a user sends a **Compose** message to another user, the system automatically sends an email notification to the recipient's registered email address. Announcements do **not** send emails — only direct compose messages do.
+
+The system is configured to use **TurboSMTP** but any SMTP provider works.
+
+### Step 1 — Create a TurboSMTP account
+
+1. Sign up at [https://www.turbo-smtp.com](https://www.turbo-smtp.com)
+2. After registration you will receive a welcome email containing:
+   - **SMTP Username** — called *Consumer Key* (e.g. `9927560aa0013566dedd`)
+   - **SMTP Password** — called *Consumer Secret* (e.g. `1FqxJaDTzGU0BM6eyE8W`)
+3. You can also find these in your TurboSMTP dashboard under **SMTP Credentials**
+
+### Step 2 — Add the credentials to your `.env`
+
+```env
+MAIL_DRIVER=smtp
+MAIL_HOST=pro.turbo-smtp.com
+MAIL_PORT=587
+MAIL_USERNAME=your-consumer-key
+MAIL_PASSWORD=your-consumer-secret
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=your-verified-sender@yourdomain.com
+MAIL_FROM_NAME="St. Mark School"
+```
+
+> **`MAIL_FROM_ADDRESS`** must be an email address you own and have verified with TurboSMTP (see Step 3). Using an unverified address will cause delivery failures.
+
+### Step 3 — Verify your sender identity (important)
+
+TurboSMTP requires you to prove you own the sending address to ensure high deliverability:
+
+1. Log in to your TurboSMTP dashboard
+2. Go to **Sender Identities** (or **Approved Senders**)
+3. Add your `MAIL_FROM_ADDRESS` and follow the verification steps (usually clicking a link in a confirmation email, or adding a DNS TXT record)
+
+Without this step emails may be rejected or land in spam.
+
+### Step 4 — Clear config cache and restart
+
+```bash
+php artisan config:clear
+# Then stop and restart php artisan serve
+```
+
+### Step 5 — Test the connection
+
+A built-in test command is included:
+
+```bash
+# Basic SMTP connectivity test
+php artisan mail:test your@email.com
+
+# Test the full message notification email using an existing message ID
+php artisan mail:test your@email.com --message_id=1
+```
+
+If you see `✅ Email sent successfully!` the setup is complete.
+
+### Using a different SMTP provider
+
+Any standard SMTP provider works. Just replace the host/port/credentials:
+
+| Provider | Host | Port |
+|---|---|---|
+| TurboSMTP | `pro.turbo-smtp.com` | `587` |
+| Gmail (App Password) | `smtp.gmail.com` | `587` |
+| Brevo (Sendinblue) | `smtp-relay.brevo.com` | `587` |
+| Mailgun | `smtp.mailgun.org` | `587` |
+| Mailtrap (testing only) | `sandbox.smtp.mailtrap.io` | `2525` |
+
+> For **Gmail**, you must use an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password. 2FA must be enabled on the account.
+
+### Troubleshooting email
+
+| Problem | Fix |
+|---|---|
+| No email received | Check `storage/logs/laravel.log` for `MAIL_DEBUG` entries |
+| `Connection refused` | Wrong host or port — double-check your provider's settings |
+| `Authentication failed` | Wrong username/password — copy directly from provider dashboard |
+| Lands in spam | Complete sender identity verification in TurboSMTP dashboard |
+| `MAIL_FROM_ADDRESS` rejected | Address not verified with your SMTP provider |
+| Multiple PHP processes | Run `Stop-Process -Name php -Force` then `php artisan serve` |
+
+
 
 | Problem | Fix |
 |---|---|

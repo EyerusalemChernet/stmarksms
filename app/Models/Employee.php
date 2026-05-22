@@ -148,6 +148,18 @@ class Employee extends Model
         return $this->hasMany(PerformanceReview::class)->orderByDesc('period');
     }
 
+    /** Training records */
+    public function trainings()
+    {
+        return $this->hasMany(EmployeeTraining::class)->orderByDesc('start_date');
+    }
+
+    /** Completed trainings */
+    public function completedTrainings()
+    {
+        return $this->hasMany(EmployeeTraining::class)->where('status', 'completed');
+    }
+
     // ── Computed attributes ──────────────────────────────────────────────────
 
     /** Full name */

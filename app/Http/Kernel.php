@@ -37,6 +37,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\Custom\ForcePasswordChange::class,
         ],
 
         'api' => [
@@ -73,5 +74,6 @@ class Kernel extends HttpKernel
         'teacher'   => \App\Http\Middleware\Custom\Teacher::class,
         'accountant' => \App\Http\Middleware\Custom\Accountant::class,
         'finance_access' => \App\Http\Middleware\Custom\FinanceAccess::class,
+        'force.password.change' => \App\Http\Middleware\Custom\ForcePasswordChange::class,
     ];
 }

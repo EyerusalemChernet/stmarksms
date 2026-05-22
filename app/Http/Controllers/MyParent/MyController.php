@@ -79,11 +79,21 @@ class MyController extends Controller
             // Active library borrows
             $borrowed = BookRequest::where('user_id', $sid)->whereIn('status', ['pending', 'approved'])->with('book')->get();
 
+            // Recent 5 days attendance
+            $recentAtt = AttendanceRecord::join('attendance_sessions', 'attendance_records.session_id', '=', 'attendance_sessions.id')
+                ->where('attendance_sessions.year', $year)
+                ->where('attendance_records.student_id', $sid)
+                ->orderByDesc('attendance_sessions.date')
+                ->select('attendance_records.status', 'attendance_sessions.date')
+                ->take(5)
+                ->get();
+
             return [
                 'sr'          => $sr,
                 'att_pct'     => $attPct,
                 'att_total'   => $total,
                 'att_present' => $present,
+                'recent_att'  => $recentAtt,
                 'latest_exr'  => $latestExr,
                 'unpaid'         => $unpaidCount,
                 'fee_balance'    => $feeBalance,

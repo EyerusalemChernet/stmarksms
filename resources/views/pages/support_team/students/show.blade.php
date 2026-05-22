@@ -39,9 +39,43 @@
                             </tr>
                             @if($sr->my_parent_id)
                                 <tr>
-                                    <td class="font-weight-bold">Parent</td>
+                                    <td class="font-weight-bold">Parent / Guardian</td>
                                     <td>
-                                        <span><a target="_blank" href="{{ route('users.show', Qs::hash($sr->my_parent_id)) }}">{{ $sr->my_parent->name }}</a></span>
+                                        <div class="d-flex align-items-start" style="gap:10px;">
+                                            <img src="{{ $sr->my_parent->photo ?? asset('global_assets/images/user.png') }}"
+                                                 class="rounded-circle" style="width:36px;height:36px;object-fit:cover;flex-shrink:0;" alt="parent">
+                                            <div>
+                                                <a target="_blank" href="{{ route('users.show', Qs::hash($sr->my_parent_id)) }}"
+                                                   style="font-weight:600;">{{ $sr->my_parent->name }}</a>
+                                                @if($sr->my_parent->phone)
+                                                <div style="font-size:12px;color:#64748b;">
+                                                    <i class="bi bi-telephone mr-1"></i>{{ $sr->my_parent->phone }}
+                                                    @if($sr->my_parent->phone2)
+                                                        &nbsp;/&nbsp;{{ $sr->my_parent->phone2 }}
+                                                    @endif
+                                                </div>
+                                                @endif
+                                                @if($sr->my_parent->email)
+                                                <div style="font-size:12px;color:#64748b;">
+                                                    <i class="bi bi-envelope mr-1"></i>{{ $sr->my_parent->email }}
+                                                </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @else
+                                <tr>
+                                    <td class="font-weight-bold">Parent / Guardian</td>
+                                    <td>
+                                        <span class="badge badge-warning" style="font-size:12px;">
+                                            <i class="bi bi-exclamation-triangle mr-1"></i>Not assigned
+                                        </span>
+                                        @if(Qs::userIsTeamSA())
+                                        <a href="{{ route('students.edit', Qs::hash($sr->id)) }}" class="btn btn-xs btn-outline-primary ml-2">
+                                            <i class="bi bi-person-plus mr-1"></i>Assign Parent
+                                        </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @endif
@@ -49,6 +83,21 @@
                                 <td class="font-weight-bold">Year Admitted</td>
                                 <td>{{ $sr->year_admitted }}</td>
                             </tr>
+                            @if(Qs::userIsSuperAdmin() && $sr->birth_cert_path)
+                            <tr>
+                                <td class="font-weight-bold">
+                                    <i class="bi bi-file-earmark-text mr-1 text-primary"></i>Admission Document
+                                </td>
+                                <td>
+                                    <a href="{{ route('students.document.download', Qs::hash($sr->id)) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download mr-1"></i>
+                                        {{ $sr->birth_cert_name ?: 'Download Document' }}
+                                    </a>
+                                    <small class="text-muted ml-2" style="font-size:11px;">Birth Certificate / Student ID</small>
+                                </td>
+                            </tr>
+                            @endif
                             <tr>
                                 <td class="font-weight-bold">Gender</td>
                                 <td>{{ $sr->user->gender }}</td>

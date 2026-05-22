@@ -28,12 +28,87 @@
             <li class="nav-item d-none d-md-block">
                 <span style="font-size:12px;background:rgba(255,255,255,.12);border-radius:20px;padding:5px 14px;color:rgba(255,255,255,.85);"><i class="bi bi-calendar3 mr-1"></i>{{ Qs::getSetting('current_session') }}</span>
             </li>
-            <li class="nav-item">
-                <a href="{{ route('inbox') }}" class="navbar-nav-link" title="Inbox" style="color:rgba(255,255,255,.75);position:relative;">
-                    <i class="bi bi-envelope" style="font-size:16px;"></i>
-                    @php $unreadCount = \App\Models\Message::where('receiver_id', Auth::id())->where('read', false)->count(); @endphp
-                    @if($unreadCount > 0)<span style="position:absolute;top:10px;right:8px;width:7px;height:7px;background:#ef4444;border-radius:50%;border:2px solid #1e1b4b;"></span>@endif
+
+            {{-- Notification Bell --}}
+            @php
+                $unreadMessages   = \App\Models\Message::where('receiver_id', Auth::id())->where('read', false)->where('archived', false)->count();
+                $userType         = Qs::getUserType();
+                $audienceKey      = $userType . 's';
+                $newAnnouncements = \App\Models\Announcement::where('active', true)
+                    ->where(function($q) use ($audienceKey) {
+                        $q->where('audience', 'all')->orWhere('audience', $audienceKey);
+                    })
+                    ->where('created_at', '>=', now()->subDays(3))
+                    ->count();
+                $totalNotifications = $unreadMessages + $newAnnouncements;
+            @endphp
+            <li class="nav-item" style="position:relative;">
+                <a href="{{ route('inbox') }}" class="navbar-nav-link" title="Notifications"
+                   style="color:rgba(255,255,255,.75);position:relative;display:inline-flex;align-items:center;padding:8px 10px;">
+                    <i class="bi bi-bell" style="font-size:17px;"></i>
+                    @if($totalNotifications > 0)
+                    <span style="
+                        position:absolute;
+                        top:4px;right:4px;
+                        min-width:17px;height:17px;
+                        background:#ef4444;
+                        border-radius:9px;
+                        border:2px solid #1e1b4b;
+                        font-size:10px;font-weight:700;
+                        color:#fff;
+                        display:flex;align-items:center;justify-content:center;
+                        line-height:1;padding:0 3px;
+                    ">{{ $totalNotifications > 99 ? '99+' : $totalNotifications }}</span>
+                    @endif
                 </a>
+                {{-- Dropdown panel --}}
+                <div id="notif-dropdown" style="
+                    display:none;
+                    position:absolute;top:100%;right:0;
+                    width:300px;
+                    background:#fff;
+                    border-radius:10px;
+                    box-shadow:0 8px 30px rgba(0,0,0,.18);
+                    z-index:9999;
+                    overflow:hidden;
+                ">
+                    <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
+                        <strong style="font-size:13px;color:#1e293b;">Notifications</strong>
+                        @if($totalNotifications > 0)
+                        <span style="font-size:11px;background:#ef4444;color:#fff;border-radius:10px;padding:2px 8px;">{{ $totalNotifications }} new</span>
+                        @endif
+                    </div>
+                    <div style="max-height:320px;overflow-y:auto;">
+                        @if($unreadMessages > 0)
+                        <a href="{{ route('inbox') }}" style="display:flex;align-items:center;gap:10px;padding:11px 16px;text-decoration:none;border-bottom:1px solid #f8fafc;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                            <span style="width:34px;height:34px;background:#ede9fe;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="bi bi-envelope-fill" style="color:#7c3aed;font-size:15px;"></i>
+                            </span>
+                            <div>
+                                <div style="font-size:13px;font-weight:600;color:#1e293b;">{{ $unreadMessages }} unread message{{ $unreadMessages > 1 ? 's' : '' }}</div>
+                                <div style="font-size:11px;color:#94a3b8;">Click to open inbox</div>
+                            </div>
+                        </a>
+                        @endif
+                        @if($newAnnouncements > 0)
+                        <a href="{{ route('announcements') }}" style="display:flex;align-items:center;gap:10px;padding:11px 16px;text-decoration:none;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                            <span style="width:34px;height:34px;background:#fef3c7;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="bi bi-megaphone-fill" style="color:#d97706;font-size:15px;"></i>
+                            </span>
+                            <div>
+                                <div style="font-size:13px;font-weight:600;color:#1e293b;">{{ $newAnnouncements }} new announcement{{ $newAnnouncements > 1 ? 's' : '' }}</div>
+                                <div style="font-size:11px;color:#94a3b8;">Posted in the last 3 days</div>
+                            </div>
+                        </a>
+                        @endif
+                        @if($totalNotifications === 0)
+                        <div style="padding:24px 16px;text-align:center;color:#94a3b8;font-size:13px;">
+                            <i class="bi bi-check-circle" style="font-size:22px;display:block;margin-bottom:6px;color:#10b981;"></i>
+                            All caught up!
+                        </div>
+                        @endif
+                    </div>
+                </div>
             </li>
             <li class="nav-item d-none d-md-flex align-items-center" style="gap:8px;padding:0 8px;">
                 <img src="{{ Auth::user()->photo }}" class="rounded-circle" style="width:28px;height:28px;object-fit:cover;border:2px solid rgba(255,255,255,.3);" alt="photo">

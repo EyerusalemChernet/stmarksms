@@ -60,11 +60,15 @@
                                 @endforeach
                             </ul>
                         </li>
-                        <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.promotion','students.promotion_manage']) ? 'nav-item-expanded' : '' }}">
+                        <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.promotion','students.promotion_manage','promotion_rules.index','term_setup.index']) ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link"><i class="bi bi-arrow-up-circle mr-1"></i>Promotion</a>
                             <ul class="nav nav-group-sub">
                                 <li class="nav-item"><a href="{{ route('students.promotion') }}" class="nav-link {{ Route::is('students.promotion') ? 'active' : '' }}">Promote Students</a></li>
                                 <li class="nav-item"><a href="{{ route('students.promotion_manage') }}" class="nav-link {{ Route::is('students.promotion_manage') ? 'active' : '' }}">Manage Promotions</a></li>
+                                @if(Qs::userIsSuperAdmin())
+                                <li class="nav-item"><a href="{{ route('promotion_rules.index') }}" class="nav-link {{ Route::is('promotion_rules.*') ? 'active' : '' }}">Promotion Rules</a></li>
+                                <li class="nav-item"><a href="{{ route('term_setup.index') }}#auto-promotion" class="nav-link {{ Route::is('term_setup.index') ? 'active' : '' }}">Auto-Promotion</a></li>
+                                @endif
                             </ul>
                         </li>
                         <li class="nav-item"><a href="{{ route('students.graduated') }}" class="nav-link {{ Route::is('students.graduated') ? 'active' : '' }}"><i class="bi bi-mortarboard mr-1"></i>Graduated</a></li>
@@ -74,10 +78,10 @@
                 {{-- Academics --}}
                 <li class="sidebar-section-label">Academics</li>
                 <li class="nav-item"><a href="{{ route('calendar.index') }}" class="nav-link {{ Route::is('calendar.index') || Route::is('acal.*') ? 'active' : '' }}"><i class="bi bi-calendar-range"></i><span>Academic Calendar</span></a></li>
-                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['exams.index','exams.edit','grades.index','grades.edit','marks.index','marks.manage','marks.bulk','marks.tabulation','marks.show','marks.batch_fix']) ? 'nav-item-expanded nav-item-open' : '' }}">
+                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['term_setup.index','exams.index','exams.edit','grades.index','grades.edit','marks.index','marks.manage','marks.bulk','marks.tabulation','marks.show','marks.batch_fix']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-journal-check"></i><span>Exams & Marks</span></a>
                     <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('exams.index') }}" class="nav-link {{ Route::is('exams.index') ? 'active' : '' }}">Exam List</a></li>
+                        <li class="nav-item"><a href="{{ route('term_setup.index') }}" class="nav-link {{ Route::is('term_setup.index') ? 'active' : '' }}">Term & Semester Setup</a></li>
                         <li class="nav-item"><a href="{{ route('grades.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['grades.index','grades.edit']) ? 'active' : '' }}">Grades</a></li>
                         <li class="nav-item"><a href="{{ route('marks.tabulation') }}" class="nav-link {{ Route::is('marks.tabulation') ? 'active' : '' }}">Tabulation Sheet</a></li>
                         <li class="nav-item"><a href="{{ route('marks.batch_fix') }}" class="nav-link {{ Route::is('marks.batch_fix') ? 'active' : '' }}">Batch Fix</a></li>
@@ -85,10 +89,13 @@
                         <li class="nav-item"><a href="{{ route('marks.bulk') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['marks.bulk','marks.show']) ? 'active' : '' }}">Marksheet</a></li>
                     </ul>
                 </li>
-                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['tt.index','ttr.edit','ttr.show','ttr.manage']) ? 'nav-item-expanded nav-item-open' : '' }}">
+                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['tt.index','ttr.edit','ttr.show','ttr.manage']) || Route::is('auto_timetable.*') ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-calendar-week"></i><span>Timetable</span></a>
                     <ul class="nav nav-group-sub">
                         <li class="nav-item"><a href="{{ route('tt.index') }}" class="nav-link {{ Route::is('tt.index') ? 'active' : '' }}">View Timetables</a></li>
+                        @if(Qs::userIsSuperAdmin())
+                        <li class="nav-item"><a href="{{ route('auto_timetable.index') }}" class="nav-link {{ Route::is('auto_timetable.*') ? 'active' : '' }}">Auto Timetable</a></li>
+                        @endif
                     </ul>
                 </li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['attendance.index','attendance.manage','attendance.sessions','attendance.report']) ? 'nav-item-expanded nav-item-open' : '' }}">
@@ -105,6 +112,9 @@
                 <li class="nav-item"><a href="{{ route('classes.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['classes.index','classes.edit']) ? 'active' : '' }}"><i class="bi bi-grid-3x3-gap"></i><span>Classes</span></a></li>
                 <li class="nav-item"><a href="{{ route('sections.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['sections.index','sections.edit']) ? 'active' : '' }}"><i class="bi bi-diagram-3"></i><span>Sections</span></a></li>
                 <li class="nav-item"><a href="{{ route('subjects.index') }}" class="nav-link {{ in_array(Route::currentRouteName(), ['subjects.index','subjects.edit']) ? 'active' : '' }}"><i class="bi bi-book"></i><span>Subjects</span></a></li>
+                @if(Qs::userIsSuperAdmin())
+                <li class="nav-item"><a href="{{ route('departments.index') }}" class="nav-link {{ Route::is('departments.*') ? 'active' : '' }}"><i class="bi bi-building"></i><span>Departments</span></a></li>
+                @endif
 
                 {{-- Library --}}
                 <li class="sidebar-section-label">Library</li>
@@ -124,13 +134,18 @@
                 <li class="nav-item nav-item-submenu {{ $hrActive ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-person-badge"></i><span>HR</span></a>
                     <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('hr.index') }}" class="nav-link {{ Route::is('hr.index') ? 'active' : '' }}"><i class="bi bi-people mr-1"></i>Staff List</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.index') }}" class="nav-link {{ Route::is('hr.index') ? 'active' : '' }}"><i class="bi bi-speedometer2 mr-1"></i>Dashboard</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.staff') }}" class="nav-link {{ Route::is('hr.staff') || Route::is('hr.show') ? 'active' : '' }}"><i class="bi bi-people mr-1"></i>Staff List</a></li>
                         <li class="nav-item"><a href="{{ route('hr.employees.create') }}" class="nav-link {{ Route::is('hr.employees.create') ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Add Employee</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.employees.unlinked') }}" class="nav-link {{ Route::is('hr.employees.unlinked') ? 'active' : '' }}"><i class="bi bi-link-45deg mr-1"></i>Link Users</a></li>
                         <li class="nav-item"><a href="{{ route('hr.departments') }}" class="nav-link {{ Route::is('hr.departments') ? 'active' : '' }}"><i class="bi bi-building mr-1"></i>Departments</a></li>
                         <li class="nav-item"><a href="{{ route('hr.positions') }}" class="nav-link {{ Route::is('hr.positions') ? 'active' : '' }}"><i class="bi bi-briefcase mr-1"></i>Positions</a></li>
                         <li class="nav-item"><a href="{{ route('hr.shifts') }}" class="nav-link {{ Route::is('hr.shifts') ? 'active' : '' }}"><i class="bi bi-clock mr-1"></i>Shifts</a></li>
                         <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
                         <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.contracts') }}" class="nav-link {{ Route::is('hr.contracts') ? 'active' : '' }}"><i class="bi bi-file-earmark-text mr-1"></i>Contracts</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.training.programs') }}" class="nav-link {{ str_starts_with(Route::currentRouteName() ?? '', 'hr.training') ? 'active' : '' }}"><i class="bi bi-mortarboard mr-1"></i>Training</a></li>
                         @php $leaveActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.leave.'); @endphp
                         <li class="nav-item nav-item-submenu {{ $leaveActive ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link {{ $leaveActive ? 'active' : '' }}"><i class="bi bi-calendar-x mr-1"></i>Leave Management</a>
@@ -243,6 +258,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('my.training') }}" class="nav-link {{ Route::is('my.training') ? 'active' : '' }}">
+                        <i class="bi bi-mortarboard"></i><span>My Training</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('my.job_board') }}" class="nav-link {{ Route::is('my.job_board') || Route::is('my.job_posting') || Route::is('my.job_apply') ? 'active' : '' }}">
                         <i class="bi bi-briefcase"></i><span>Job Board</span>
                     </a>
@@ -260,13 +280,18 @@
                 <li class="nav-item nav-item-submenu {{ $hrActive ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-person-badge"></i><span>HR</span></a>
                     <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('hr.index') }}" class="nav-link {{ Route::is('hr.index') ? 'active' : '' }}"><i class="bi bi-people mr-1"></i>Staff List</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.index') }}" class="nav-link {{ Route::is('hr.index') ? 'active' : '' }}"><i class="bi bi-speedometer2 mr-1"></i>Dashboard</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.staff') }}" class="nav-link {{ Route::is('hr.staff') || Route::is('hr.show') ? 'active' : '' }}"><i class="bi bi-people mr-1"></i>Staff List</a></li>
                         <li class="nav-item"><a href="{{ route('hr.employees.create') }}" class="nav-link {{ Route::is('hr.employees.create') ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Add Employee</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.employees.unlinked') }}" class="nav-link {{ Route::is('hr.employees.unlinked') ? 'active' : '' }}"><i class="bi bi-link-45deg mr-1"></i>Link Users</a></li>
                         <li class="nav-item"><a href="{{ route('hr.departments') }}" class="nav-link {{ Route::is('hr.departments') ? 'active' : '' }}"><i class="bi bi-building mr-1"></i>Departments</a></li>
                         <li class="nav-item"><a href="{{ route('hr.positions') }}" class="nav-link {{ Route::is('hr.positions') ? 'active' : '' }}"><i class="bi bi-briefcase mr-1"></i>Positions</a></li>
                         <li class="nav-item"><a href="{{ route('hr.shifts') }}" class="nav-link {{ Route::is('hr.shifts') ? 'active' : '' }}"><i class="bi bi-clock mr-1"></i>Shifts</a></li>
                         <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
                         <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.contracts') }}" class="nav-link {{ Route::is('hr.contracts') ? 'active' : '' }}"><i class="bi bi-file-earmark-text mr-1"></i>Contracts</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
+                        <li class="nav-item"><a href="{{ route('hr.training.programs') }}" class="nav-link {{ str_starts_with(Route::currentRouteName() ?? '', 'hr.training') ? 'active' : '' }}"><i class="bi bi-mortarboard mr-1"></i>Training</a></li>
                         @php $leaveActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.leave.'); @endphp
                         <li class="nav-item nav-item-submenu {{ $leaveActive ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link {{ $leaveActive ? 'active' : '' }}">
@@ -314,6 +339,11 @@
                 <li class="nav-item">
                     <a href="{{ route('my.leave.index') }}" class="nav-link {{ Route::is('my.leave.*') ? 'active' : '' }}">
                         <i class="bi bi-calendar-heart"></i><span>My Leave</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('my.training') }}" class="nav-link {{ Route::is('my.training') ? 'active' : '' }}">
+                        <i class="bi bi-mortarboard"></i><span>My Training</span>
                     </a>
                 </li>
 

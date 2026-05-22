@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         Commands\GenerateAcademicCalendar::class,
+        Commands\UpdateStudentAges::class,
     ];
 
     /**
@@ -23,14 +24,22 @@ class Kernel extends ConsoleKernel
      * @return void
      */
     protected function schedule(Schedule $schedule)
-        {
-            // Auto-generate next academic year every September 1st at 06:00 AM
-            $schedule->command('calendar:generate', [date('Y')])
-                     ->yearlyOn(9, 1, '06:00')
-                     ->withoutOverlapping()
-                     ->runInBackground()
-                     ->appendOutputTo(storage_path('logs/calendar-generator.log'));
-        }
+    {
+        // Auto-generate next academic year every September 1st at 06:00 AM
+        $schedule->command('calendar:generate', [date('Y')])
+                 ->yearlyOn(9, 1, '06:00')
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->appendOutputTo(storage_path('logs/calendar-generator.log'));
+
+        // Recalculate student ages every day at midnight
+        // Runs on every student's birthday automatically
+        $schedule->command('students:update-ages')
+                 ->dailyAt('00:05')
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->appendOutputTo(storage_path('logs/student-ages.log'));
+    }
 
 
     /**

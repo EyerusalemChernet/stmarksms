@@ -99,6 +99,28 @@ class StudentRecordController extends Controller
             } catch (\Exception $e) {}
         }
 
+        // Save birth certificate / student ID document if uploaded
+        if ($req->hasFile('birth_cert')) {
+            $doc = $req->file('birth_cert');
+            $docPath = $doc->storeAs(
+                Qs::getUploadPath('student') . $data['code'],
+                'birth_cert.' . $doc->getClientOriginalExtension()
+            );
+            $sr['birth_cert_path'] = $docPath;
+            $sr['birth_cert_name'] = $doc->getClientOriginalName();
+        }
+
+        // Save birth certificate / student ID document if uploaded
+        if ($req->hasFile('birth_cert')) {
+            $doc = $req->file('birth_cert');
+            $docPath = $doc->storeAs(
+                Qs::getUploadPath('student') . $data['code'],
+                'birth_cert.' . $doc->getClientOriginalExtension()
+            );
+            $sr['birth_cert_path'] = $docPath;
+            $sr['birth_cert_name'] = $doc->getClientOriginalName();
+        }
+
         $this->student->createRecord($sr); // Create Student
         AuditLog::log('created', 'students', "Student '{$data['name']}' admitted (Adm: {$data['username']})");
         return Qs::jsonStoreOk();
@@ -200,8 +222,8 @@ class StudentRecordController extends Controller
      */
     public function bulkTemplate()
     {
-        $headers = ['name','gender','email','phone','dob','address','class_name','section_name','year_admitted','religion'];
-        $example = ['Abebe Kebede','Male','abebe@email.com','0911234567','2010-05-12','Addis Ababa','Grade 1','A', date('Y'),'Ethiopian Orthodox'];
+        $headers = ['name','gender','dob','email','phone','address','class_name','section_name','year_admitted','religion','nationality','parent_email'];
+        $example = ['ABEBE KEBEDE','Male','2012-05-12','abebe@email.com','0911234567','Addis Ababa','Grade 1','A',date('Y'),'Ethiopian Orthodox','Ethiopian','parent@email.com'];
 
         $csv = implode(',', $headers)."\n".implode(',', $example)."\n";
 
@@ -209,6 +231,24 @@ class StudentRecordController extends Controller
             'Content-Type'        => 'text/csv',
             'Content-Disposition' => 'attachment; filename="students_bulk_template.csv"',
         ]);
+    }
+
+    /**
+     * Download a student's uploaded document (birth cert / ID).
+     * Super admin only.
+     */
+    public function downloadDocument($sr_id)
+    {
+        if (!Qs::userIsSuperAdmin()) return Qs::goWithDanger();
+
+        $sr_id = Qs::decodeHash($sr_id);
+        $sr = $this->student->getRecord(['id' => $sr_id])->first();
+
+        if (!$sr || !$sr->birth_cert_path || !Storage::exists($sr->birth_cert_path)) {
+            return back()->with('flash_danger', 'Document not found.');
+        }
+
+        return Storage::download($sr->birth_cert_path, $sr->birth_cert_name ?: 'document');
     }
 
     /**
@@ -226,64 +266,128 @@ class StudentRecordController extends Controller
         $errors   = [];
         $row      = 1;
 
+        // Pre-load nationality map (name → id) for fast lookup
+        $nationalityMap = \App\Models\Nationality::all()
+            ->keyBy(fn($n) => strtolower(trim($n->name)));
+        $ethiopianId = $nationalityMap['ethiopian']->id ?? null;
+
+        // Pre-compute the next admission sequence once before the loop
+        $year    = date('Y');
+        $last    = \App\Models\StudentRecord::whereYear('created_at', $year)
+                        ->orderByDesc('id')->first();
+        $seq = 1;
+        if ($last && $last->adm_no && preg_match('/STM-\d{4}-(\d{4})/', $last->adm_no, $m)) {
+            $seq = intval($m[1]) + 1;
+        }
+
         while (($line = fgetcsv($handle)) !== false) {
             $row++;
+
+            // Skip completely empty rows
+            if (empty(array_filter($line, fn($v) => trim($v) !== ''))) continue;
+
+            if (count($line) < count($headers)) {
+                $errors[] = "Row {$row}: Not enough columns — skipped.";
+                continue;
+            }
+
             $data = array_combine($headers, array_map('trim', $line));
 
-            // Resolve class
-            $class = \App\Models\MyClass::where('name', $data['class_name'] ?? '')->first();
-            if (!$class) { $errors[] = "Row {$row}: Class '{$data['class_name']}' not found."; continue; }
+            // ── Required: name ──────────────────────────────────────────────
+            if (empty($data['name']) || strlen($data['name']) < 3) {
+                $errors[] = "Row {$row}: Name is required (min 3 characters) — skipped.";
+                continue;
+            }
 
-            // Resolve section
-            $sectionName = $data['section_name'] ?? '';
+            // ── Required: gender ────────────────────────────────────────────
+            if (!in_array($data['gender'] ?? '', ['Male', 'Female'])) {
+                $errors[] = "Row {$row}: Gender must be 'Male' or 'Female' — skipped.";
+                continue;
+            }
+
+            // ── Required: dob ───────────────────────────────────────────────
+            if (empty($data['dob'])) {
+                $errors[] = "Row {$row}: Date of Birth is required — skipped.";
+                continue;
+            }
+            try {
+                $dob = \Carbon\Carbon::parse($data['dob']);
+                $age = $dob->age;
+                if ($age < 3 || $age > 25) {
+                    $errors[] = "Row {$row}: Age must be between 3 and 25 (DOB: {$data['dob']}) — skipped.";
+                    continue;
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Row {$row}: Invalid date of birth '{$data['dob']}' — skipped.";
+                continue;
+            }
+
+            // ── Resolve class ────────────────────────────────────────────────
+            $class = \App\Models\MyClass::where('name', $data['class_name'] ?? '')->first();
+            if (!$class) {
+                $errors[] = "Row {$row}: Class '{$data['class_name']}' not found — skipped.";
+                continue;
+            }
+
+            // ── Resolve section ──────────────────────────────────────────────
             $section = \App\Models\Section::where('my_class_id', $class->id)
-                ->where('name', $sectionName)->first();
+                ->where('name', $data['section_name'] ?? '')->first();
             if (!$section) {
-                // fallback to default_section_id if provided
                 $section = $req->default_section_id
                     ? \App\Models\Section::find($req->default_section_id)
                     : \App\Models\Section::where('my_class_id', $class->id)->first();
             }
-            if (!$section) { $errors[] = "Row {$row}: Section not found for class '{$data['class_name']}'."; continue; }
+            if (!$section) {
+                $errors[] = "Row {$row}: No section found for class '{$data['class_name']}' — skipped.";
+                continue;
+            }
 
-            // Skip duplicate email
+            // ── Duplicate email check ────────────────────────────────────────
             if (!empty($data['email']) && \App\User::where('email', $data['email'])->exists()) {
-                $errors[] = "Row {$row}: Email '{$data['email']}' already exists — skipped."; continue;
+                $errors[] = "Row {$row}: Email '{$data['email']}' already exists — skipped.";
+                continue;
             }
 
-            // Auto-generate admission number
-            $year    = date('Y');
-            $last    = \App\Models\StudentRecord::whereYear('created_at', $year)->latest()->first();
-            $seq     = 1;
-            if ($last && $last->adm_no && preg_match('/STM-\d{4}-(\d{4})/', $last->adm_no, $m)) {
-                $seq = intval($m[1]) + 1;
+            // ── Resolve nationality (default Ethiopian) ──────────────────────
+            $nalId = $ethiopianId;
+            if (!empty($data['nationality'])) {
+                $nalId = $nationalityMap[strtolower($data['nationality'])]->id ?? $ethiopianId;
             }
-            $adm_no = 'STM-'.$year.'-'.str_pad($seq, 4, '0', STR_PAD_LEFT);
+
+            // ── Generate admission number (sequential, no re-query) ──────────
+            $adm_no = 'STM-' . $year . '-' . str_pad($seq, 4, '0', STR_PAD_LEFT);
+            $seq++;
 
             $code = strtoupper(Str::random(10));
 
             $user = $this->user->create([
-                'name'       => ucwords($data['name'] ?? ''),
-                'email'      => $data['email'] ?: null,
-                'phone'      => $data['phone'] ?? null,
-                'dob'        => $data['dob'] ?? null,
-                'gender'     => $data['gender'] ?? 'Male',
-                'address'    => $data['address'] ?? 'N/A',
-                'user_type'  => 'student',
-                'code'       => $code,
-                'username'   => $adm_no,
-                'password'   => Hash::make('student'),
-                'photo'      => Qs::getDefaultUserImage(),
+                'name'                 => strtoupper(trim($data['name'])),
+                'email'                => !empty($data['email']) ? $data['email'] : null,
+                'phone'                => $data['phone'] ?? null,
+                'dob'                  => $dob->format('Y-m-d'),
+                'gender'               => $data['gender'],
+                'address'              => !empty($data['address']) ? $data['address'] : 'N/A',
+                'nal_id'               => $nalId,
+                'user_type'            => 'student',
+                'code'                 => $code,
+                'username'             => $adm_no,
+                'password'             => Hash::make('student'),
+                'must_change_password' => false, // students don't log in directly
+                'photo'                => Qs::getDefaultUserImage(),
             ]);
 
             $this->student->createRecord([
-                'user_id'      => $user->id,
-                'my_class_id'  => $class->id,
-                'section_id'   => $section->id,
-                'adm_no'       => $adm_no,
-                'year_admitted'=> $data['year_admitted'] ?? date('Y'),
-                'religion'     => $data['religion'] ?? null,
-                'session'      => Qs::getSetting('current_session'),
+                'user_id'       => $user->id,
+                'my_class_id'   => $class->id,
+                'section_id'    => $section->id,
+                'adm_no'        => $adm_no,
+                'year_admitted' => !empty($data['year_admitted']) ? $data['year_admitted'] : $year,
+                'religion'      => $data['religion'] ?? null,
+                'age'           => $age,
+                'session'       => Qs::getSetting('current_session'),
+                'my_parent_id'  => !empty($data['parent_email'])
+                    ? (\App\User::where('email', $data['parent_email'])->where('user_type','parent')->value('id') ?? null)
+                    : null,
             ]);
 
             $imported++;
@@ -294,14 +398,13 @@ class StudentRecordController extends Controller
         AuditLog::log('bulk_import', 'students', "Bulk admitted {$imported} student(s).");
 
         $msg = "{$imported} student(s) imported successfully.";
-        if ($errors) $msg .= ' '.count($errors).' row(s) skipped.';
+        if ($errors) $msg .= ' ' . count($errors) . ' row(s) skipped.';
 
         return response()->json(['ok' => $imported > 0, 'msg' => $msg, 'errors' => $errors]);
     }
 
     public function destroy($st_id)
     {
-        $st_id = Qs::decodeHash($st_id);
         if(!$st_id){return Qs::goWithDanger();}
 
         $sr = $this->student->getRecord(['user_id' => $st_id])->first();

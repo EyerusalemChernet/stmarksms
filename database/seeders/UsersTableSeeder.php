@@ -25,7 +25,7 @@ class UsersTableSeeder extends Seeder
 
     protected function createNewUsers()
     {
-        $password = Hash::make('cj'); // Default user password
+        $password = Hash::make('stmark'); // Default user password
 
         $d = [
             [
@@ -70,6 +70,15 @@ class UsersTableSeeder extends Seeder
                 'user_type'      => 'hr_manager',
                 'username'       => 'hr',
                 'password'       => Hash::make('hr123'),
+                'code'           => strtoupper(Str::random(10)),
+                'remember_token' => Str::random(10),
+            ],
+            [
+                'name'           => 'Demo Employee',
+                'email'          => 'employee@stmarksms.com',
+                'user_type'      => 'employee',
+                'username'       => 'employee',
+                'password'       => $password,
                 'code'           => strtoupper(Str::random(10)),
                 'remember_token' => Str::random(10),
             ],

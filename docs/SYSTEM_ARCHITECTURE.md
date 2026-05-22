@@ -1,4 +1,4 @@
-﻿# St. Mark School ERP — System Architecture
+# St. Mark School ERP — System Architecture
 
 > **St. Mark Primary School, Addis Ababa, Ethiopia**
 > Version 1.0 | Laravel 8 | Generated from codebase analysis
@@ -39,7 +39,7 @@ Before this system, the school relied on paper-based records, spreadsheets, and 
 
 This system replaces all of those with a unified, role-controlled web application accessible from any browser.
 
-## 1.3 Target Users
+## 1.3 Target Users & Actors
 
 | Role | Description |
 |------|-------------|
@@ -47,8 +47,9 @@ This system replaces all of those with a unified, role-controlled web applicatio
 | `admin` | Same as super_admin except cannot access System Settings. |
 | `teacher` | Marks attendance for their homeroom class, enters exam marks, views timetables. |
 | `hr_manager` | Exclusive access to HR, payroll, leave, recruitment, performance, and finance modules. |
-| `parent` | Read-only portal to view their child's academic records and attendance. |
+| `parent` | Read-only portal to view their child's academic records, attendance, and message teachers. |
 | `student` | Cannot log in directly. Managed through the parent portal. |
+| `employee` | System actor (non-login entity in most cases) tracked for HR, Payroll, Leave, and Performance. Represents non-teaching staff as well as teaching staff. |
 
 ## 1.4 Key Features and Modules
 
@@ -417,12 +418,12 @@ Homeroom teachers mark daily student attendance. Admins view reports. AI service
 ### Key Workflows
 
 **Marking Attendance:**
-1. Teacher navigates to Attendance → their homeroom section is shown
-2. Teacher opens a session (selects class, section, date)
-3. System validates: teacher must be assigned as homeroom teacher for that section
-4. `RulesEngine::validateAttendanceSession()` checks for duplicate sessions
-5. For each student: mark Present / Absent / Late
-6. Records saved to `attendance_records` table
+1. Teacher navigates to Attendance or uses the "My Homeroom" dashboard widget.
+2. Teacher opens a session (selects class, section, date).
+3. System validates: teacher must be assigned as the **Homeroom Teacher** for that specific section. *(Note: A strict workload validation prevents a teacher from being assigned to more than one homeroom section simultaneously).*
+4. `RulesEngine::validateAttendanceSession()` checks for duplicate sessions.
+5. For each student: mark Present / Absent / Late.
+6. Records saved to `attendance_records` table.
 
 **Admin View:**
 - Admins see all sessions but cannot mark attendance (read-only)
@@ -1457,10 +1458,17 @@ Qs::userIsMyChild($student_id, Auth::id())
 - Leave requests summary
 
 ### Teacher Dashboard (`pages/teacher/dashboard.blade.php`)
+- **My Homeroom**: Dedicated widget showing their assigned homeroom class/section with quick actions for Attendance and Students.
 - Stat cards: My Subjects, Today's Sessions, Unread Messages, Total Parents
 - Quick Actions: Attendance, Marksheet, Library, Timetable
-- No announcements yet / Recent Announcements
-- No exams scheduled / Upcoming Exams
+- Pending Marks: Highlights exams needing mark entries from the teacher
+- Recent Announcements & Upcoming Exams
+
+### Parent Dashboard (`pages/parent/dashboard.blade.php`)
+- **Child Summary Cards**: Shows attendance %, outstanding fees, latest exam result, and active library borrows for each child.
+- **Last 5 Days Trend**: Visual indicator of the child's most recent attendance (Present/Late/Absent).
+- **Message Homeroom Teacher**: Quick action to open a compose message screen pre-filled with the child's homeroom teacher.
+- Recent Announcements
 
 ## 8.2 Navigation Structure
 
@@ -1674,7 +1682,7 @@ Sensitive IDs in URLs are hashed using `hashids/hashids`:
 Qs::hash($id)       // encode
 Qs::decodeHash($str) // decode
 ```
-Salt: `date('dMY') . 'CJ'` (changes daily)
+Salt: `date('dMY') . 'STM'` (changes daily)
 
 ## 10.7 Audit Logging
 
@@ -1743,3 +1751,215 @@ Stored in `audit_logs` table with user_id, action, module, description, timestam
 - **Student self-service** — Allow students to view their own marks and attendance via a dedicated portal
 - **Timetable auto-generation** — Implement constraint-based timetable generation algorithm
 
+
+---
+
+# 13. System Diagrams (UML)
+
+This section provides visual representations of the system architecture, use cases, and key workflows using Mermaid.js syntax.
+
+## 13.1 Entity-Relationship (ER) Diagram
+This diagram illustrates the core relationships between actors (Users, Employees, Students, Parents) and the academic structure.
+
+```mermaid
+erDiagram
+    USERS ||--o{ EMPLOYEES : "has profile"
+    USERS ||--o{ STUDENT_RECORDS : "is student"
+    USERS ||--o{ STUDENT_RECORDS : "is parent of"
+    
+    MY_CLASSES ||--o{ SECTIONS : "contains"
+    MY_CLASSES ||--o{ SUBJECTS : "teaches"
+    
+    SECTIONS ||--o{ STUDENT_RECORDS : "enrols"
+    SECTIONS ||--o| USERS : "homeroom teacher"
+    
+    SUBJECTS ||--o{ MARKS : "assesses"
+    STUDENT_RECORDS ||--o{ MARKS : "receives"
+    
+    EMPLOYEES ||--o{ LEAVE_REQUESTS : "submits"
+    EMPLOYEES ||--o{ STAFF_PAYROLLS : "receives"
+    
+    USERS {
+        int id PK
+        string name
+        string user_type "super_admin, admin, teacher, hr_manager, parent, student"
+    }
+    EMPLOYEES {
+        int id PK
+        int user_id FK "nullable"
+        string employee_code
+    }
+    STUDENT_RECORDS {
+        int id PK
+        int user_id FK
+        int my_parent_id FK
+        int section_id FK
+    }
+    SECTIONS {
+        int id PK
+        int my_class_id FK
+        int teacher_id FK "Homeroom Teacher"
+    }
+```
+
+## 13.2 Use Case Diagram
+This diagram outlines the primary actions each actor can perform within the system.
+
+```mermaid
+usecaseDiagram
+    actor "Super Admin" as SA
+    actor "HR Manager" as HR
+    actor "Teacher" as T
+    actor "Parent" as P
+    actor "Employee" as E
+
+    package "St. Mark SMS" {
+        usecase "Manage System Settings" as UC1
+        usecase "Manage Academics & Students" as UC2
+        usecase "Process Payroll & Leave" as UC3
+        usecase "Manage Recruitment" as UC4
+        usecase "Mark Homeroom Attendance" as UC5
+        usecase "Enter Exam Marks" as UC6
+        usecase "View Child Progress" as UC7
+        usecase "Message Homeroom Teacher" as UC8
+        usecase "Request Leave" as UC9
+    }
+
+    SA --> UC1
+    SA --> UC2
+    
+    HR --> UC3
+    HR --> UC4
+    
+    T --> UC5
+    T --> UC6
+    T --> UC9
+    
+    P --> UC7
+    P --> UC8
+    
+    E --> UC9
+```
+
+## 13.3 Sequence Diagrams
+
+### Teacher Attendance Workflow
+How a Homeroom Teacher marks daily attendance.
+
+```mermaid
+sequenceDiagram
+    actor Teacher
+    participant Dashboard as Teacher Dashboard
+    participant AttCtrl as AttendanceController
+    participant Rules as RulesEngine
+    participant DB as Database
+
+    Teacher->>Dashboard: Logs in
+    Dashboard-->>Teacher: Displays "My Homeroom" widget
+    Teacher->>Dashboard: Clicks "Take Attendance"
+    Dashboard->>AttCtrl: GET /attendance
+    AttCtrl->>DB: Check if Teacher is assigned to Section
+    DB-->>AttCtrl: Returns Section ID
+    AttCtrl-->>Teacher: Shows Attendance Marking Page
+    Teacher->>AttCtrl: Submits Present/Absent for students
+    AttCtrl->>Rules: validateAttendanceSession()
+    Rules-->>AttCtrl: OK (No duplicates)
+    AttCtrl->>DB: Insert into attendance_records
+    DB-->>AttCtrl: Success
+    AttCtrl-->>Teacher: Flash success message
+```
+
+### Parent Dashboard Workflow
+How a parent views their child's records and recent attendance trend.
+
+```mermaid
+sequenceDiagram
+    actor Parent
+    participant MyCtrl as MyController
+    participant DB as Database
+    participant View as Dashboard View
+
+    Parent->>MyCtrl: GET /parent/dashboard
+    MyCtrl->>DB: Query StudentRecord (my_parent_id = Parent.id)
+    DB-->>MyCtrl: Returns Children Array
+    loop For each child
+        MyCtrl->>DB: Get recent 5 days AttendanceRecord
+        DB-->>MyCtrl: Returns 5 records
+        MyCtrl->>DB: Get latest ExamRecord
+        DB-->>MyCtrl: Returns Exam Result
+    end
+    MyCtrl->>View: Render dashboard with $childData
+    View-->>Parent: Displays Child Summary Cards & 5-Day Trend
+```
+
+### HR Leave Approval Workflow
+How an employee requests leave and HR approves it.
+
+```mermaid
+sequenceDiagram
+    actor Employee
+    participant LeaveCtrl as LeaveController
+    participant Service as LeaveService
+    actor HR as HR Manager
+
+    Employee->>LeaveCtrl: POST /my/leave (Leave Request)
+    LeaveCtrl->>Service: calculate days_requested
+    Service->>Service: Check leave_balances (available >= requested)
+    Service-->>LeaveCtrl: Balance OK
+    LeaveCtrl->>Database: Create leave_requests (status = pending)
+    LeaveCtrl-->>Employee: Success message
+
+    HR->>LeaveCtrl: GET /hr/leave/requests
+    LeaveCtrl-->>HR: Shows pending requests
+    HR->>LeaveCtrl: POST /hr/leave/approve/{id}
+    LeaveCtrl->>Database: Update status = approved
+    LeaveCtrl->>Database: Update leave_balances (used += days)
+    LeaveCtrl-->>HR: Flash success
+```
+
+### Mark Entry Workflow
+How a teacher enters exam marks for a subject.
+
+```mermaid
+sequenceDiagram
+    actor Teacher
+    participant MarkCtrl as MarkController
+    participant MkHelper as Mk (Helper)
+    participant DB as Database
+
+    Teacher->>MarkCtrl: Selects Exam, Class, Section, Subject
+    MarkCtrl->>DB: Query students in Section
+    DB-->>MarkCtrl: Returns Student Array
+    MarkCtrl-->>Teacher: Displays Mark Entry Form
+    Teacher->>MarkCtrl: Submits Marks (t1, t2, exm)
+    loop For each student
+        MarkCtrl->>MarkCtrl: Calculate Total (tex1 or tex2)
+        MarkCtrl->>MkHelper: getGradeList()
+        MkHelper-->>MarkCtrl: Returns Grading Scale
+        MarkCtrl->>MarkCtrl: Determine Grade & Remark
+        MarkCtrl->>DB: Update marks table
+    end
+    DB-->>MarkCtrl: Success
+    MarkCtrl-->>Teacher: Flash success message
+```
+
+### Message Homeroom Teacher Workflow
+How a parent uses the new quick action to message a teacher.
+
+```mermaid
+sequenceDiagram
+    actor Parent
+    participant Dashboard as Parent Dashboard
+    participant CommCtrl as CommunicationController
+    participant DB as Database
+
+    Parent->>Dashboard: Clicks "Message Teacher" on Child Card
+    Dashboard->>CommCtrl: GET /messages/compose?reply={teacher_id}
+    CommCtrl->>DB: Query User (id = teacher_id)
+    DB-->>CommCtrl: Returns Teacher Info
+    CommCtrl-->>Parent: Displays Compose Form (Teacher Pre-selected)
+    Parent->>CommCtrl: Submits Message Body
+    CommCtrl->>DB: Insert into messages (sender=Parent, receiver=Teacher)
+    DB-->>CommCtrl: Success
+    CommCtrl-->>Parent: Redirect to Inbox with Success
+```

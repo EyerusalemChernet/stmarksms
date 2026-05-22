@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Helpers\Qs;
+use App\Repositories\UserRepo;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UserRequest extends FormRequest
 {
@@ -33,7 +35,8 @@ class UserRequest extends FormRequest
             'address'   => 'required|string|min:6|max:120',
             'state_id'  => 'required|exists:states,id',
             'lga_id'    => 'required|exists:lgas,id',
-            'nal_id'    => 'required',
+            'nal_id'         => 'required',
+            'department_id'  => 'nullable|exists:departments,id',
         ];
         $update =  [
             'name'     => 'required|string|min:6|max:150',
@@ -45,9 +48,24 @@ class UserRequest extends FormRequest
             'address'  => 'required|string|min:6|max:120',
             'state_id' => 'required|exists:states,id',
             'lga_id'   => 'required|exists:lgas,id',
-            'nal_id'   => 'required',
+            'nal_id'        => 'required',
+            'department_id' => 'nullable|exists:departments,id',
         ];
         return ($this->method() === 'POST') ? $store : $update;
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            if ($this->method() !== 'POST' || !$this->filled('user_type')) {
+                return;
+            }
+
+            $type = app(UserRepo::class)->findType($this->user_type);
+            if ($type && $type->title === 'teacher' && !$this->department_id) {
+                $v->errors()->add('department_id', 'Please select a department for the teacher.');
+            }
+        });
     }
 
     public function attributes()
