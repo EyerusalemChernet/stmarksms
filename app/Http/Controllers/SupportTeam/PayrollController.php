@@ -117,13 +117,13 @@ class PayrollController extends Controller
 
     public function edit($id)
     {
-        // Validate ID
-        if (!is_numeric($id) || (int)$id <= 0) {
+        // Convert to int and validate
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', 'Invalid payroll ID.');
         }
-
-        $id = (int)$id;
         
         // Fetch payroll with relationships
         $payroll = StaffPayroll::with([
@@ -170,12 +170,14 @@ class PayrollController extends Controller
 
     public function update(Request $req, $id)
     {
-        if (!is_numeric($id) || (int)$id <= 0) {
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', 'Invalid payroll ID.');
         }
 
-        $payroll = StaffPayroll::findOr((int)$id, function() {
+        $payroll = StaffPayroll::findOr($id, function() {
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', 'Payroll record not found.');
         });
@@ -203,11 +205,13 @@ class PayrollController extends Controller
 
     public function addItem(Request $req, $id)
     {
-        if (!is_numeric($id) || (int)$id <= 0) {
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return back()->with('flash_danger', 'Invalid payroll ID.');
         }
 
-        $payroll = StaffPayroll::find((int)$id);
+        $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -240,11 +244,13 @@ class PayrollController extends Controller
 
     public function removeItem(Request $req, $id)
     {
-        if (!is_numeric($id) || (int)$id <= 0) {
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return back()->with('flash_danger', 'Invalid payroll ID.');
         }
 
-        $payroll = StaffPayroll::find((int)$id);
+        $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -266,11 +272,13 @@ class PayrollController extends Controller
 
     public function approve($id)
     {
-        if (!is_numeric($id) || (int)$id <= 0) {
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return back()->with('flash_danger', 'Invalid payroll ID.');
         }
 
-        $payroll = StaffPayroll::find((int)$id);
+        $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -290,11 +298,13 @@ class PayrollController extends Controller
 
     public function markPaid($id)
     {
-        if (!is_numeric($id) || (int)$id <= 0) {
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return back()->with('flash_danger', 'Invalid payroll ID.');
         }
 
-        $payroll = StaffPayroll::find((int)$id);
+        $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -314,11 +324,13 @@ class PayrollController extends Controller
 
     public function revertToDraft($id)
     {
-        if (!is_numeric($id) || (int)$id <= 0) {
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return back()->with('flash_danger', 'Invalid payroll ID.');
         }
 
-        $payroll = StaffPayroll::find((int)$id);
+        $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
@@ -421,13 +433,13 @@ class PayrollController extends Controller
 
     public function show($id)
     {
-        // Validate ID
-        if (!is_numeric($id) || (int)$id <= 0) {
+        // Convert to int and validate
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', 'Invalid payroll ID.');
         }
-
-        $id = (int)$id;
 
         // Fetch payroll
         $payroll = StaffPayroll::with([
@@ -458,13 +470,13 @@ class PayrollController extends Controller
 
     public function pdf($id)
     {
-        // Validate ID
-        if (!is_numeric($id) || (int)$id <= 0) {
+        // Convert to int and validate
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', 'Invalid payroll ID.');
         }
-
-        $id = (int)$id;
 
         // Fetch payroll
         $payroll = StaffPayroll::with([
@@ -497,13 +509,13 @@ class PayrollController extends Controller
 
     public function export($id)
     {
-        // Validate ID
-        if (!is_numeric($id) || (int)$id <= 0) {
+        // Convert to int and validate
+        $id = intval($id);
+        
+        if ($id <= 0) {
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', 'Invalid payroll ID.');
         }
-
-        $id = (int)$id;
 
         // Fetch payroll
         $payroll = StaffPayroll::with(['employee', 'items'])->find($id);
