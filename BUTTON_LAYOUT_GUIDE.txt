@@ -1,0 +1,183 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║              PAYROLL BUTTON REORGANIZATION - LAYOUT GUIDE                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+PAYROLL PAGE STRUCTURE
+═══════════════════════════════════════════════════════════════════════════
+
+┌─ Top Control Bar ──────────────────────────────────────────────────────────┐
+│                                                                            │
+│ [Month Picker] [Status Filter] [View Button]  | Generate Payroll |      │
+│                                                                 │           │
+│                                        [Export PDF] [Export CSV]          │
+│                                                                            │
+│ ✓ PDF and CSV export buttons are HERE at the top                         │
+│ ✓ These export the ENTIRE payroll list with current filters              │
+│ ✓ Easy to find and use for bulk export                                   │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Status Summary Cards ──────────────────────────────────────────────────────┐
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐                          │
+│ │    25       │ │    10       │ │    65       │                          │
+│ │   Draft     │ │  Approved   │ │    Paid     │                          │
+│ └─────────────┘ └─────────────┘ └─────────────┘                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Financial Summary & Reports (Optional) ───────────────────────────────────┐
+│ (Earnings, Deductions, Tax, Pension, Attendance, Overtime summaries)     │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Payroll Table ────────────────────────────────────────────────────────────┐
+│                                                                            │
+│ Employee    Dept        Salary   Present Absent  Earnings  Deduct  Net  │
+│                                                                   Status   │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│ John Doe    HR          5000     20      2       5200      400     4800  │ Draft
+│ [View] [Edit] [✓]                                                        │
+│                                                                            │
+│ Jane Smith  Finance     4500     18      3       4500      300     4200  │ Paid
+│ [View] [Edit] [💰]                                                       │
+│                                                                            │
+│ Bob J.      IT          6000     19      1       6300      500     5800  │ Approved
+│ [View] [Edit] [💰]                                                       │
+│                                                                            │
+│ ✓ Only View and Edit buttons are in the table                           │
+│ ✓ Cleaner, more readable layout                                          │
+│ ✓ Approve (✓) and Mark Paid (💰) workflow buttons still shown           │
+│ ✓ Less clutter, easier to scan                                           │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+
+BUTTON LOCATIONS & USAGE
+═════════════════════════════════════════════════════════════════════════
+
+TOP CONTROL BAR (Right side)
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  [Export PDF]  → Downloads entire payroll list as PDF file             │
+│                  File: payroll_list_[month].pdf                        │
+│                                                                          │
+│  [Export CSV]  → Downloads entire payroll list as CSV file             │
+│                  File: payroll_list_[month].csv                        │
+│                                                                          │
+│  💡 Use these for bulk export of multiple employees at once            │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+TABLE ACTIONS COLUMN (Last column)
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  👁️  [View]    → Opens individual payroll detail page                  │
+│                  Shows: Full calculations, breakdown, details           │
+│                  Can download individual PDF/CSV from there            │
+│                                                                          │
+│  ✏️  [Edit]    → Opens edit form (only for DRAFT payroll)              │
+│                  Allows: Change amounts, add items, adjust figures      │
+│                  Note: Only available while status is "Draft"          │
+│                                                                          │
+│  ✓  [Approve] → Approves draft payroll (appears if DRAFT status)      │
+│                  Changes status from "Draft" → "Approved"               │
+│                  Requires confirmation                                  │
+│                                                                          │
+│  💰 [Mark Paid]→ Marks approved payroll as paid (if APPROVED status)   │
+│                  Changes status from "Approved" → "Paid"               │
+│                  Requires confirmation                                  │
+│                                                                          │
+│  💡 Use these for individual payroll management                        │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+
+TYPICAL WORKFLOW
+════════════════════════════════════════════════════════════════════════════
+
+1. VIEW PAYROLL LIST
+   └─ Go to HR → Payroll
+   └─ Select month and status filters (optional)
+   └─ See all employees and their payroll status
+
+2. EXPORT (If needed)
+   └─ Click [Export PDF] or [Export CSV] at top right
+   └─ Downloads complete list for reporting
+
+3. REVIEW INDIVIDUAL PAYROLL
+   └─ Click [View] icon for any employee
+   └─ Review details, calculations, breakdowns
+   └─ Optional: Download individual PDF/CSV from detail page
+
+4. EDIT DRAFT PAYROLL (If needed)
+   └─ Click [Edit] icon on draft payroll
+   └─ Make corrections/adjustments
+   └─ Save changes
+
+5. APPROVE PAYROLL
+   └─ Click [✓ Approve] button for draft payroll
+   └─ Confirms → Status changes to "Approved"
+
+6. MARK AS PAID
+   └─ Click [💰 Mark Paid] button for approved payroll
+   └─ Confirms → Status changes to "Paid"
+   └─ Process complete
+
+═══════════════════════════════════════════════════════════════════════════
+
+BENEFITS OF THIS LAYOUT
+═══════════════════════════════════════════════════════════════════════════
+
+✓ Cleaner Interface
+  - Fewer buttons visible in table
+  - Less visual clutter
+  - Easier to scan and navigate
+
+✓ Better Organization
+  - Export functions grouped at top
+  - Action buttons in dedicated column
+  - Clear separation of concerns
+
+✓ Improved UX
+  - Buttons have clear titles on hover
+  - Logical workflow progression
+  - Mobile-friendly (fewer buttons)
+
+✓ Professional Look
+  - Minimalist design
+  - Follows UI best practices
+  - Easier to understand at a glance
+
+═══════════════════════════════════════════════════════════════════════════
+
+QUICK REFERENCE
+═════════════════════════════════════════════════════════════════════════════
+
+Want to...                      Go to...              Click...
+─────────────────────────────────────────────────────────────────────────
+Export entire payroll list      Top right             [Export PDF] or [CSV]
+View individual payroll         Table row             [👁️ View]
+Edit payroll (draft only)       Table row             [✏️ Edit]
+Approve payroll                 Table row (draft)     [✓ Approve]
+Mark payroll as paid            Table row (approved)  [💰 Mark Paid]
+Download individual PDF         Detail page           [📄 PDF] button
+Export individual CSV           Detail page           [📥 CSV] button
+
+═════════════════════════════════════════════════════════════════════════════
+
+AFTER CHANGES ARE APPLIED
+═════════════════════════════════════════════════════════════════════════════
+
+✓ Clear browser cache: Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
+✓ Reload the page
+✓ You should see:
+  - [Export PDF] and [Export CSV] at top right
+  - Only [👁️ View] and [✏️ Edit] buttons in table
+  - Approve and Mark Paid buttons when needed
+  - Much cleaner interface!
+
+═════════════════════════════════════════════════════════════════════════════
+
+Date: May 23, 2026
+Status: ✅ Complete and Deployed
+Commit: 80f9a36
