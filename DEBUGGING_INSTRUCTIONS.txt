@@ -1,0 +1,69 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                      DEBUGGING PAYROLL ID ERROR                           ║
+║                                                                            ║
+║ Follow these steps to help identify and fix the issue                     ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: Clear Everything
+═════════════════════════
+1. Press Ctrl+F5 in browser (or Cmd+Shift+R on Mac)
+2. Wait for page to reload completely
+
+STEP 2: Open Payroll Page
+═════════════════════════
+1. Go to HR → Payroll
+2. Make sure a month is selected (e.g., 2026-05)
+3. You should see payroll records in the table
+
+STEP 3: Right-Click on Page and View Source
+═════════════════════════════════════════════
+1. Right-click anywhere on the payroll table
+2. Select "View Page Source" (or "Inspect")
+3. Look for lines with "DEBUG:" comments
+
+You should see something like:
+<!-- DEBUG: Payroll ID=5, Edit URL=/hr/payroll/5/edit -->
+
+This tells us:
+✓ The payroll ID is: 5
+✓ The URL being generated is: /hr/payroll/5/edit
+
+STEP 4: Report What You Find
+══════════════════════════════
+Please tell us:
+1. What does the DEBUG comment show? (copy the exact line)
+2. When you click the Edit button, what error message appears?
+3. Can you see the payroll table with records?
+
+STEP 5: Check Server Logs
+═══════════════════════════
+If you have access to the server:
+1. Open: storage/logs/laravel.log
+2. Look for lines starting with "PayrollController@edit"
+3. Share those log lines
+
+EXAMPLE LOG OUTPUT WE'RE LOOKING FOR
+════════════════════════════════════════════════════════════════════════════
+
+[2026-05-23 14:35:10] local.DEBUG: === PayrollController@edit START ===
+{"id_raw":"5","id_type":"string"}
+
+[2026-05-23 14:35:10] local.DEBUG: PayrollController@edit - converted ID
+{"id_intval":5}
+
+[2026-05-23 14:35:10] local.DEBUG: PayrollController@edit - payroll found
+{"found":"yes","payroll_id":5}
+
+[2026-05-23 14:35:10] local.DEBUG: === PayrollController@edit SUCCESS ===
+
+This would mean it's working! But if it says "found":"no", then the payroll isn't in the database.
+
+═════════════════════════════════════════════════════════════════════════════
+
+Please follow these steps and share:
+1. The DEBUG comment from the page source
+2. The error message you see
+3. Any log entries from storage/logs/laravel.log
+
+This will help us identify the exact issue!
+

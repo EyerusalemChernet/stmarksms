@@ -294,6 +294,8 @@ Route::group(['namespace' => 'SuperAdmin','middleware' => 'super_admin', 'prefix
     Route::delete('/promotion-rules/{rule}',    'PromotionRuleController@destroy')->name('promotion_rules.destroy');
 
     Route::get('/audit-logs', 'AuditLogController@index')->name('audit.index');
+    Route::get('/audit-logs/hr', 'AuditLogController@hrAuditLog')->name('audit.hr');
+    Route::get('/audit-logs/hr/export', 'AuditLogController@exportHrAuditLog')->name('audit.hr.export');
 
     Route::get('/academic-years',                   'AcademicYearController@index')->name('academic_years.index');
     Route::post('/academic-years',                  'AcademicYearController@store')->name('academic_years.store');

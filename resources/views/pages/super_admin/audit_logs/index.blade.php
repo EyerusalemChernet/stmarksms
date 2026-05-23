@@ -4,7 +4,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0"><i class="bi bi-journal-text mr-2"></i>Audit Logs</h5>
-    <a href="{{ route('settings') }}" class="btn btn-sm btn-secondary"><i class="bi bi-arrow-left mr-1"></i>Back to Settings</a>
+    <div>
+        <a href="{{ route('audit.hr') }}" class="btn btn-sm btn-info"><i class="bi bi-briefcase mr-1"></i>HR Module Logs</a>
+        <a href="{{ route('settings') }}" class="btn btn-sm btn-secondary"><i class="bi bi-arrow-left mr-1"></i>Back to Settings</a>
+    </div>
 </div>
 
 <div class="card">
