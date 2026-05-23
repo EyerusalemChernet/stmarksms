@@ -120,17 +120,12 @@ class PayrollController extends Controller
         \Log::debug('=== PayrollController@edit START ===', [
             'id_raw' => $id,
             'id_type' => gettype($id),
+            'id_is_null' => is_null($id),
+            'id_is_empty' => empty($id),
         ]);
 
         try {
-            // Don't validate - just try to find it
-            $id = intval($id);
-            
-            \Log::debug('PayrollController@edit - converted ID', [
-                'id_intval' => $id,
-            ]);
-
-            // Fetch payroll with relationships
+            // Try to find the payroll directly without converting
             $payroll = StaffPayroll::with([
                 'employee.employmentDetails.department',
                 'employee.employmentDetails.position',
@@ -138,7 +133,8 @@ class PayrollController extends Controller
                 'approvedBy'
             ])->find($id);
 
-            \Log::debug('PayrollController@edit - payroll found', [
+            \Log::debug('PayrollController@edit - payroll lookup', [
+                'id_used' => $id,
                 'found' => $payroll ? 'yes' : 'no',
                 'payroll_id' => $payroll?->id,
             ]);
@@ -148,7 +144,7 @@ class PayrollController extends Controller
                     'id' => $id,
                 ]);
                 return redirect()->route('hr.payroll')
-                    ->with('flash_danger', "Payroll record #{$id} not found.");
+                    ->with('flash_danger', "Payroll record not found for ID: {$id}");
             }
             
             // Validate payroll has employee
@@ -194,13 +190,6 @@ class PayrollController extends Controller
 
     public function update(Request $req, $id)
     {
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return redirect()->route('hr.payroll')
-                ->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         $payroll = StaffPayroll::findOr($id, function() {
             return redirect()->route('hr.payroll')
                 ->with('flash_danger', 'Payroll record not found.');
@@ -229,12 +218,6 @@ class PayrollController extends Controller
 
     public function addItem(Request $req, $id)
     {
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return back()->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
@@ -268,12 +251,6 @@ class PayrollController extends Controller
 
     public function removeItem(Request $req, $id)
     {
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return back()->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
@@ -296,12 +273,6 @@ class PayrollController extends Controller
 
     public function approve($id)
     {
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return back()->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
@@ -322,12 +293,6 @@ class PayrollController extends Controller
 
     public function markPaid($id)
     {
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return back()->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
@@ -348,12 +313,6 @@ class PayrollController extends Controller
 
     public function revertToDraft($id)
     {
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return back()->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         $payroll = StaffPayroll::find($id);
 
         if (!$payroll) {
@@ -457,14 +416,6 @@ class PayrollController extends Controller
 
     public function show($id)
     {
-        // Convert to int and validate
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return redirect()->route('hr.payroll')
-                ->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         // Fetch payroll
         $payroll = StaffPayroll::with([
             'employee.employmentDetails.department',
@@ -475,7 +426,7 @@ class PayrollController extends Controller
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record #{$id} not found.");
+                ->with('flash_danger', "Payroll record not found.");
         }
 
         // Get analytics
@@ -494,14 +445,6 @@ class PayrollController extends Controller
 
     public function pdf($id)
     {
-        // Convert to int and validate
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return redirect()->route('hr.payroll')
-                ->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         // Fetch payroll
         $payroll = StaffPayroll::with([
             'employee.employmentDetails.department',
@@ -511,7 +454,7 @@ class PayrollController extends Controller
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record #{$id} not found.");
+                ->with('flash_danger', "Payroll record not found.");
         }
 
         // Get analytics
@@ -533,14 +476,6 @@ class PayrollController extends Controller
 
     public function export($id)
     {
-        // Convert to int and validate
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return redirect()->route('hr.payroll')
-                ->with('flash_danger', 'Invalid payroll ID.');
-        }
-
         // Fetch payroll
         $payroll = StaffPayroll::with(['employee', 'items'])->find($id);
 
