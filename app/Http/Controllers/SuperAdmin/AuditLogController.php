@@ -11,7 +11,11 @@ class AuditLogController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('teamSA');
+        // teamSA (admin/super_admin) for the super admin views
+        $this->middleware('teamSA')->except(['hrManagerAuditLog', 'exportHrManagerAuditLog']);
+
+        // hr_manager middleware for the HR manager views
+        $this->middleware('hr_manager')->only(['hrManagerAuditLog', 'exportHrManagerAuditLog']);
     }
 
     public function index()
