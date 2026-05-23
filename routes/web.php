@@ -235,6 +235,8 @@ Route::group(['namespace' => 'SuperAdmin','middleware' => 'super_admin', 'prefix
     Route::delete('/rules/{id}', 'RuleController@destroy')->name('rules.destroy');
 
     Route::get('/audit-logs', 'AuditLogController@index')->name('audit.index');
+    Route::get('/audit-logs/hr', 'AuditLogController@hrAuditLog')->name('audit.hr');
+    Route::get('/audit-logs/hr/export', 'AuditLogController@exportHrAuditLog')->name('audit.hr.export');
 
     Route::get('/departments', 'DepartmentController@index')->name('departments.index');
     Route::post('/departments', 'DepartmentController@store')->name('departments.store');

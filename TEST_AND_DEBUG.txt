@@ -1,0 +1,59 @@
+═══════════════════════════════════════════════════════════════════════════
+  TESTING & DEBUGGING PAYROLL BUTTONS
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 1: Clear Browser Cache
+─────────────────────────────
+Press: Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
+This ensures you're seeing the latest code.
+
+STEP 2: Go to Payroll Page
+──────────────────────────
+1. Login to the system
+2. Go to HR → Payroll
+3. Select month: 2026-05 (or a month with payroll)
+
+STEP 3: Click Edit Button
+─────────────────────────
+1. Find any payroll record in the table
+2. Click the ✏️ Edit button
+3. Note what error you see (if any)
+
+STEP 4: Check Debug Logs
+────────────────────────
+After clicking the Edit button, a log file is created with debug info.
+
+Path: storage/logs/laravel.log
+
+STEP 5: Share the Log
+──────────────────────
+1. Open: storage/logs/laravel.log
+2. Copy the LAST 20 lines (the most recent entries)
+3. Share them so we can see:
+   - What ID is being passed
+   - What type it is
+   - What intval() converts it to
+
+WHAT TO LOOK FOR IN LOGS
+════════════════════════════════════════════════════════════════════════════
+
+You should see something like:
+
+[2026-05-23 14:30:45] local.DEBUG: PayrollController@edit - incoming ID
+{"id_raw":"5","id_type":"string","id_intval":5}
+
+This tells us:
+- id_raw: The raw value from the URL
+- id_type: What type PHP sees it as
+- id_intval: What intval() converts it to
+
+If you see:
+{"id_intval":0}
+
+Then the ID is being converted to 0, which would cause the error.
+
+═══════════════════════════════════════════════════════════════════════════
+
+Once you click Edit and check the logs, please share the output so we can
+see exactly what's happening.
+

@@ -1,0 +1,47 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                        GET DEBUG INFORMATION                              ║
+║                                                                            ║
+║  To help fix this issue, we need to see what's happening in the logs      ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: Clear Browser Cache
+═════════════════════════════
+Press: Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
+
+STEP 2: Clear Log File
+═════════════════════════════
+Delete or clear: storage/logs/laravel.log
+(This makes it easier to see the new entries)
+
+STEP 3: Click Edit Button
+═════════════════════════════
+1. Go to HR → Payroll
+2. Select month: 2026-05
+3. Click ANY ✏️ Edit button in the table
+4. You'll see the "Invalid payroll ID" error
+
+STEP 4: Read the Log File
+═════════════════════════════
+Open: storage/logs/laravel.log
+
+Look for entries that start with:
+  "PayrollController@edit START"
+  "PayrollController@edit - converted ID"
+  "PayrollController@edit - payroll found"
+
+STEP 5: Share the Log Output
+═════════════════════════════
+Copy the log file content and share it.
+
+The debug messages will show us:
+  - What ID value is being received
+  - What type it is (string, int, etc)
+  - Whether the payroll is found in the database
+  - What error is occurring
+
+This will help us understand exactly what's wrong.
+
+═════════════════════════════════════════════════════════════════════════════
+
+Once you have the log output, please paste it here so we can analyze it.
+
