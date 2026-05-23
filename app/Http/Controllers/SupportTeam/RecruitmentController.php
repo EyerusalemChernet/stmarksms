@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\SupportTeam;
 
+use App\Helpers\Qs;
 use App\Http\Controllers\Controller;
 use App\Models\ApplicationNote;
 use App\Models\AuditLog;
@@ -282,23 +283,21 @@ class RecruitmentController extends Controller
         ]);
     }
 
-    /**
-     * Download resume file for an application
-     * HR/SuperAdmin only
-     */
-    public function downloadResume($applicationId)
+    public function downloadResume($hrId)
     {
-        // Check authorization
-        if (!auth()->user()->hasAnyRole(['super_admin', 'admin'])) {
-            abort(403, 'Unauthorized');
+        if (!Qs::userIsHRManager()) {
+            abort(403, 'Only HR, Admin, or Super Admin can download resumes.');
         }
 
-        $application = JobApplication::findOrFail($applicationId);
+        $application = JobApplication::findOrFail($hrId);
 
-        if (!$application->resume_path || !\Storage::disk('public')->exists($application->resume_path)) {
-            return back()->with('flash_danger', 'Resume file not found.');
+        if (!$application->hasResume()) {
+            return back()->with('flash_danger', 'No resume file uploaded for this application.');
         }
 
-        return \Storage::disk('public')->download($application->resume_path);
+        $downloadName = $application->resume_file_name
+            ?: 'resume_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $application->full_name) . '.pdf';
+
+        return \Storage::disk('public')->download($application->resume_path, $downloadName);
     }
 }

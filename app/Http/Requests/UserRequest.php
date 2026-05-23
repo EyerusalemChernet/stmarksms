@@ -37,6 +37,7 @@ class UserRequest extends FormRequest
             'lga_id'    => 'required|exists:lgas,id',
             'nal_id'         => 'required',
             'department_id'  => 'nullable|exists:departments,id',
+            'employee_id'    => 'sometimes|nullable|integer|exists:employees,id',
         ];
         $update =  [
             'name'     => 'required|string|min:6|max:150',
@@ -64,6 +65,13 @@ class UserRequest extends FormRequest
             $type = app(UserRepo::class)->findType($this->user_type);
             if ($type && $type->title === 'teacher' && !$this->department_id) {
                 $v->errors()->add('department_id', 'Please select a department for the teacher.');
+            }
+
+            if ($this->filled('employee_id')) {
+                $employee = \App\Models\Employee::find($this->employee_id);
+                if (!$employee || $employee->user_id) {
+                    $v->errors()->add('employee_id', 'This employee already has a user account or does not exist.');
+                }
             }
         });
     }
@@ -96,6 +104,13 @@ class UserRequest extends FormRequest
             $input = $this->all();
 
             $input['user_type'] = Qs::decodeHash($input['user_type']);
+
+            if (!empty($input['employee_id'])) {
+                $decodedEmp = Qs::decodeHash($input['employee_id']);
+                if ($decodedEmp) {
+                    $input['employee_id'] = $decodedEmp;
+                }
+            }
 
             $this->getInputSource()->replace($input);
 

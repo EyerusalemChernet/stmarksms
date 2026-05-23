@@ -4,7 +4,9 @@ namespace App\Http\Controllers\SupportTeam;
 
 use App\Helpers\Qs;
 use App\Http\Requests\UserRequest;
+use App\Models\AuditLog;
 use App\Models\Department;
+use App\Models\Employee;
 use App\Repositories\LocationRepo;
 use App\Repositories\MyClassRepo;
 use App\Repositories\UserRepo;
@@ -42,6 +44,17 @@ class UserController extends Controller
         $d['departments'] = Department::orderBy('name')->get();
         $teacherType = $ut->firstWhere('title', 'teacher');
         $d['teacher_type_hash'] = $teacherType ? Qs::hash($teacherType->id) : '';
+        $employeeType = $ut->firstWhere('title', 'employee');
+        $d['employee_type_hash'] = $employeeType ? Qs::hash($employeeType->id) : '';
+
+        $d['linkEmployee'] = null;
+        if (request()->filled('employee')) {
+            $empId = Qs::decodeHash(request('employee'));
+            if ($empId) {
+                $d['linkEmployee'] = Employee::whereNull('user_id')->with('employmentDetails')->find($empId);
+            }
+        }
+
         return view('pages.support_team.users.index', $d);
     }
 
@@ -110,11 +123,20 @@ class UserController extends Controller
             $d2 = $req->only(Qs::getStaffRecord());
             $d2['user_id'] = $user->id;
             $d2['code'] = $staff_id;
+            $d2['emp_date'] = $d2['emp_date'] ?? now()->toDateString();
             $this->user->createStaffRecord($d2);
         }
 
-        /* AUTO-CREATE EMPLOYEE RECORD for HR self-service portal */
-        if ($user_is_staff) {
+        $linkEmployeeId = $req->employee_id ? (int) $req->employee_id : null;
+        if ($linkEmployeeId) {
+            $employee = Employee::whereNull('user_id')->find($linkEmployeeId);
+            if (!$employee) {
+                return Qs::json('User created, but the employee record is already linked or was not found.', false);
+            }
+            $employee->update(['user_id' => $user->id]);
+            AuditLog::log('updated', 'hr',
+                "User account created and linked to employee {$employee->employee_code} ({$employee->full_name})");
+        } elseif ($user_is_staff) {
             \App\Services\EmployeeProfileService::createFromUser($user);
         }
 

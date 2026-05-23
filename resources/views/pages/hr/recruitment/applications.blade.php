@@ -66,6 +66,7 @@
                     <th>Applied</th>
                     <th>Interview</th>
                     <th>Status</th>
+                    <th>Resume</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -86,8 +87,19 @@
                         </span>
                     </td>
                     <td>
+                        @if($app->hasResume())
+                            <span class="badge badge-success" title="{{ $app->resume_file_name }}">Yes</span>
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
+                    </td>
+                    <td class="text-nowrap">
                         <a href="{{ route('hr.recruitment.applications.show', $app->id) }}"
-                           class="btn btn-xs btn-primary"><i class="bi bi-eye"></i></a>
+                           class="btn btn-xs btn-primary" title="View"><i class="bi bi-eye"></i></a>
+                        @if($app->hasResume() && \App\Helpers\Qs::userIsHRManager())
+                        <a href="{{ route('hr.recruitment.applications.download-resume', $app->id) }}"
+                           class="btn btn-xs btn-info" title="Download resume"><i class="bi bi-download"></i></a>
+                        @endif
                         @if($app->isHired())
                         <a href="{{ route('hr.recruitment.applications.convert', $app->id) }}"
                            class="btn btn-xs btn-success" title="Convert to Employee">
@@ -97,7 +109,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">No applications found.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">No applications found.</td></tr>
                 @endforelse
             </tbody>
         </table>

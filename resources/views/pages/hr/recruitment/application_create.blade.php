@@ -13,7 +13,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-body">
-                <form action="{{ route('hr.recruitment.applications.store') }}" method="POST">
+                <form action="{{ route('hr.recruitment.applications.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="form-group">
                         <label class="font-weight-bold">Job Posting <span class="text-danger">*</span></label>
@@ -56,6 +56,16 @@
                         <label class="font-weight-bold">Cover Letter</label>
                         <textarea name="cover_letter" class="form-control" rows="4" placeholder="Applicant's cover letter or notes...">{{ old('cover_letter') }}</textarea>
                     </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Resume / CV</label>
+                        <div class="custom-file">
+                            <input type="file" name="resume" id="resume" class="custom-file-input @error('resume') is-invalid @enderror"
+                                   accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                            <label class="custom-file-label" for="resume">Choose file (PDF, DOC, DOCX — max 5MB)</label>
+                        </div>
+                        @error('resume')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        <small class="text-muted">Optional. HR, Admin, and Super Admin can download after upload.</small>
+                    </div>
                     <div class="d-flex justify-content-between">
                         <button type="submit" class="btn btn-success px-4">
                             <i class="bi bi-send mr-1"></i>Submit Application
@@ -67,4 +77,12 @@
         </div>
     </div>
 </div>
+@push('scripts')
+<script>
+document.getElementById('resume')?.addEventListener('change', function () {
+    var label = this.nextElementSibling;
+    if (label) label.textContent = this.files[0] ? this.files[0].name : 'Choose file (PDF, DOC, DOCX — max 5MB)';
+});
+</script>
+@endpush
 @endsection

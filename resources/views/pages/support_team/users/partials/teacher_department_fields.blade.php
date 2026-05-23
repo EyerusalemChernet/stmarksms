@@ -10,7 +10,7 @@
             <select class="form-control select-search" name="department_id" id="department_id" data-placeholder="Select department (optional for non-teachers)">
                 <option value=""></option>
                 @foreach($departments as $dept)
-                    <option value="{{ $dept->id }}" {{ old('department_id') == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
+                    <option value="{{ $dept->id }}" {{ old('department_id', optional($linkEmployee ?? null)->employmentDetails?->department_id) == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
                 @endforeach
             </select>
             @if($departments->isEmpty())
@@ -25,7 +25,7 @@
     <div class="col-md-3">
         <div class="form-group">
             <label>Date of Employment:</label>
-            <input autocomplete="off" name="emp_date" value="{{ old('emp_date') }}" type="text" class="form-control date-pick" placeholder="Select Date...">
+            <input autocomplete="off" name="emp_date" value="{{ old('emp_date', optional($linkEmployee ?? null)->employmentDetails?->hire_date?->format('d/m/Y') ?? '') }}" type="text" class="form-control date-pick" placeholder="Select Date...">
         </div>
     </div>
 </div>

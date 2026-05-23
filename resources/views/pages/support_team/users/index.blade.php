@@ -25,8 +25,21 @@
 
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="new-user">
+                    @if(!empty($linkEmployee))
+                    <div class="alert alert-info border-0 mt-3 mb-0">
+                        <i class="bi bi-link-45deg mr-1"></i>
+                        Creating a login account for
+                        <strong>{{ $linkEmployee->full_name }}</strong>
+                        (<span class="text-monospace">{{ $linkEmployee->employee_code }}</span>).
+                        The new user will be linked to this employee record automatically.
+                        <a href="{{ route('hr.employees.unlinked') }}" class="alert-link ml-1">Back to Link Users</a>
+                    </div>
+                    @endif
                     <form method="post" enctype="multipart/form-data" class="wizard-form steps-validation ajax-store" action="{{ route('users.store') }}" data-fouc>
                         @csrf
+                        @if(!empty($linkEmployee))
+                        <input type="hidden" name="employee_id" value="{{ Qs::hash($linkEmployee->id) }}">
+                        @endif
                     <h6>Personal Data</h6>
                         <fieldset>
                             <div class="row">
@@ -36,7 +49,10 @@
                                         <select required data-placeholder="Select User Type" class="form-control select" name="user_type" id="user_type">
                                             <option value="" disabled selected>— Select User Type —</option>
                                 @foreach($user_types as $ut)
-                                    <option value="{{ Qs::hash($ut->id) }}">{{ $ut->name }}</option>
+                                    <option value="{{ Qs::hash($ut->id) }}"
+                                        {{ (old('user_type') == Qs::hash($ut->id) || (!empty($linkEmployee) && !empty($employee_type_hash) && $employee_type_hash == Qs::hash($ut->id))) ? 'selected' : '' }}>
+                                        {{ $ut->name }}
+                                    </option>
                                 @endforeach
                                         </select>
                                     </div>
@@ -45,14 +61,14 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label>Full Name: <span class="text-danger">*</span></label>
-                                        <input value="{{ old('name') }}" required type="text" name="name" placeholder="Full Name" class="form-control">
+                                        <input value="{{ old('name', $linkEmployee->full_name ?? '') }}" required type="text" name="name" placeholder="Full Name" class="form-control">
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Address: <span class="text-danger">*</span></label>
-                                        <input value="{{ old('address') }}" class="form-control" placeholder="Address" name="address" type="text" required>
+                                        <input value="{{ old('address', $linkEmployee->address ?? '') }}" class="form-control" placeholder="Address" name="address" type="text" required>
                                     </div>
                                 </div>
                             </div>
@@ -61,7 +77,7 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label>Email address: </label>
-                                        <input value="{{ old('email') }}" type="email" name="email" class="form-control" placeholder="your@email.com">
+                                        <input value="{{ old('email', $linkEmployee->email ?? '') }}" type="email" name="email" class="form-control" placeholder="your@email.com">
                                     </div>
                                 </div>
 
@@ -75,7 +91,7 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label>Phone <small class="text-muted">(09XXXXXXXX)</small>:</label>
-                                        <input value="{{ old('phone') }}" type="text" name="phone"
+                                        <input value="{{ old('phone', $linkEmployee->phone ?? '') }}" type="text" name="phone"
                                                class="form-control" placeholder="e.g. 0911434321"
                                                pattern="09[0-9]{8}" title="10 digits starting with 09">
                                     </div>
@@ -111,8 +127,8 @@
                                         <label for="gender">Gender: <span class="text-danger">*</span></label>
                                         <select class="select form-control" id="gender" name="gender" required data-fouc data-placeholder="Choose..">
                                             <option value=""></option>
-                                            <option {{ (old('gender') == 'Male') ? 'selected' : '' }} value="Male">Male</option>
-                                            <option {{ (old('gender') == 'Female') ? 'selected' : '' }} value="Female">Female</option>
+                                            <option {{ (old('gender', $linkEmployee->gender ?? '') == 'Male') ? 'selected' : '' }} value="Male">Male</option>
+                                            <option {{ (old('gender', $linkEmployee->gender ?? '') == 'Female') ? 'selected' : '' }} value="Female">Female</option>
                                         </select>
                                     </div>
                                 </div>

@@ -80,13 +80,20 @@
 
 {{-- ── Section 2: Employee records with NO user account ────────────────────── --}}
 <div class="card">
-    <div class="card-header bg-white">
-        <h6 class="card-title mb-0">
-            <i class="bi bi-person-badge mr-1 text-warning"></i>
-            Employee Records Without a User Account
-            <span class="badge badge-warning ml-1">{{ $employees->count() }}</span>
-        </h6>
-        <small class="text-muted">These employees exist in HR but cannot log in. Link them to a user account to enable self-service.</small>
+    <div class="card-header bg-white d-flex justify-content-between align-items-start flex-wrap" style="gap:8px;">
+        <div>
+            <h6 class="card-title mb-0">
+                <i class="bi bi-person-badge mr-1 text-warning"></i>
+                Employee Records Without a User Account
+                <span class="badge badge-warning ml-1">{{ $employees->count() }}</span>
+            </h6>
+            <small class="text-muted d-block mt-1">These employees exist in HR but cannot log in. Create a new user account or link an existing one to enable self-service.</small>
+        </div>
+        @if(\App\Helpers\Qs::userIsTeamSA() && $employees->count() > 0)
+        <a href="{{ route('users.index') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-person-plus mr-1"></i>Create User Account
+        </a>
+        @endif
     </div>
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
@@ -95,7 +102,7 @@
                     <th>Code</th>
                     <th>Name</th>
                     <th>Department</th>
-                    <th>Link to User</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -105,25 +112,33 @@
                     <td class="font-weight-bold">{{ $emp->full_name }}</td>
                     <td>{{ $emp->employmentDetails?->department?->name ?? '—' }}</td>
                     <td>
-                        <form action="{{ route('hr.employees.link_user', $emp->id) }}" method="POST" class="form-inline">
-                            @csrf
-                            <select name="user_id" class="form-control form-control-sm mr-2" style="width:200px;" required>
-                                <option value="">— Select User —</option>
-                                @forelse($availableUsers as $u)
-                                    @php
-                                        $isLinked = \App\Models\Employee::where('user_id', $u->id)->exists();
-                                    @endphp
-                                    @if(!$isLinked)
-                                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->user_type }})</option>
-                                    @endif
-                                @empty
-                                    <option value="" disabled>No users available</option>
-                                @endforelse
-                            </select>
-                            <button type="submit" class="btn btn-xs btn-primary">
-                                <i class="bi bi-link mr-1"></i>Link
-                            </button>
-                        </form>
+                        <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                            @if(\App\Helpers\Qs::userIsTeamSA())
+                            <a href="{{ route('users.index', ['employee' => \App\Helpers\Qs::hash($emp->id)]) }}"
+                               class="btn btn-xs btn-success" title="Create a login account for this employee">
+                                <i class="bi bi-person-plus mr-1"></i>Create User
+                            </a>
+                            @endif
+                            <form action="{{ route('hr.employees.link_user', $emp->id) }}" method="POST" class="form-inline mb-0">
+                                @csrf
+                                <select name="user_id" class="form-control form-control-sm mr-2" style="width:180px;" required>
+                                    <option value="">— Select User —</option>
+                                    @forelse($availableUsers as $u)
+                                        @php
+                                            $isLinked = \App\Models\Employee::where('user_id', $u->id)->exists();
+                                        @endphp
+                                        @if(!$isLinked)
+                                            <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->user_type }})</option>
+                                        @endif
+                                    @empty
+                                        <option value="" disabled>No users available</option>
+                                    @endforelse
+                                </select>
+                                <button type="submit" class="btn btn-xs btn-primary">
+                                    <i class="bi bi-link mr-1"></i>Link
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty

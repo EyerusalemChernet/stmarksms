@@ -127,52 +127,6 @@
                     </ul>
                 </li>
 
-                {{-- HR (admin & super_admin) --}}
-                @php $hrActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.'); @endphp
-                <li class="sidebar-section-label">Staff Management</li>
-                <li class="nav-item nav-item-submenu {{ $hrActive ? 'nav-item-expanded nav-item-open' : '' }}">
-                    <a href="#" class="nav-link"><i class="bi bi-person-badge"></i><span>HR</span></a>
-                    <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('hr.index') }}" class="nav-link {{ Route::is('hr.index') ? 'active' : '' }}"><i class="bi bi-speedometer2 mr-1"></i>Dashboard</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.staff') }}" class="nav-link {{ Route::is('hr.staff') || Route::is('hr.show') ? 'active' : '' }}"><i class="bi bi-people mr-1"></i>Staff List</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.employees.create') }}" class="nav-link {{ Route::is('hr.employees.create') ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Add Employee</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.employees.unlinked') }}" class="nav-link {{ Route::is('hr.employees.unlinked') ? 'active' : '' }}"><i class="bi bi-link-45deg mr-1"></i>Link Users</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.departments') }}" class="nav-link {{ Route::is('hr.departments') ? 'active' : '' }}"><i class="bi bi-building mr-1"></i>Departments</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.positions') }}" class="nav-link {{ Route::is('hr.positions') ? 'active' : '' }}"><i class="bi bi-briefcase mr-1"></i>Positions</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.shifts') }}" class="nav-link {{ Route::is('hr.shifts') ? 'active' : '' }}"><i class="bi bi-clock mr-1"></i>Shifts</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.attendance') }}" class="nav-link {{ Route::is('hr.attendance') || Route::is('hr.attendance.report') ? 'active' : '' }}"><i class="bi bi-clipboard-check mr-1"></i>Staff Attendance</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.workload') }}" class="nav-link {{ Route::is('hr.workload') ? 'active' : '' }}"><i class="bi bi-bar-chart mr-1"></i>Workload</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.contracts') }}" class="nav-link {{ Route::is('hr.contracts') ? 'active' : '' }}"><i class="bi bi-file-earmark-text mr-1"></i>Contracts</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.holidays') }}" class="nav-link {{ Route::is('hr.holidays') ? 'active' : '' }}"><i class="bi bi-calendar-event mr-1"></i>Holidays</a></li>
-                        <li class="nav-item"><a href="{{ route('hr.training.programs') }}" class="nav-link {{ str_starts_with(Route::currentRouteName() ?? '', 'hr.training') ? 'active' : '' }}"><i class="bi bi-mortarboard mr-1"></i>Training</a></li>
-                        @php $leaveActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.leave.'); @endphp
-                        <li class="nav-item nav-item-submenu {{ $leaveActive ? 'nav-item-expanded' : '' }}">
-                            <a href="#" class="nav-link {{ $leaveActive ? 'active' : '' }}"><i class="bi bi-calendar-x mr-1"></i>Leave Management</a>
-                            <ul class="nav nav-group-sub">
-                                <li class="nav-item"><a href="{{ route('hr.leave.requests') }}" class="nav-link {{ Route::is('hr.leave.requests') || Route::is('hr.leave.requests.show') ? 'active' : '' }}">Requests</a></li>
-                                <li class="nav-item"><a href="{{ route('hr.leave.balances') }}" class="nav-link {{ Route::is('hr.leave.balances') || Route::is('hr.leave.employee_balance') ? 'active' : '' }}">Balances</a></li>
-                                <li class="nav-item"><a href="{{ route('hr.leave.policies') }}" class="nav-link {{ Route::is('hr.leave.policies') ? 'active' : '' }}">Policies</a></li>
-                            </ul>
-                        </li>
-                        @php $recruitActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.recruitment.'); @endphp
-                        <li class="nav-item nav-item-submenu {{ $recruitActive ? 'nav-item-expanded' : '' }}">
-                            <a href="#" class="nav-link {{ $recruitActive ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Recruitment</a>
-                            <ul class="nav nav-group-sub">
-                                <li class="nav-item"><a href="{{ route('hr.recruitment.postings') }}" class="nav-link {{ Route::is('hr.recruitment.postings') ? 'active' : '' }}">Job Postings</a></li>
-                                <li class="nav-item"><a href="{{ route('hr.recruitment.applications') }}" class="nav-link {{ Route::is('hr.recruitment.applications') || Route::is('hr.recruitment.applications.show') ? 'active' : '' }}">Applications</a></li>
-                            </ul>
-                        </li>
-                        @php $perfActive = str_starts_with(Route::currentRouteName() ?? '', 'hr.performance.'); @endphp
-                        <li class="nav-item nav-item-submenu {{ $perfActive ? 'nav-item-expanded' : '' }}">
-                            <a href="#" class="nav-link {{ $perfActive ? 'active' : '' }}"><i class="bi bi-star mr-1"></i>Performance</a>
-                            <ul class="nav nav-group-sub">
-                                <li class="nav-item"><a href="{{ route('hr.performance.reviews') }}" class="nav-link {{ Route::is('hr.performance.reviews') || Route::is('hr.performance.reviews.show') ? 'active' : '' }}">Reviews</a></li>
-                                <li class="nav-item"><a href="{{ route('hr.performance.categories') }}" class="nav-link {{ Route::is('hr.performance.categories') ? 'active' : '' }}">Score Categories</a></li>
-                            </ul>
-                        </li>
-                    </ul>
-                </li>
-
                 {{-- Analytics --}}
                 @php $reportsActive = str_starts_with(Route::currentRouteName() ?? '', 'reports.'); @endphp
                 <li class="sidebar-section-label">Analytics</li>

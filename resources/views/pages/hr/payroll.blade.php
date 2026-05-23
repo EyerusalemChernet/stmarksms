@@ -36,9 +36,9 @@
         </form>
 
         <div class="ml-auto d-flex" style="gap:6px;">
-            <a href="{{ route('hr.payroll', array_merge(request()->query(), ['export'=>'pdf'])) }}"
-               class="btn btn-sm btn-danger">
-                <i class="bi bi-file-pdf mr-1"></i>PDF
+            <a href="{{ route('hr.payroll.reports', ['month' => $month]) }}"
+               class="btn btn-sm btn-info">
+                <i class="bi bi-bar-chart-line mr-1"></i>Reports
             </a>
             <a href="{{ route('hr.payroll', array_merge(request()->query(), ['export'=>'csv'])) }}"
                class="btn btn-sm btn-success">
@@ -121,6 +121,12 @@
                     <td>
                         <a href="{{ route('hr.payroll.edit', $pr->id) }}" class="btn btn-xs btn-primary">
                             <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ route('hr.payroll.show', $pr->id) }}" class="btn btn-xs btn-outline-secondary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ route('hr.payroll.export', $pr->id) }}" class="btn btn-xs btn-outline-success" title="Export CSV">
+                            <i class="bi bi-download"></i>
                         </a>
                         @if($pr->isDraft())
                         <form action="{{ route('hr.payroll.approve', $pr->id) }}" method="POST" class="d-inline">

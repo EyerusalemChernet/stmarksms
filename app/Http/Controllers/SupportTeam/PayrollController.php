@@ -96,19 +96,77 @@ class PayrollController extends Controller
 
     // ── EDIT / VIEW ───────────────────────────────────────────────────────────
 
-    public function edit($id)
+    public function show($id)
     {
-        $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
-<<<<<<< HEAD
-            ->findOrFail($id);
-=======
+        $payroll = StaffPayroll::with(['employee.employmentDetails.department', 'employee.employmentDetails.position', 'items', 'approvedBy'])
             ->find($id);
 
         if (!$payroll) {
             return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record not found. Please generate payroll for the desired month first.");
+                ->with('flash_danger', 'Payroll record not found.');
         }
->>>>>>> a0b22f9 (Integrate advanced payroll system into PayrollController with validation, calculations, and reporting)
+
+        return view('pages.hr.payroll_show', compact('payroll'));
+    }
+
+    public function pdf($id)
+    {
+        $payroll = StaffPayroll::with(['employee.employmentDetails.department', 'items', 'approvedBy'])
+            ->findOrFail($id);
+
+        $settings = \App\Models\Setting::pluck('description', 'type')->toArray();
+        $filename = 'payslip_' . ($payroll->employee->employee_code ?? $id) . '_' . $payroll->month . '.pdf';
+
+        // Fallback: return printable HTML if DomPDF not installed
+        return view('pages.hr.payroll_show', compact('payroll', 'settings'));
+    }
+
+    public function export($id)
+    {
+        $payroll = StaffPayroll::with(['employee.employmentDetails.department', 'items', 'approvedBy'])
+            ->findOrFail($id);
+
+        $emp = $payroll->employee;
+        $filename = 'payslip_' . ($emp->employee_code ?? $id) . '_' . $payroll->month . '.csv';
+        $headers  = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename={$filename}"];
+
+        $callback = function () use ($payroll, $emp) {
+            $h = fopen('php://output', 'w');
+            fputcsv($h, ['Payslip', $payroll->month]);
+            fputcsv($h, ['Employee', $emp->full_name]);
+            fputcsv($h, ['Code', $emp->employee_code ?? '']);
+            fputcsv($h, ['Department', $emp->employmentDetails?->department?->name ?? '']);
+            fputcsv($h, []);
+            fputcsv($h, ['Item', 'Amount (ETB)']);
+            fputcsv($h, ['Base Salary', $payroll->base_salary]);
+            foreach ($payroll->items->where('type', 'earning') as $item) {
+                fputcsv($h, [$item->label, $item->amount]);
+            }
+            fputcsv($h, ['Total Earnings', $payroll->base_salary + $payroll->allowances]);
+            fputcsv($h, []);
+            fputcsv($h, ['Income Tax', '-' . $payroll->income_tax]);
+            fputcsv($h, ['Employee Pension (7%)', '-' . $payroll->employee_pension]);
+            foreach ($payroll->items->where('type', 'deduction') as $item) {
+                fputcsv($h, [$item->label, '-' . $item->amount]);
+            }
+            fputcsv($h, ['Net Pay', $payroll->net_pay]);
+            fputcsv($h, []);
+            fputcsv($h, ['Status', ucfirst($payroll->status)]);
+            fclose($h);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function edit($id)
+    {
+        $payroll = StaffPayroll::with(['employee.employmentDetails', 'items', 'approvedBy'])
+            ->find($id);
+
+        if (!$payroll) {
+            return redirect()->route('hr.payroll')
+                ->with('flash_danger', 'Payroll record not found. Please generate payroll for the desired month first.');
+        }
 
         // ── Validate payroll integrity ───────────────────────────────────────
         $validator = new PayrollValidator();

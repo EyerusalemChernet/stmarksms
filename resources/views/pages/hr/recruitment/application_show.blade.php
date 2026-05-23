@@ -32,6 +32,25 @@
             </div>
         </div>
 
+        <div class="card mb-3">
+            <div class="card-header bg-white"><h6 class="card-title mb-0"><i class="bi bi-file-earmark-person mr-1"></i>Resume / CV</h6></div>
+            <div class="card-body">
+                @if($application->hasResume())
+                <p class="small mb-2 text-muted">{{ $application->resume_file_name }}</p>
+                @if(\App\Helpers\Qs::userIsHRManager())
+                <a href="{{ route('hr.recruitment.applications.download-resume', $application->id) }}"
+                   class="btn btn-primary btn-sm btn-block">
+                    <i class="bi bi-download mr-1"></i>Download Resume
+                </a>
+                @else
+                <span class="text-muted small">Resume on file (download restricted).</span>
+                @endif
+                @else
+                <p class="text-muted small mb-0">No resume uploaded.</p>
+                @endif
+            </div>
+        </div>
+
         @if($application->cover_letter)
         <div class="card mb-3">
             <div class="card-header bg-white"><h6 class="card-title mb-0">Cover Letter</h6></div>

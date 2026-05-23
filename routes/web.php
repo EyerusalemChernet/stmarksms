@@ -406,7 +406,6 @@ Route::group(['namespace' => 'Finance', 'middleware' => ['auth', 'finance_access
 
         Route::get('/payments', 'StudentFeeController@payments')->name('fees.payments');
         Route::get('/receipt/{id}', 'StudentFeeController@receipt')->name('fees.receipt');
-        Route::get('/pending', 'StudentFeeController@pendingList')->name('fees.pending');
         Route::get('/report', 'StudentFeeController@report')->name('fees.report');
     });
 
@@ -522,17 +521,19 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
 
     /*************** Payroll *****************/
     Route::get('/payroll',                'PayrollController@index')->name('hr.payroll');
+    Route::get('/payroll/reports',        'PayrollController@reports')->name('hr.payroll.reports');
     Route::post('/payroll/generate',      'PayrollController@generate')->name('hr.payroll.generate');
     Route::get('/payroll/{id}/edit',      'PayrollController@edit')->name('hr.payroll.edit');
+    Route::get('/payroll/{id}/pdf',       'PayrollController@pdf')->name('hr.payroll.pdf');
+    Route::get('/payroll/{id}/export',    'PayrollController@export')->name('hr.payroll.export');
     Route::put('/payroll/{id}',           'PayrollController@update')->name('hr.payroll.update');
     Route::post('/payroll/{id}/approve',  'PayrollController@approve')->name('hr.payroll.approve');
     Route::post('/payroll/{id}/paid',     'PayrollController@markPaid')->name('hr.payroll.paid');
     Route::post('/payroll/{id}/draft',    'PayrollController@revertToDraft')->name('hr.payroll.draft');
     Route::post('/payroll/{id}/items',    'PayrollController@addItem')->name('hr.payroll.item.add');
     Route::delete('/payroll/{id}/items',  'PayrollController@removeItem')->name('hr.payroll.item.remove');
-    // Generic route MUST come last to avoid shadowing specific routes
+    // Generic show MUST come last to avoid shadowing specific routes
     Route::get('/payroll/{id}',           'PayrollController@show')->name('hr.payroll.show');
-    Route::put('/payroll/{id}',           'PayrollController@update')->name('hr.payroll.update');
 
     /*************** Payments (Legacy) *****************/
     Route::group(['prefix' => 'payments'], function(){
@@ -654,6 +655,7 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
             Route::post('/applications/{hrId}/status', 'RecruitmentController@updateStatus')->name('hr.recruitment.applications.status');
             Route::post('/applications/{hrId}/note', 'RecruitmentController@addNote')->name('hr.recruitment.applications.note');
             Route::get('/applications/{hrId}/convert', 'RecruitmentController@convertToEmployee')->name('hr.recruitment.applications.convert');
+            Route::get('/applications/{hrId}/resume', 'RecruitmentController@downloadResume')->name('hr.recruitment.applications.download-resume');
         });
 
         // ── Performance ──────────────────────────────────────────────────────
@@ -738,8 +740,3 @@ Route::group(['namespace' => 'MyParent', 'middleware' => 'my_parent'], function 
     Route::get('/my_children', 'MyController@children')->name('my_children'); // legacy redirect
 });
 
-
-// ── Recruitment Module Routes - Resume Download ──────────────────────────────
-Route::middleware(['auth', 'admin_or_super_admin'])->namespace('SupportTeam')->prefix('hr/recruitment')->group(function () {
-    Route::get('/applications/{applicationId}/download-resume', 'RecruitmentController@downloadResume')->name('hr.recruitment.applications.download-resume');
-});
