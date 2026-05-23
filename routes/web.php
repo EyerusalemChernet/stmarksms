@@ -438,6 +438,10 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
         Route::get('/staff', 'HRController@index')->name('hr.staff');
         Route::get('/staff/{hrId}', 'HRController@show')->name('hr.show');
 
+        // Audit Logs for HR Manager
+        Route::get('/audit-logs', 'SuperAdmin\AuditLogController@hrManagerAuditLog')->name('hr.audit_logs');
+        Route::get('/audit-logs/export', 'SuperAdmin\AuditLogController@exportHrManagerAuditLog')->name('hr.audit_logs.export');
+
         // Employee create
         Route::get('/employees/create', 'HRController@createEmployee')->name('hr.employees.create');
         Route::post('/employees', 'HRController@storeEmployee')->name('hr.employees.store');
