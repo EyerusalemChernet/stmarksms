@@ -14,7 +14,7 @@
     </a>
 </div>
 
-<form action="{{ route('hr.profile.update', $employee->id) }}" method="POST">
+<form action="{{ route('hr.profile.update', $employee->id) }}" method="POST" enctype="multipart/form-data">
     @csrf @method('PUT')
 
     <div class="row">
@@ -164,6 +164,105 @@
 
                     <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="add-contact">
                         <i class="bi bi-plus mr-1"></i>Add Contact
+                    </button>
+                </div>
+            </div>
+
+            {{-- Qualifications --}}
+            <div class="card mb-3">
+                <div class="card-header bg-white">
+                    <h6 class="card-title mb-0"><i class="bi bi-mortarboard mr-1"></i>Qualifications</h6>
+                </div>
+                <div class="card-body" id="qualifications-container">
+                    @php
+                        $qualifications = old('qualifications', $employee->qualifications->map(fn($q) => [
+                            'degree'           => $q->degree,
+                            'field_of_study'   => $q->field_of_study,
+                            'institution'      => $q->institution,
+                            'graduation_year'  => $q->graduation_year,
+                            'certificate_path' => $q->certificate_path,
+                            'id'               => $q->id,
+                        ])->toArray());
+                        if (empty($qualifications)) $qualifications = [['degree'=>'','field_of_study'=>'','institution'=>'','graduation_year'=>'','certificate_path'=>'','id'=>null]];
+                    @endphp
+
+                    @foreach($qualifications as $i => $qual)
+                    <div class="qualification-row border rounded p-3 mb-3">
+                        @if(!empty($qual['id']))
+                        <input type="hidden" name="qualifications[{{ $i }}][id]" value="{{ $qual['id'] }}">
+                        @endif
+                        <div class="form-row">
+                            <div class="form-group col-md-3">
+                                <label class="small font-weight-bold">Degree <span class="text-danger">*</span></label>
+                                <input type="text" name="qualifications[{{ $i }}][degree]"
+                                       class="form-control form-control-sm"
+                                       placeholder="e.g. BSc, MSc, PhD"
+                                       value="{{ $qual['degree'] ?? '' }}">
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label class="small font-weight-bold">Field of Study</label>
+                                <input type="text" name="qualifications[{{ $i }}][field_of_study]"
+                                       class="form-control form-control-sm"
+                                       placeholder="e.g. Computer Science"
+                                       value="{{ $qual['field_of_study'] ?? '' }}">
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label class="small font-weight-bold">Institution</label>
+                                <input type="text" name="qualifications[{{ $i }}][institution]"
+                                       class="form-control form-control-sm"
+                                       placeholder="e.g. Addis Ababa University"
+                                       value="{{ $qual['institution'] ?? '' }}">
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label class="small font-weight-bold">Graduation Year</label>
+                                <input type="number" name="qualifications[{{ $i }}][graduation_year]"
+                                       class="form-control form-control-sm"
+                                       placeholder="e.g. 2020"
+                                       min="1950" max="{{ now()->year }}"
+                                       value="{{ $qual['graduation_year'] ?? '' }}">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-12">
+                                <label class="small font-weight-bold">Certificate/Diploma <i class="bi bi-file-pdf text-danger"></i></label>
+                                <div class="input-group input-group-sm">
+                                    <div class="custom-file">
+                                        <input type="file" name="qualifications[{{ $i }}][certificate]"
+                                               class="custom-file-input qualification-file"
+                                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                               data-index="{{ $i }}">
+                                        <label class="custom-file-label">Choose file (PDF, DOC, JPG, PNG)</label>
+                                    </div>
+                                </div>
+                                @if(!empty($qual['certificate_path']))
+                                <small class="text-success d-block mt-1">
+                                    <i class="bi bi-check-circle mr-1"></i>
+                                    <a href="{{ asset('storage/' . $qual['certificate_path']) }}" target="_blank" class="text-success">
+                                        {{ basename($qual['certificate_path']) }}
+                                    </a>
+                                </small>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                @if(!empty($qual['id']))
+                                    <i class="bi bi-info-circle mr-1"></i>ID: {{ $qual['id'] }}
+                                @endif
+                            </small>
+                            @if($i > 0)
+                            <button type="button" class="btn btn-xs btn-outline-danger remove-qualification">
+                                <i class="bi bi-trash"></i> Remove
+                            </button>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="add-qualification">
+                        <i class="bi bi-plus mr-1"></i>Add Qualification
                     </button>
                 </div>
             </div>
@@ -431,6 +530,62 @@ $('#add-contact').on('click', function(){
 
 $(document).on('click', '.remove-contact', function(){
     $(this).closest('.emergency-row').remove();
+});
+
+// Dynamic qualification rows
+var qualCount = {{ count($qualifications) }};
+
+$('#add-qualification').on('click', function(){
+    var i = qualCount++;
+    var html = `
+    <div class="qualification-row border rounded p-3 mb-3">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">Degree <span class="text-danger">*</span></label>
+                <input type="text" name="qualifications[${i}][degree]" class="form-control form-control-sm" placeholder="e.g. BSc, MSc, PhD">
+            </div>
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">Field of Study</label>
+                <input type="text" name="qualifications[${i}][field_of_study]" class="form-control form-control-sm" placeholder="e.g. Computer Science">
+            </div>
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">Institution</label>
+                <input type="text" name="qualifications[${i}][institution]" class="form-control form-control-sm" placeholder="e.g. Addis Ababa University">
+            </div>
+            <div class="form-group col-md-3">
+                <label class="small font-weight-bold">Graduation Year</label>
+                <input type="number" name="qualifications[${i}][graduation_year]" class="form-control form-control-sm" placeholder="e.g. 2020" min="1950" max="{{ now()->year }}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label class="small font-weight-bold">Certificate/Diploma <i class="bi bi-file-pdf text-danger"></i></label>
+                <div class="input-group input-group-sm">
+                    <div class="custom-file">
+                        <input type="file" name="qualifications[${i}][certificate]" class="custom-file-input qualification-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" data-index="${i}">
+                        <label class="custom-file-label">Choose file (PDF, DOC, JPG, PNG)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">New qualification</small>
+            <button type="button" class="btn btn-xs btn-outline-danger remove-qualification">
+                <i class="bi bi-trash"></i> Remove
+            </button>
+        </div>
+    </div>`;
+    $('#qualifications-container').find('#add-qualification').before(html);
+});
+
+$(document).on('click', '.remove-qualification', function(){
+    $(this).closest('.qualification-row').remove();
+});
+
+// Update file input label with selected file name
+$(document).on('change', '.qualification-file', function(){
+    var fileName = $(this).val().split('\\').pop();
+    $(this).siblings('.custom-file-label').text(fileName || 'Choose file (PDF, DOC, JPG, PNG)');
 });
 </script>
 @endsection

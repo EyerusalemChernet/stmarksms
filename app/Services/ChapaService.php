@@ -51,7 +51,7 @@ class ChapaService
             'callback_url'  => route('chapa.webhook'),
             'return_url'    => route($returnRoute, $returnParams),
             'customization'   => [
-                'title'       => config('app.name', 'School') . ' Fees',
+                'title'       => substr(config('app.name', 'School'), 0, 10) . ' Fees',
                 'description' => optional($invoice->fee_structure->category)->name ?? $invoice->invoice_no,
             ],
         ];
@@ -69,9 +69,16 @@ class ChapaService
                 return redirect($data['data']['checkout_url']);
             }
 
-            return back()->with('flash_danger', 'Payment gateway error: ' . ($data['message'] ?? 'Unknown error'));
+            if (is_array($data['message'] ?? null)) {
+                $errorMessage = 'Payment gateway error: ' . json_encode($data['message']);
+            } else {
+                $errorMessage = 'Payment gateway error: ' . ($data['message'] ?? 'Unknown error');
+            }
+            \Log::error('Chapa API Error', ['response' => $data, 'status' => $response->status()]);
+            return back()->with('flash_danger', $errorMessage);
         } catch (\Throwable $e) {
-            return back()->with('flash_danger', 'Could not connect to payment gateway. Please try again or pay at the office.');
+            \Log::error('Chapa Connection Error', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return back()->with('flash_danger', 'Payment gateway error: ' . $e->getMessage());
         }
     }
 
@@ -112,22 +119,19 @@ class ChapaService
             $data = $response->json();
 
             if ($response->successful() && ($data['status'] ?? '') === 'success') {
-                $amount = (float) ($data['data']['amount'] ?? $invoice->balance);
-
-                DB::transaction(function () use ($invoice, $txRef, $amount) {
-                    $payAmount = min($amount, (float) $invoice->balance);
+                DB::transaction(function () use ($invoice, $txRef) {
+                    $payAmount = (float) $invoice->balance;
                     if ($payAmount <= 0) {
                         return;
                     }
 
-                    $installmentNo = $invoice->payments()->count() + 1;
                     FeePayment::create([
                         'receipt_no'      => 'REC-CH-' . strtoupper(substr($txRef, -8)),
                         'invoice_id'      => $invoice->id,
                         'student_id'      => $invoice->student_id,
                         'collected_by'    => Auth::id() ?? $invoice->student_id,
                         'amount'          => $payAmount,
-                        'installment_no'  => $installmentNo,
+                        'installment_no'  => 1,
                         'payment_method'  => 'chapa',
                         'transaction_ref' => $txRef,
                         'notes'           => 'Paid via Chapa',

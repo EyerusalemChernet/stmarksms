@@ -59,7 +59,7 @@
           <td>{{ number_format($inv->net_amount,2) }}</td>
           <td class="text-success">{{ number_format($inv->amount_paid,2) }}</td>
           <td class="text-danger font-weight-bold">{{ number_format($inv->balance,2) }}</td>
-          <td>@if($inv->status==='partial')<span class="badge badge-warning">Partial</span>@else<span class="badge badge-danger">Unpaid</span>@endif</td>
+          <td><span class="badge badge-danger">Unpaid</span></td>
           <td>@if($inv->due_date && $inv->due_date < now()->toDateString())<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> {{ $inv->due_date }}</span>@else{{ $inv->due_date ?? '-' }}@endif</td>
           <td><a href="{{ route('fees.invoice', Qs::hash($inv->id)) }}" class="btn btn-success btn-xs"><i class="bi bi-cash-coin"></i></a></td>
         </tr>

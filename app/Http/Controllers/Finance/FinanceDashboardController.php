@@ -8,7 +8,6 @@ use App\Models\Expense;
 use App\Models\FeePayment;
 use App\Models\Income;
 use App\Models\StudentFeeInvoice;
-use App\Models\TransportRecord;
 
 class FinanceDashboardController extends Controller
 {
@@ -45,9 +44,8 @@ class FinanceDashboardController extends Controller
 
         // Fee status breakdown
         $d['status_counts'] = [
-            'paid'    => StudentFeeInvoice::where('session',$session)->where('status','paid')->count(),
-            'partial' => StudentFeeInvoice::where('session',$session)->where('status','partial')->count(),
-            'unpaid'  => StudentFeeInvoice::where('session',$session)->where('status','unpaid')->count(),
+            'paid'   => StudentFeeInvoice::where('session', $session)->where('status', 'paid')->count(),
+            'unpaid' => StudentFeeInvoice::where('session', $session)->whereIn('status', ['unpaid', 'partial'])->count(),
         ];
 
         return view('pages.finance.dashboard', $d);

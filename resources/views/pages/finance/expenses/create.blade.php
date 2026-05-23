@@ -1,6 +1,15 @@
 @extends('layouts.master')
 @section('page_title','Add Expense')
 @section('content')
+@if(!empty($autoApproveOnCreate))
+<div class="alert alert-success mb-3 py-2" style="font-size:13px;">
+  <i class="bi bi-check-circle mr-1"></i> Expenses you add as Admin or Super Admin are <strong>approved automatically</strong>.
+</div>
+@else
+<div class="alert alert-info mb-3 py-2" style="font-size:13px;">
+  <i class="bi bi-info-circle mr-1"></i> Your expense will be submitted as <strong>Pending</strong> until an administrator approves it.
+</div>
+@endif
 <div class="row justify-content-center">
   <div class="col-md-7">
     <div class="card">

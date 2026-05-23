@@ -50,19 +50,13 @@
 
 {{-- Status Badges --}}
 <div class="row mb-3">
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="card border-success"><div class="card-body py-2 d-flex justify-content-between align-items-center">
       <span style="font-size:13px;color:#64748b">Fully Paid</span>
       <span class="badge badge-success px-3 py-2" style="font-size:15px;">{{ $count_paid }}</span>
     </div></div>
   </div>
-  <div class="col-md-4">
-    <div class="card border-warning"><div class="card-body py-2 d-flex justify-content-between align-items-center">
-      <span style="font-size:13px;color:#64748b">Partial</span>
-      <span class="badge badge-warning px-3 py-2" style="font-size:15px;">{{ $count_partial }}</span>
-    </div></div>
-  </div>
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="card border-danger"><div class="card-body py-2 d-flex justify-content-between align-items-center">
       <span style="font-size:13px;color:#64748b">Unpaid</span>
       <span class="badge badge-danger px-3 py-2" style="font-size:15px;">{{ $count_unpaid }}</span>

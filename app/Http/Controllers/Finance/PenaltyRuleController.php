@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Services\FinancePermission as FP;
+use App\Services\ParentOverdueFeeNotifier;
 use App\Services\PenaltyService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class PenaltyRuleController extends Controller
@@ -29,24 +31,41 @@ class PenaltyRuleController extends Controller
         FP::require('manage_penalty_rules');
 
         $req->validate([
-            'late_fee_grace_days' => 'required|integer|min:0|max:365',
-            'late_fee_type'       => 'required|in:percent,fixed',
-            'late_fee_amount'     => 'required|numeric|min:0',
+            'late_fee_grace_days'        => 'required|integer|min:0|max:365',
+            'late_fee_type'              => 'required|in:percent,fixed',
+            'late_fee_amount'            => 'required|numeric|min:0',
+            'late_fee_default_due_days'  => 'required|integer|min:1|max:365',
+            'late_fee_notify_after_days' => 'required|integer|min:0|max:365',
+            'late_fee_penalty_frequency' => 'required|in:once,daily,weekly',
         ]);
 
         PenaltyService::setRules(
             $req->has('late_fee_enabled'),
             (int) $req->late_fee_grace_days,
             $req->late_fee_type,
-            (float) $req->late_fee_amount
+            (float) $req->late_fee_amount,
+            (int) $req->late_fee_default_due_days,
+            (int) $req->late_fee_notify_after_days,
+            $req->late_fee_penalty_frequency
         );
 
         FP::audit('updated', 'penalty_rules', null, null, [], $req->only([
             'late_fee_enabled', 'late_fee_grace_days', 'late_fee_type', 'late_fee_amount',
+            'late_fee_default_due_days', 'late_fee_notify_after_days', 'late_fee_penalty_frequency',
         ]));
 
-        return redirect()->route('penalties.index')
-            ->with('flash_success', 'Penalty rules saved successfully.');
+        $notifyStats = ['messages' => 0, 'penalties' => 0];
+        if ($req->has('late_fee_enabled')) {
+            ParentOverdueFeeNotifier::postParentsPolicyAnnouncement(Auth::id());
+            $notifyStats = ParentOverdueFeeNotifier::run();
+        }
+
+        $msg = 'Penalty rules saved successfully.';
+        if ($notifyStats['messages'] > 0) {
+            $msg .= ' ' . $notifyStats['messages'] . ' parent reminder(s) sent for overdue fees.';
+        }
+
+        return redirect()->route('penalties.index')->with('flash_success', $msg);
     }
 
     public function applyNow(Request $req)

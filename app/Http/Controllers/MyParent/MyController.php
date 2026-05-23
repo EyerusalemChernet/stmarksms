@@ -174,10 +174,48 @@ class MyController extends Controller
         ));
     }
 
-    /** Legacy: list of children (kept for backward compat) */
-    public function children()
+    /** Parent fee payment interface */
+    public function feePayment($invoice_id)
     {
-        return redirect()->route('parent.dashboard');
+        $parentId = Auth::id();
+        $id = Qs::decodeHash($invoice_id);
+        
+        $invoice = StudentFeeInvoice::with(['student', 'fee_structure.category', 'fee_structure.my_class', 'payments'])
+            ->findOrFail($id);
+        
+        // Security: ensure this invoice belongs to parent's child
+        $sr = $this->student->getRecord(['user_id' => $invoice->student_id, 'my_parent_id' => $parentId])->first();
+        if (!$sr) {
+            return redirect()->route('parent.dashboard')->with('flash_danger', 'Access denied.');
+        }
+        
+        // Apply penalties if needed
+        if (in_array($invoice->status, ['unpaid', 'partial'])) {
+            PenaltyService::syncPenaltyForInvoice($invoice);
+            $invoice->refresh();
+        }
+        
+        return view('pages.parent.fee_payment', compact('invoice', 'sr'));
+    }
+    
+    /** Download payment receipt */
+    public function downloadReceipt($payment_id)
+    {
+        $parentId = Auth::id();
+        $id = Qs::decodeHash($payment_id);
+        
+        $payment = FeePayment::with(['student', 'invoice.fee_structure.category', 'invoice.fee_structure.my_class'])
+            ->findOrFail($id);
+        
+        // Security: ensure this payment belongs to parent's child
+        $sr = $this->student->getRecord(['user_id' => $payment->student_id, 'my_parent_id' => $parentId])->first();
+        if (!$sr) {
+            return redirect()->route('parent.dashboard')->with('flash_danger', 'Access denied.');
+        }
+        
+        $settings = \App\Models\Setting::pluck('description', 'type')->toArray();
+        
+        return view('pages.parent.receipt', compact('payment', 'settings'));
     }
 
     /** Activity timeline for a child */

@@ -9,10 +9,13 @@ use Carbon\Carbon;
 
 class PenaltyService
 {
-    public const SETTING_ENABLED     = 'late_fee_enabled';
-    public const SETTING_GRACE_DAYS  = 'late_fee_grace_days';
-    public const SETTING_TYPE        = 'late_fee_type';
-    public const SETTING_AMOUNT      = 'late_fee_amount';
+    public const SETTING_ENABLED          = 'late_fee_enabled';
+    public const SETTING_GRACE_DAYS       = 'late_fee_grace_days';
+    public const SETTING_TYPE             = 'late_fee_type';
+    public const SETTING_AMOUNT           = 'late_fee_amount';
+    public const SETTING_DEFAULT_DUE_DAYS = 'late_fee_default_due_days';
+    public const SETTING_NOTIFY_AFTER     = 'late_fee_notify_after_days';
+    public const SETTING_FREQUENCY        = 'late_fee_penalty_frequency';
 
     public static function isEnabled(): bool
     {
@@ -36,22 +39,65 @@ class PenaltyService
         return (float) (Qs::getSetting(self::SETTING_AMOUNT) ?: 5);
     }
 
-    public static function getRules(): array
+    public static function getDefaultDueDays(): int
     {
-        return [
-            'enabled'    => self::isEnabled(),
-            'grace_days' => self::getGraceDays(),
-            'type'       => self::getType(),
-            'amount'     => self::getAmount(),
-        ];
+        return max(1, (int) (Qs::getSetting(self::SETTING_DEFAULT_DUE_DAYS) ?: 30));
     }
 
-    public static function setRules(bool $enabled, int $graceDays, string $type, float $amount): void
+    public static function getNotifyAfterDays(): int
     {
+        return max(0, (int) (Qs::getSetting(self::SETTING_NOTIFY_AFTER) ?: 7));
+    }
+
+    public static function getPenaltyFrequency(): string
+    {
+        $freq = Qs::getSetting(self::SETTING_FREQUENCY) ?: 'weekly';
+        return in_array($freq, ['once', 'daily', 'weekly'], true) ? $freq : 'weekly';
+    }
+
+    public static function getRules(): array
+    {
+        $rules = [
+            'enabled'           => self::isEnabled(),
+            'grace_days'        => self::getGraceDays(),
+            'type'              => self::getType(),
+            'amount'            => self::getAmount(),
+            'default_due_days'  => self::getDefaultDueDays(),
+            'notify_after_days' => self::getNotifyAfterDays(),
+            'frequency'         => self::getPenaltyFrequency(),
+        ];
+
+        $rules['description'] = $rules['enabled']
+            ? ($rules['type'] === 'percent'
+                ? $rules['amount'] . '% after grace period'
+                : 'ETB ' . number_format($rules['amount'], 2) . ' fixed after grace period')
+            : 'Penalties are currently disabled';
+
+        $rules['frequency_label'] = match ($rules['frequency']) {
+            'once'   => 'Once per invoice',
+            'daily'  => 'Daily reminder',
+            default  => 'Weekly reminder',
+        };
+
+        return $rules;
+    }
+
+    public static function setRules(
+        bool $enabled,
+        int $graceDays,
+        string $type,
+        float $amount,
+        int $defaultDueDays,
+        int $notifyAfterDays,
+        string $frequency
+    ): void {
         Setting::updateOrCreate(['type' => self::SETTING_ENABLED], ['description' => $enabled ? '1' : '0']);
         Setting::updateOrCreate(['type' => self::SETTING_GRACE_DAYS], ['description' => (string) $graceDays]);
         Setting::updateOrCreate(['type' => self::SETTING_TYPE], ['description' => $type]);
         Setting::updateOrCreate(['type' => self::SETTING_AMOUNT], ['description' => (string) $amount]);
+        Setting::updateOrCreate(['type' => self::SETTING_DEFAULT_DUE_DAYS], ['description' => (string) max(1, $defaultDueDays)]);
+        Setting::updateOrCreate(['type' => self::SETTING_NOTIFY_AFTER], ['description' => (string) max(0, $notifyAfterDays)]);
+        Setting::updateOrCreate(['type' => self::SETTING_FREQUENCY], ['description' => $frequency]);
     }
 
     public static function calculateFine(StudentFeeInvoice $invoice): float
@@ -104,14 +150,7 @@ class PenaltyService
 
     public static function penaltySummaryForParent(): array
     {
-        $rules = self::getRules();
-        $rules['description'] = $rules['enabled']
-            ? ($rules['type'] === 'percent'
-                ? $rules['amount'] . '% after grace period'
-                : 'ETB ' . number_format($rules['amount'], 2) . ' fixed after grace period')
-            : 'Penalties are currently disabled';
-
-        return $rules;
+        return self::getRules();
     }
 
     public static function applyToOverdueInvoices(): int

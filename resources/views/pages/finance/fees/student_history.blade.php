@@ -42,7 +42,7 @@
             <code class="ml-2" style="font-size:11px;">{{ $inv->invoice_no }}</code>
         </div>
         <div class="d-flex align-items-center" style="gap:8px;">
-            @php $badge = ['unpaid'=>'danger','partial'=>'warning','paid'=>'success'][$inv->status] @endphp
+            @php $badge = $inv->status === 'paid' ? 'success' : 'danger' @endphp
             <span class="badge badge-{{ $badge }}">{{ ucfirst($inv->status) }}</span>
             <a href="{{ route('fees.invoice', $inv->id) }}" class="btn btn-xs btn-primary">View</a>
         </div>

@@ -294,6 +294,8 @@ Route::group(['namespace' => 'SuperAdmin','middleware' => 'super_admin', 'prefix
     Route::delete('/promotion-rules/{rule}',    'PromotionRuleController@destroy')->name('promotion_rules.destroy');
 
     Route::get('/audit-logs', 'AuditLogController@index')->name('audit.index');
+    Route::get('/audit-logs/hr', 'AuditLogController@hrAuditLog')->name('audit.hr');
+    Route::get('/audit-logs/hr/export', 'AuditLogController@exportHrAuditLog')->name('audit.hr.export');
 
     Route::get('/academic-years',                   'AcademicYearController@index')->name('academic_years.index');
     Route::post('/academic-years',                  'AcademicYearController@store')->name('academic_years.store');
@@ -397,7 +399,8 @@ Route::group(['namespace' => 'Finance', 'middleware' => ['auth', 'finance_access
         Route::get('/invoices', 'StudentFeeController@invoices')->name('fees.invoices');
         Route::post('/invoices/generate', 'StudentFeeController@assignFee')->name('fees.invoices.generate');
         Route::get('/invoice/{id}', 'StudentFeeController@invoiceDetail')->name('fees.invoice');
-        Route::post('/pay/{id}', 'StudentFeeController@recordPayment')->name('fees.pay');
+        Route::put('/invoice/{id}', 'StudentFeeController@updateInvoice')->name('fees.invoice.update');
+        Route::post('/pay/{id}', 'StudentFeeController@recordPayment')->name('fees.pay')->middleware('accountant');
         Route::post('/discount/{id}', 'StudentFeeController@applyDiscount')->name('fees.discount');
         Route::post('/fine/{id}', 'StudentFeeController@applyFine')->name('fees.fine');
 
@@ -407,18 +410,19 @@ Route::group(['namespace' => 'Finance', 'middleware' => ['auth', 'finance_access
         Route::get('/report', 'StudentFeeController@report')->name('fees.report');
     });
 
-    // --- Discount Requests & Rule Proposals ---
-    Route::group(['prefix' => 'discounts'], function() {
-        // Global discount rule proposals MUST come before /{id} dynamic routes
-        Route::get('/rules', 'DiscountRequestController@ruleIndex')->name('discount_rules.index');
-        Route::post('/rules', 'DiscountRequestController@ruleStore')->name('discount_rules.store')->middleware('super_admin');
+    // --- Discount Rules ---
+    Route::group(['prefix' => 'discounts/rules'], function() {
+        Route::get('/', 'DiscountRequestController@ruleIndex')->name('discount_rules.index');
+        Route::post('/', 'DiscountRequestController@ruleStore')->name('discount_rules.store')->middleware('super_admin');
+    });
 
-        // Individual invoice discount requests (dynamic {id} routes AFTER static ones)
+    // --- Discount Requests (per-invoice; static paths before dynamic {id}) ---
+    Route::group(['prefix' => 'discounts'], function() {
         Route::get('/', 'DiscountRequestController@index')->name('discount_requests.index');
         Route::get('/create/{invoice_id}', 'DiscountRequestController@create')->name('discount_requests.create');
         Route::post('/{invoice_id}', 'DiscountRequestController@store')->name('discount_requests.store');
-        Route::post('/{id}/approve', 'DiscountRequestController@approve')->name('discount_requests.approve')->withoutMiddleware('accountant');
-        Route::post('/{id}/reject', 'DiscountRequestController@reject')->name('discount_requests.reject')->withoutMiddleware('accountant');
+        Route::post('/{id}/approve', 'DiscountRequestController@approve')->name('discount_requests.approve');
+        Route::post('/{id}/reject', 'DiscountRequestController@reject')->name('discount_requests.reject');
     });
 
     // --- Expenses ---
@@ -430,23 +434,13 @@ Route::group(['namespace' => 'Finance', 'middleware' => ['auth', 'finance_access
         Route::put('/{id}', 'ExpenseController@update')->name('expenses.update');
         Route::post('/{id}/approve', 'ExpenseController@approve')->name('expenses.approve')->withoutMiddleware('accountant');
         Route::post('/{id}/reject', 'ExpenseController@reject')->name('expenses.reject')->withoutMiddleware('accountant');
-        Route::delete('/{id}', 'ExpenseController@destroy')->name('expenses.destroy');
+        Route::delete('/{id}', 'ExpenseController@destroy')->name('expenses.destroy')->middleware('super_admin');
         Route::get('/export/csv', 'ExpenseController@exportCsv')->name('expenses.csv');
 
         Route::get('/categories', 'ExpenseController@categories')->name('expense_cats.index');
         Route::post('/categories', 'ExpenseController@storeCategory')->name('expense_cats.store');
         Route::put('/categories/{id}', 'ExpenseController@updateCategory')->name('expense_cats.update');
-        Route::delete('/categories/{id}', 'ExpenseController@destroyCategory')->name('expense_cats.destroy');
-    });
-
-    // --- Transport ---
-    Route::group(['prefix' => 'transport'], function() {
-        Route::get('/', 'TransportController@index')->name('transport.index');
-        Route::post('/', 'TransportController@store')->name('transport.store');
-        Route::put('/{id}', 'TransportController@update')->name('transport.update');
-        Route::delete('/{id}', 'TransportController@destroy')->name('transport.destroy');
-        Route::get('/payments', 'TransportController@payments')->name('transport.payments');
-        Route::post('/payments', 'TransportController@storePayment')->name('transport.pay');
+        Route::delete('/categories/{id}', 'ExpenseController@destroyCategory')->name('expense_cats.destroy')->middleware('super_admin');
     });
 
     // --- Penalty Rules ---
@@ -497,12 +491,14 @@ Route::group(['namespace' => 'Finance', 'middleware' => ['auth', 'finance_access
         Route::get('/chapa-settings', 'FinanceGovernanceController@chapaSettings')->name('finance.chapa.settings');
     });
 
-    Route::get('/settings', 'FinanceSettingController@index')->name('finance.settings.index');
-    Route::post('/settings/expense-category', 'FinanceSettingController@storeExpenseCategory')->name('finance.settings.expense_cat');
-    Route::post('/settings/expense-category/{id}/delete', 'FinanceSettingController@destroyExpenseCategory')->name('finance.settings.expense_cat_del');
-    Route::post('/settings/income-category', 'FinanceSettingController@storeIncomeCategory')->name('finance.settings.income_cat');
-    Route::post('/settings/income-category/{id}/delete', 'FinanceSettingController@destroyIncomeCategory')->name('finance.settings.income_cat_del');
-    Route::post('/settings/late-fee-rules', 'FinanceSettingController@updateLateFeeRules')->name('finance.settings.late_fee');
+    Route::group(['prefix' => 'settings', 'middleware' => 'super_admin'], function() {
+        Route::get('/', 'FinanceSettingController@index')->name('finance.settings.index');
+        Route::post('/expense-category', 'FinanceSettingController@storeExpenseCategory')->name('finance.settings.expense_cat');
+        Route::post('/expense-category/{id}/delete', 'FinanceSettingController@destroyExpenseCategory')->name('finance.settings.expense_cat_del')->middleware('super_admin');
+        Route::post('/income-category', 'FinanceSettingController@storeIncomeCategory')->name('finance.settings.income_cat');
+        Route::post('/income-category/{id}/delete', 'FinanceSettingController@destroyIncomeCategory')->name('finance.settings.income_cat_del');
+        Route::post('/late-fee-rules', 'FinanceSettingController@updateLateFeeRules')->name('finance.settings.late_fee');
+    });
 
     // --- Finance Dashboard ---
     Route::get('/dashboard', 'FinanceDashboardController@index')->name('finance.dashboard');
@@ -534,16 +530,15 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
     Route::post('/payroll/{id}/draft',    'PayrollController@revertToDraft')->name('hr.payroll.draft');
     Route::post('/payroll/{id}/items',    'PayrollController@addItem')->name('hr.payroll.item.add');
     Route::delete('/payroll/{id}/items',  'PayrollController@removeItem')->name('hr.payroll.item.remove');
+    // Generic route MUST come last to avoid shadowing specific routes
+    Route::get('/payroll/{id}',           'PayrollController@show')->name('hr.payroll.show');
+    Route::put('/payroll/{id}',           'PayrollController@update')->name('hr.payroll.update');
 
-    /*************** Payments (Legacy → unified finance) *****************/
-    Route::group(['namespace' => 'Finance', 'prefix' => 'payments'], function () {
-        Route::get('manage/{class_id?}', 'LegacyPaymentRedirectController@manage')->name('payments.manage');
-        Route::get('invoice/{id}/{year?}', 'LegacyPaymentRedirectController@invoice')->name('payments.invoice');
-        Route::get('receipts/{id}', 'LegacyPaymentRedirectController@receipts')->name('payments.receipts');
-        Route::post('select_year', 'LegacyPaymentRedirectController@selectYear')->name('payments.select_year');
-        Route::post('select_class', 'LegacyPaymentRedirectController@selectClass')->name('payments.select_class');
-    });
-    Route::group(['prefix' => 'payments'], function () {
+    /*************** Payments (Legacy) *****************/
+    Route::group(['prefix' => 'payments'], function(){
+        Route::get('manage/{class_id?}', 'PaymentController@manage')->name('payments.manage');
+        Route::get('invoice/{id}/{year?}', 'PaymentController@invoice')->name('payments.invoice');
+        Route::get('receipts/{id}', 'PaymentController@receipts')->name('payments.receipts');
         Route::get('pdf_receipts/{id}', 'PaymentController@pdf_receipts')->name('payments.pdf_receipts');
         Route::delete('reset_record/{id}', 'PaymentController@reset_record')->name('payments.reset_record');
         Route::post('pay_now/{id}', 'PaymentController@pay_now')->name('payments.pay_now');
@@ -555,6 +550,10 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
         Route::get('/', 'HRController@dashboard')->name('hr.index');
         Route::get('/staff', 'HRController@index')->name('hr.staff');
         Route::get('/staff/{hrId}', 'HRController@show')->name('hr.show');
+
+        // Audit Logs for HR Manager
+        Route::get('/audit-logs', '\App\Http\Controllers\SuperAdmin\AuditLogController@hrManagerAuditLog')->name('hr.audit_logs');
+        Route::get('/audit-logs/export', '\App\Http\Controllers\SuperAdmin\AuditLogController@exportHrManagerAuditLog')->name('hr.audit_logs.export');
 
         // Employee create
         Route::get('/employees/create', 'HRController@createEmployee')->name('hr.employees.create');
@@ -730,9 +729,17 @@ Route::group(['namespace' => 'MyParent', 'middleware' => 'my_parent'], function 
     Route::get('/parent/dashboard', 'MyController@dashboard')->name('parent.dashboard');
     Route::get('/parent/fees', 'ParentFeeController@index')->name('parent.fees');
     Route::get('/parent/fees/invoice/{id}', 'ParentFeeController@show')->name('parent.fee');
+    Route::get('/parent/fees/payment/{invoice_id}', 'MyController@feePayment')->name('parent.fee.payment');
+    Route::get('/parent/receipt/{payment_id}', 'MyController@downloadReceipt')->name('parent.receipt');
     Route::post('/parent/fees/invoice/{id}/chapa', '\App\Http\Controllers\Finance\ChapaPaymentController@initiateFeePay')->name('parent.fee.chapa');
     Route::get('/parent/fees/invoice/{id}/chapa/return', '\App\Http\Controllers\Finance\ChapaPaymentController@returnFeePay')->name('parent.fee.chapa.return');
     Route::get('/parent/child/{student_id}', 'MyController@childDetail')->name('parent.child');
     Route::get('/parent/child/{student_id}/timeline', 'MyController@timeline')->name('parent.timeline');
     Route::get('/my_children', 'MyController@children')->name('my_children'); // legacy redirect
+});
+
+
+// ── Recruitment Module Routes - Resume Download ──────────────────────────────
+Route::middleware(['auth', 'admin_or_super_admin'])->namespace('SupportTeam')->prefix('hr/recruitment')->group(function () {
+    Route::get('/applications/{applicationId}/download-resume', 'RecruitmentController@downloadResume')->name('hr.recruitment.applications.download-resume');
 });

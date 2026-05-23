@@ -3,6 +3,8 @@ namespace App\Http\Controllers\Finance;
 
 use App\Helpers\Qs;
 use App\Http\Controllers\Controller;
+use App\Services\AdminFeeAudit;
+use App\Services\FinancePermission as FP;
 use App\Models\FeeCategory;
 use App\Models\FeePayment;
 use App\Models\FeeStructure;
@@ -16,19 +18,41 @@ use Illuminate\Support\Facades\DB;
 class StudentFeeController extends Controller
 {
     public function categories() {
-        $categories = FeeCategory::withCount('structures')->get();
-        return view('pages.finance.fees.categories', compact('categories'));
+        $categories = FeeCategory::withCount('structures')->with('adminUpdater')->get();
+        $canManageFeeSetup  = FP::canManageFeeSetup();
+        $canEditFeeSetup    = FP::canEditFeeSetup();
+        $canCreateFeeSetup  = FP::canCreateFeeSetup();
+        $canDeleteFeeSetup  = FP::canDeleteFeeSetup();
+        return view('pages.finance.fees.categories', compact(
+            'categories', 'canManageFeeSetup', 'canEditFeeSetup', 'canCreateFeeSetup', 'canDeleteFeeSetup'
+        ));
     }
     public function storeCategory(Request $req) {
-        $req->validate(['name'=>'required|string|max:100','code'=>'required|string|max:10|unique:fee_categories','description'=>'nullable|string']);
-        FeeCategory::create($req->only('name','code','description'));
-        return back()->with('flash_success','Category created.');
+        FP::requireAny(['manage_fees', 'manage_fee_setup']);
+        $req->validate([
+            'name'        => 'required|string|max:100',
+            'code'        => 'required|string|max:10|unique:fee_categories',
+            'description' => 'nullable|string',
+        ]);
+        $cat = FeeCategory::create($req->only('name', 'code', 'description'));
+        AdminFeeAudit::stamp($cat, 'created', 'Fee category created by Super Admin.');
+        return back()->with('flash_success', 'Category created.');
     }
     public function updateCategory(Request $req, $id) {
-        FeeCategory::findOrFail($id)->update($req->validate(['name'=>'required|string|max:100','description'=>'nullable|string','active'=>'required|boolean']));
-        return back()->with('flash_success','Category updated.');
+        FP::requireAny(['manage_fees', 'manage_fee_setup']);
+        $cat = FeeCategory::findOrFail($id);
+        FP::requireCanEditFeeSetupRecord($cat);
+        $validated = $req->validate([
+            'name'        => 'required|string|max:100',
+            'description' => 'nullable|string',
+            'active'      => 'required|boolean',
+        ]);
+        $cat->update($validated);
+        AdminFeeAudit::stamp($cat, 'updated', 'Fee category updated by Super Admin.');
+        return back()->with('flash_success', 'Category updated.');
     }
     public function destroyCategory($id) {
+        FP::require('manage_fee_setup');
         $cat = FeeCategory::withCount('structures')->findOrFail($id);
         if ($cat->structures_count > 0) return back()->with('flash_danger','Cannot delete: category has structures.');
         $cat->delete();
@@ -41,7 +65,7 @@ class StudentFeeController extends Controller
         $classes       = MyClass::orderBy('name')->get();
         $categories    = FeeCategory::where('active', true)->get();
 
-        $query = FeeStructure::with(['category', 'my_class'])
+        $query = FeeStructure::with(['category', 'my_class', 'adminUpdater'])
             ->orderByDesc('session')
             ->orderBy('my_class_id');
         if ($sessionFilter) {
@@ -56,27 +80,50 @@ class StudentFeeController extends Controller
             ->sort()
             ->values();
 
+        $canManageFeeSetup  = FP::canManageFeeSetup();
+        $canEditFeeSetup    = FP::canEditFeeSetup();
+        $canCreateFeeSetup  = FP::canCreateFeeSetup();
+        $canDeleteFeeSetup  = FP::canDeleteFeeSetup();
+        $canManageFees      = FP::has('manage_fees');
+
         return view('pages.finance.fees.structures', compact(
-            'classes', 'categories', 'structures', 'sessions', 'sessionFilter', 'formSession'
+            'classes', 'categories', 'structures', 'sessions', 'sessionFilter', 'formSession',
+            'canManageFeeSetup', 'canEditFeeSetup', 'canCreateFeeSetup', 'canDeleteFeeSetup', 'canManageFees'
         ));
     }
     public function storeStructure(Request $req) {
-        $req->validate(['fee_category_id'=>'required|exists:fee_categories,id','my_class_id'=>'required|exists:my_classes,id','session'=>'required|string','amount'=>'required|numeric|min:0','installments'=>'required|integer|min:1']);
+        FP::requireAny(['manage_fees', 'manage_fee_setup']);
+        $req->validate([
+            'fee_category_id' => 'required|exists:fee_categories,id',
+            'my_class_id'     => 'required|exists:my_classes,id',
+            'session'         => 'required|string',
+            'amount'          => 'required|numeric|min:0',
+            'installments'    => 'required|integer|min:1',
+        ]);
         if (FeeStructure::where('fee_category_id',$req->fee_category_id)->where('my_class_id',$req->my_class_id)->where('session',$req->session)->exists()) {
             return redirect()->route('fees.structures')
                 ->with('flash_danger','Structure already exists for this category/class/session.');
         }
-        FeeStructure::create($req->only('fee_category_id','my_class_id','session','amount','installments'));
+        $s = FeeStructure::create($req->only('fee_category_id', 'my_class_id', 'session', 'amount', 'installments'));
+        AdminFeeAudit::stamp($s, 'created', 'Fee structure created by Super Admin.');
         return redirect()->route('fees.structures')
             ->with('flash_success','Fee structure created.');
     }
     public function updateStructure(Request $req, $id) {
+        FP::requireAny(['manage_fees', 'manage_fee_setup']);
         $s = FeeStructure::findOrFail($id);
-        $s->update($req->validate(['amount'=>'required|numeric|min:0','installments'=>'required|integer|min:1|max:12']));
+        FP::requireCanEditFeeSetupRecord($s);
+        $validated = $req->validate([
+            'amount'       => 'required|numeric|min:0',
+            'installments' => 'required|integer|min:1|max:12',
+        ]);
+        $s->update($validated);
+        AdminFeeAudit::stamp($s, 'updated', 'Fee structure updated by Super Admin.');
         return redirect()->route('fees.structures')
             ->with('flash_success','Fee structure updated.');
     }
     public function destroyStructure($id) {
+        FP::require('manage_fee_setup');
         $s = FeeStructure::withCount('invoices')->findOrFail($id);
         if ($s->invoices_count > 0) {
             return redirect()->route('fees.structures')
@@ -94,8 +141,13 @@ class StudentFeeController extends Controller
         $search        = $req->get('search');
         $classes       = MyClass::orderBy('name')->get();
 
-        $query = StudentFeeInvoice::with(['student', 'fee_structure.category', 'fee_structure.my_class'])
-            ->latest();
+        $query = StudentFeeInvoice::with([
+            'student',
+            'fee_structure.my_class',
+            'fee_structure.category.adminUpdater',
+            'fee_structure.adminUpdater',
+            'adminUpdater',
+        ])->latest();
         if ($sessionFilter) {
             $query->where('session', $sessionFilter);
         }
@@ -124,12 +176,18 @@ class StudentFeeController extends Controller
             ->sort()
             ->values();
 
+        $canManageFees         = FP::has('manage_fees');
+        $canRecordFeePayments  = FP::canRecordFeePayments();
+        $canEditInvoices       = FP::canEditInvoices();
+
         return view('pages.finance.fees.invoices', compact(
-            'invoices', 'classes', 'sessionFilter', 'feeStructures', 'sessions'
+            'invoices', 'classes', 'sessionFilter', 'feeStructures', 'sessions',
+            'canManageFees', 'canRecordFeePayments', 'canEditInvoices'
         ));
     }
 
     public function assignFee(Request $req) {
+        FP::require('manage_fees');
         $req->validate([
             'fee_structure_id' => 'required|exists:fee_structures,id',
             'my_class_id'      => 'nullable|exists:my_classes,id',
@@ -206,7 +264,7 @@ class StudentFeeController extends Controller
             'amount_paid'     => 0,
             'balance'         => $structure->amount,
             'status'          => 'unpaid',
-            'due_date'        => now()->addDays(30)->toDateString(),
+            'due_date'        => now()->addDays(\App\Services\PenaltyService::getDefaultDueDays())->toDateString(),
         ]);
 
         \App\Services\DiscountService::applyAutomaticDiscountToInvoice($invoice);
@@ -215,12 +273,58 @@ class StudentFeeController extends Controller
     }
     public function invoiceDetail($id) {
         $invoice = $this->findInvoice($id);
-        $invoice->load(['student', 'fee_structure.category', 'fee_structure.my_class', 'payments.collector']);
-        $installment_no = $invoice->payments()->count() + 1;
-        return view('pages.finance.fees.invoice_detail', compact('invoice', 'installment_no'));
+        $invoice->load([
+            'student',
+            'fee_structure.category.adminUpdater',
+            'fee_structure.adminUpdater',
+            'fee_structure.my_class',
+            'payments.collector',
+            'adminUpdater',
+        ]);
+        $canManageFees        = FP::has('manage_fees');
+        $canRecordFeePayments = FP::canRecordFeePayments();
+        $canEditInvoices      = FP::canEditInvoices();
+        return view('pages.finance.fees.invoice_detail', compact(
+            'invoice', 'canManageFees', 'canRecordFeePayments', 'canEditInvoices'
+        ));
+    }
+
+    public function updateInvoice(Request $req, $id)
+    {
+        FP::require('edit_invoices');
+        $inv = $this->findInvoice($id);
+
+        if ($inv->admin_updated_at) {
+            return $this->redirectToInvoice($inv)->with('flash_danger', 'This invoice has already been updated and cannot be edited again.');
+        }
+
+        if ($inv->amount_paid > 0) {
+            return $this->redirectToInvoice($inv)->with('flash_danger', 'Cannot edit an invoice that already has payments.');
+        }
+
+        $validated = $req->validate([
+            'original_amount' => 'required|numeric|min:0',
+            'due_date'        => 'nullable|date',
+            'update_note'     => 'required|string|min:5|max:500',
+        ]);
+
+        $inv->original_amount = $validated['original_amount'];
+        $inv->recalculateNetAmount();
+        $inv->due_date = $validated['due_date'] ?? $inv->due_date;
+        $inv->syncStatus();
+        AdminFeeAudit::stampInvoice($inv, $validated['update_note']);
+
+        FP::audit('updated', 'invoice', StudentFeeInvoice::class, $inv->id, [], [
+            'original_amount' => $inv->original_amount,
+            'net_amount'      => $inv->net_amount,
+            'note'            => $validated['update_note'],
+        ]);
+
+        return $this->redirectToInvoice($inv)->with('flash_success', 'Invoice updated. Accountants will see this change.');
     }
 
     public function recordPayment(Request $req, $id) {
+        FP::requireRecordFeePayments();
         $inv = $this->findInvoice($id);
 
         if ($inv->balance <= 0) {
@@ -228,22 +332,21 @@ class StudentFeeController extends Controller
         }
 
         $req->validate([
-            'amount'          => 'required|numeric|min:0.01|max:' . $inv->balance,
-            'payment_method'  => 'required|in:cash,bank_transfer,mobile_money,chapa',
             'transaction_ref' => 'nullable|string|max:100',
             'notes'           => 'nullable|string|max:500',
         ]);
 
-        DB::transaction(function () use ($inv, $req) {
-            $installmentNo = $inv->payments()->count() + 1;
+        $amount = (float) $inv->balance;
+
+        DB::transaction(function () use ($inv, $req, $amount) {
             FeePayment::create([
                 'receipt_no'      => 'REC-' . strtoupper(substr(uniqid(), -8)),
                 'invoice_id'      => $inv->id,
                 'student_id'      => $inv->student_id,
                 'collected_by'    => Auth::id(),
-                'amount'          => $req->amount,
-                'installment_no'  => $installmentNo,
-                'payment_method'  => $req->payment_method,
+                'amount'          => $amount,
+                'installment_no'  => 1,
+                'payment_method'  => 'cash',
                 'transaction_ref' => $req->transaction_ref,
                 'notes'           => $req->notes,
                 'paid_at'         => now(),
@@ -309,7 +412,8 @@ class StudentFeeController extends Controller
         $total_today = FeePayment::whereDate('paid_at',today())->sum('amount');
         $total_month = FeePayment::whereYear('paid_at',now()->year)->whereMonth('paid_at',now()->month)->sum('amount');
         $payments = $query->paginate(20)->appends($req->query());
-        return view('pages.finance.fees.payments', compact('payments','total_today','total_month'));
+        $paymentsViewOnly = FP::isPaymentsViewOnly();
+        return view('pages.finance.fees.payments', compact('payments', 'total_today', 'total_month', 'paymentsViewOnly'));
     }
     public function receipt($id) {
         $id = Qs::decodeHash($id);
@@ -331,7 +435,9 @@ class StudentFeeController extends Controller
         $classes=MyClass::orderBy('name')->get();
         $base=fn()=>StudentFeeInvoice::where('session',$session)->when($class_id,fn($q)=>$q->whereHas('fee_structure',fn($q2)=>$q2->where('my_class_id',$class_id)));
         $total_invoiced=$base()->sum('net_amount'); $total_collected=$base()->sum('amount_paid'); $total_balance=$base()->sum('balance');
-        $count_paid=$base()->where('status','paid')->count(); $count_partial=$base()->where('status','partial')->count(); $count_unpaid=$base()->where('status','unpaid')->count();
+        $count_paid=$base()->where('status','paid')->count();
+        $count_unpaid=$base()->whereIn('status',['unpaid','partial'])->count();
+        $count_partial=0;
         $byCategory=$base()->with('fee_structure.category')->get()->groupBy(fn($i)=>optional(optional($i->fee_structure)->category)->name??'Unknown')->map(fn($g)=>['invoiced'=>$g->sum('net_amount'),'collected'=>$g->sum('amount_paid'),'balance'=>$g->sum('balance'),'count'=>$g->count()]);
         $byClass=$base()->with('fee_structure.my_class')->get()->groupBy(fn($i)=>optional(optional($i->fee_structure)->my_class)->name??'Unknown')->map(fn($g)=>['invoiced'=>$g->sum('net_amount'),'collected'=>$g->sum('amount_paid'),'balance'=>$g->sum('balance'),'count'=>$g->count()]);
         $isLite=DB::connection()->getDriverName()==='sqlite';

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\EmployeeQualification;
 use App\Models\EmploymentDetails;
 use App\Models\EthiopianHoliday;
 use App\Models\JobPosting;
@@ -280,7 +281,7 @@ class HRController extends Controller
      */
     public function unlinkedUsers()
     {
-        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin'];
+        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin', 'employee'];
         $linkedUserIds = Employee::whereNotNull('user_id')->pluck('user_id');
 
         $unlinked = User::whereIn('user_type', $staffTypes)
@@ -291,7 +292,11 @@ class HRController extends Controller
             ->with('employmentDetails.department')
             ->orderBy('first_name')->get();
 
-        return view('pages.hr.employees_unlinked', compact('unlinked', 'employees'));
+        // Get ALL staff users for linking (including those already linked, so they can be re-linked)
+        $availableUsers = User::whereIn('user_type', $staffTypes)
+            ->orderBy('name')->get();
+
+        return view('pages.hr.employees_unlinked', compact('unlinked', 'employees', 'availableUsers'));
     }
 
     /**
@@ -340,18 +345,31 @@ class HRController extends Controller
     {
         $req->validate(['user_id' => 'required|exists:users,id']);
         $employee = Employee::findOrFail($hrId);
+        $user = User::findOrFail($req->user_id);
 
+        // Validate user is a staff type
+        $staffTypes = ['teacher', 'hr_manager', 'admin', 'super_admin', 'employee'];
+        if (!in_array($user->user_type, $staffTypes)) {
+            return back()->with('flash_danger', 'Only staff users can be linked to employees.');
+        }
+
+        // Check if employee is already linked
         if ($employee->user_id) {
             return back()->with('flash_danger', 'This employee is already linked to a user account.');
         }
+
+        // Check if user is already linked to another employee
         if (Employee::where('user_id', $req->user_id)->exists()) {
             return back()->with('flash_danger', 'That user account is already linked to another employee.');
         }
 
-        $employee->update(['user_id' => $req->user_id]);
-        AuditLog::log('updated', 'hr', "Employee #{$hrId} linked to user #{$req->user_id}");
+        // Use transaction to prevent race conditions
+        \DB::transaction(function () use ($employee, $req, $user) {
+            $employee->update(['user_id' => $req->user_id]);
+            AuditLog::log('updated', 'hr', "Employee #{$employee->id} linked to user #{$req->user_id} ({$user->name})");
+        });
 
-        return back()->with('flash_success', 'User account linked to employee.');
+        return back()->with('flash_success', "User account ({$user->name}) linked to employee.");
     }
 
     /**
@@ -431,13 +449,71 @@ class HRController extends Controller
             'emergency.*.name'     => 'nullable|string|max:100',
             'emergency.*.phone'    => 'nullable|string|max:20',
             'emergency.*.relationship' => 'nullable|string|max:50',
+            'qualifications.*.degree'           => 'nullable|string|max:100',
+            'qualifications.*.field_of_study'  => 'nullable|string|max:100',
+            'qualifications.*.institution'     => 'nullable|string|max:100',
+            'qualifications.*.graduation_year' => 'nullable|integer|min:1950|max:' . date('Y'),
+            'qualifications.*.certificate'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
         $employee = Employee::findOrFail($hrId);
         $this->profileService->update($employee, $req->all());
         if ($req->has('emergency')) {
             $this->profileService->syncEmergencyContacts($employee, $req->emergency);
         }
+        
+        // Handle qualifications with file uploads
+        if ($req->has('qualifications')) {
+            $this->updateQualifications($employee, $req->qualifications, $req);
+        }
+        
         return back()->with('flash_success','Employee profile updated.');
+    }
+
+    /**
+     * Update employee qualifications with file uploads
+     */
+    private function updateQualifications($employee, $qualifications, $req)
+    {
+        foreach ($qualifications as $index => $qual) {
+            // Skip empty rows
+            if (empty($qual['degree']) && empty($qual['field_of_study']) && empty($qual['institution'])) {
+                continue;
+            }
+
+            $qualData = [
+                'degree'           => $qual['degree'] ?? null,
+                'field_of_study'   => $qual['field_of_study'] ?? null,
+                'institution'      => $qual['institution'] ?? null,
+                'graduation_year'  => $qual['graduation_year'] ?? null,
+            ];
+
+            // Handle file upload
+            if ($req->hasFile("qualifications.{$index}.certificate")) {
+                $file = $req->file("qualifications.{$index}.certificate");
+                $path = $file->store('qualifications/' . $employee->id, 'public');
+                $qualData['certificate_path'] = $path;
+            }
+
+            // Update or create qualification
+            if (!empty($qual['id'])) {
+                // Update existing - only update provided fields
+                $existingQual = EmployeeQualification::where('id', $qual['id'])
+                    ->where('employee_id', $employee->id)
+                    ->first();
+                
+                if ($existingQual) {
+                    // If no new file uploaded, keep the existing certificate_path
+                    if (!$req->hasFile("qualifications.{$index}.certificate")) {
+                        unset($qualData['certificate_path']);
+                    }
+                    $existingQual->update($qualData);
+                }
+            } else {
+                // Create new
+                $qualData['employee_id'] = $employee->id;
+                EmployeeQualification::create($qualData);
+            }
+        }
     }
 
     // ── EMPLOYEE STATUS ──────────────────────────────────────────────────────
@@ -1081,8 +1157,10 @@ class HRController extends Controller
 
     public function renewContract(Request $req, $hrId)
     {
+        // Validate with max date (10 years from now)
+        $maxDate = now()->addYears(10)->format('Y-m-d');
         $req->validate([
-            'contract_end_date' => 'required|date|after:today',
+            'contract_end_date' => 'required|date|after:today|before:' . $maxDate,
             'notes'             => 'nullable|string|max:500',
         ]);
 
@@ -1094,14 +1172,15 @@ class HRController extends Controller
         }
 
         $oldDate = $ed->contract_end_date?->format('d M Y') ?? 'none';
+        $newDate = Carbon::parse($req->contract_end_date)->format('d M Y');
         $ed->update(['contract_end_date' => $req->contract_end_date]);
 
         AuditLog::log('updated', 'hr',
-            "Contract renewed for {$employee->employee_code}: {$oldDate} → {$req->contract_end_date}. ".($req->notes ?? '')
+            "Contract renewed for {$employee->employee_code}: {$oldDate} → {$newDate}. ".($req->notes ?? '')
         );
 
         return back()->with('flash_success',
-            "Contract renewed for {$employee->full_name} until ".Carbon::parse($req->contract_end_date)->format('d M Y').".");
+            "Contract renewed for {$employee->full_name} until {$newDate}.");
     }
 
     // ── WORKLOAD ─────────────────────────────────────────────────────────────

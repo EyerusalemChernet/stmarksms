@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\GenerateAcademicCalendar::class,
         Commands\UpdateStudentAges::class,
+        Commands\NotifyOverdueFeeParents::class,
     ];
 
     /**
@@ -39,6 +40,12 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping()
                  ->runInBackground()
                  ->appendOutputTo(storage_path('logs/student-ages.log'));
+
+        $schedule->command('fees:notify-overdue-parents')
+                 ->dailyAt('07:00')
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->appendOutputTo(storage_path('logs/fee-overdue-notify.log'));
     }
 
 

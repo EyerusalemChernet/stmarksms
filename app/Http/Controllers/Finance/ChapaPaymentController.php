@@ -35,6 +35,9 @@ class ChapaPaymentController extends Controller
             abort(403);
         }
 
+        // Audit log for payment initiation
+        \App\Models\AuditLog::log('payment_initiated', 'finance', "Chapa payment initiated for invoice #{$invoice->id}, amount: ETB " . number_format($invoice->balance, 2) . " by " . auth()->user()->user_type);
+
         return $chapa->initiateForInvoice(
             $invoice,
             auth()->user()->user_type === 'parent' ? 'parent.fee.chapa.return' : 'chapa.fee.return',
@@ -49,8 +52,15 @@ class ChapaPaymentController extends Controller
         $invoice = $this->resolveInvoice($invoice_id);
 
         if ($invoice->chapa_ref) {
-            $chapa->processByTxRef($invoice->chapa_ref);
+            $success = $chapa->processByTxRef($invoice->chapa_ref);
             $invoice->refresh();
+            
+            // Audit log for payment verification
+            if ($success) {
+                \App\Models\AuditLog::log('payment_verified', 'finance', "Chapa payment verified for invoice #{$invoice->id}, amount: ETB " . number_format($invoice->amount_paid, 2));
+            } else {
+                \App\Models\AuditLog::log('payment_failed', 'finance', "Chapa payment verification failed for invoice #{$invoice->id}");
+            }
         }
 
         $route = auth()->user()->user_type === 'parent' ? 'parent.fee' : 'fees.invoice';

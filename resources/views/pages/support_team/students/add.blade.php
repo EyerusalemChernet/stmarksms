@@ -865,5 +865,72 @@ function resetBulkForm() {
 if (window.location.hash === '#tab-bulk') {
     switchMainTab('bulk', document.getElementById('bulk-tab-btn'));
 }
+
+// ── Modern JavaScript versions of AJAX functions ──────────────────────────────
+function getLGA(state_id) {
+    if (!state_id) return;
+    
+    const lgaSelect = document.getElementById('lga_id');
+    if (!lgaSelect) return;
+    
+    // Clear existing options
+    lgaSelect.innerHTML = '<option value="">Loading...</option>';
+    
+    // Make AJAX request
+    fetch(`/ajax/get_lga/${state_id}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        lgaSelect.innerHTML = '<option value="">-- Choose --</option>';
+        data.forEach(lga => {
+            const option = document.createElement('option');
+            option.value = lga.id;
+            option.textContent = lga.name;
+            lgaSelect.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Error loading LGAs:', error);
+        lgaSelect.innerHTML = '<option value="">-- Error loading data --</option>';
+    });
+}
+
+function getClassSections(class_id) {
+    if (!class_id) return;
+    
+    const sectionSelect = document.getElementById('section_id');
+    if (!sectionSelect) return;
+    
+    // Clear existing options
+    sectionSelect.innerHTML = '<option value="">Loading...</option>';
+    
+    // Make AJAX request
+    fetch(`/ajax/get_class_sections/${class_id}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        sectionSelect.innerHTML = '<option value="">-- Choose --</option>';
+        data.forEach(section => {
+            const option = document.createElement('option');
+            option.value = section.id;
+            option.textContent = section.name;
+            sectionSelect.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Error loading sections:', error);
+        sectionSelect.innerHTML = '<option value="">-- Error loading data --</option>';
+    });
+}
 </script>
 @endsection
