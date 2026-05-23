@@ -321,6 +321,7 @@
                                 <li class="nav-item"><a href="{{ route('hr.performance.categories') }}" class="nav-link {{ Route::is('hr.performance.categories') ? 'active' : '' }}">Score Categories</a></li>
                             </ul>
                         </li>
+                        <li class="nav-item"><a href="{{ route('hr.audit_logs') }}" class="nav-link {{ Route::is('hr.audit_logs') ? 'active' : '' }}"><i class="bi bi-journal-text mr-1"></i>Activity Log</a></li>
                     </ul>
                 </li>
 
