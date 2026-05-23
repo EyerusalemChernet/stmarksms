@@ -36,9 +36,13 @@
             <div class="form-group">
                 <label>Payment Method</label>
                 <select name="payment_method" class="form-control">
+                    @if(!Qs::userIsAccountant())
                     <option value="bank_transfer" {{ $record->payment_method === 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                    @endif
                     <option value="cash" {{ $record->payment_method === 'cash' ? 'selected' : '' }}>Cash</option>
+                    @if(!Qs::userIsAccountant())
                     <option value="mobile_money" {{ $record->payment_method === 'mobile_money' ? 'selected' : '' }}>Mobile Money</option>
+                    @endif
                 </select>
             </div>
             <div class="form-group">

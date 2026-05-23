@@ -153,7 +153,6 @@
                                 </td>
                                 <td>
                                     @if($inv->status === 'paid')<span class="badge badge-success">Paid</span>
-                                    @elseif($inv->status === 'partial')<span class="badge badge-warning">Partial</span>
                                     @else<span class="badge badge-danger">Unpaid</span>@endif
                                 </td>
                                 <td><a href="{{ route('parent.fee', Qs::hash($inv->id)) }}" class="btn btn-xs btn-info">Details</a></td>

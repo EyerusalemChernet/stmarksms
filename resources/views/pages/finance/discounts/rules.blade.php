@@ -142,7 +142,4 @@
   </div>
 </div>
 
-<div class="mt-2">
-  <a href="{{ route('discount_requests.index') }}" class="btn btn-light btn-sm"><i class="bi bi-percent mr-1"></i>Discount Requests</a>
-</div>
 @endsection

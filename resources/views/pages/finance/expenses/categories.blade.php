@@ -3,6 +3,7 @@
 @section('content')
 <div class="row">
   <div class="col-md-5">
+    @if(auth()->user()->user_type === 'accountant')
     <div class="card">
       <div class="card-header"><h6 class="mb-0"><i class="bi bi-tags mr-2"></i>Add Category</h6></div>
       <div class="card-body">
@@ -13,6 +14,12 @@
         </form>
       </div>
     </div>
+    @else
+    <div class="alert alert-secondary" style="font-size:13px;">
+      <i class="bi bi-info-circle mr-1"></i>
+      Expense categories are managed by the accountant.
+    </div>
+    @endif
   </div>
   <div class="col-md-7">
     <div class="card">
@@ -29,7 +36,9 @@
               <td><span class="badge badge-secondary">{{ $cat->expenses_count }}</span></td>
               <td class="text-nowrap">
                 <button class="btn btn-warning btn-xs" data-toggle="modal" data-target="#editCat{{ $cat->id }}"><i class="bi bi-pencil"></i></button>
-                <form action="{{ route('expense_cats.destroy',$cat->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this category?')">@csrf @method('DELETE')<button class="btn btn-danger btn-xs"><i class="bi bi-trash"></i></button></form>
+                @if(!empty($canDeleteExpenseCategories))
+                <form action="{{ route('expense_cats.destroy',$cat->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this category?')">@csrf @method('DELETE')<button class="btn btn-danger btn-xs" title="Delete (Super Admin only)"><i class="bi bi-trash"></i></button></form>
+                @endif
               </td>
             </tr>
             @empty

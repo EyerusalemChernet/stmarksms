@@ -79,6 +79,26 @@
   <div class="col-md-2 col-6 mb-2"><div class="card text-center py-2 border-danger"><small class="text-muted">Balance</small><strong class="text-danger">ETB {{ number_format($totals['balance'], 2) }}</strong></div></div>
 </div>
 
+@if($totals['unpaid'] > 0)
+{{-- Quick Payment Section --}}
+<div class="alert alert-info mb-4">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h6 class="mb-1"><i class="bi bi-exclamation-circle mr-2"></i>Outstanding Payments</h6>
+      <p class="mb-0">You have <strong>{{ $totals['unpaid'] }} unpaid invoice(s)</strong> with a total balance of <strong>ETB {{ number_format($totals['balance'], 2) }}</strong></p>
+    </div>
+    <div class="col-md-4 text-right">
+      @php $firstUnpaid = $invoices->whereIn('status', ['unpaid', 'partial'])->first(); @endphp
+      @if($firstUnpaid)
+      <a href="{{ route('parent.fee.payment', Qs::hash($firstUnpaid->id)) }}" class="btn btn-success">
+        <i class="bi bi-credit-card mr-2"></i>Pay ETB {{ number_format($firstUnpaid->balance, 2) }}
+      </a>
+      @endif
+    </div>
+  </div>
+</div>
+@endif
+
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h6 class="mb-0"><i class="bi bi-receipt mr-2"></i>Fee Invoices</h6>
@@ -133,11 +153,15 @@
             </td>
             <td>
               @if($inv->status === 'paid')<span class="badge badge-success">Paid</span>
-              @elseif($inv->status === 'partial')<span class="badge badge-warning">Partial</span>
               @else<span class="badge badge-danger">Unpaid</span>@endif
             </td>
             <td>
               <a href="{{ route('parent.fee', Qs::hash($inv->id)) }}" class="btn btn-info btn-xs">Details</a>
+              @if($inv->balance > 0)
+                <a href="{{ route('parent.fee.payment', Qs::hash($inv->id)) }}" class="btn btn-success btn-xs ml-1">
+                  <i class="bi bi-credit-card"></i> Pay Now
+                </a>
+              @endif
             </td>
           </tr>
           @empty

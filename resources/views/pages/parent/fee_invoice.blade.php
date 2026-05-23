@@ -15,7 +15,7 @@
     <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h6 class="mb-0"><i class="bi bi-receipt mr-2"></i>Invoice {{ $invoice->invoice_no }}</h6>
-        <span class="badge badge-{{ $invoice->status === 'paid' ? 'success' : ($invoice->status === 'partial' ? 'warning' : 'danger') }} px-3">
+        <span class="badge badge-{{ $invoice->status === 'paid' ? 'success' : 'danger' }} px-3">
           {{ strtoupper($invoice->status) }}
         </span>
       </div>
@@ -27,7 +27,7 @@
               <tr><td class="text-muted">Class</td><td>{{ optional($invoice->fee_structure->my_class)->name ?? '-' }}</td></tr>
               <tr><td class="text-muted">Fee type</td><td>{{ optional($invoice->fee_structure->category)->name ?? '-' }}</td></tr>
               <tr><td class="text-muted">Session</td><td>{{ $invoice->session }}</td></tr>
-              <tr><td class="text-muted">Due date</td><td>{{ $invoice->due_date ? \Carbon\Carbon::parse($invoice->due_date)->format('d M Y') : '—' }}</td></tr>
+              <tr><td class="text-muted">Due date</td><td>{{ $invoice->due_date ? $invoice->due_date->format('d M Y') : '—' }}</td></tr>
             </table>
           </div>
           <div class="col-sm-6">
@@ -124,7 +124,7 @@
     <div class="card mb-3 border-light">
       <div class="card-body py-2" style="font-size:12px;">
         <i class="bi bi-info-circle mr-1"></i>
-        Pay before <strong>{{ \Carbon\Carbon::parse($invoice->due_date)->addDays($penaltyInfo['grace_days'])->format('d M Y') }}</strong>
+        Pay before <strong>{{ $invoice->due_date ? $invoice->due_date->addDays($penaltyInfo['grace_days'])->format('d M Y') : 'N/A' }}</strong>
         to avoid a late penalty.
       </div>
     </div>

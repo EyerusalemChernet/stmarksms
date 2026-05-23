@@ -17,7 +17,22 @@
       <i class="bi bi-calendar-month text-primary" style="font-size:28px;opacity:.4"></i>
     </div></div>
   </div>
+  <div class="col-md-4 col-12 mb-2">
+    <div class="card border-0 shadow-sm"><div class="card-body py-3 d-flex justify-content-between align-items-center">
+      <div><div style="font-size:11px;color:#94a3b8">ACCESS</div>
+      <div style="font-size:16px;font-weight:600;color:#6366f1">
+        @if($paymentsViewOnly)View only @else Full access @endif
+      </div></div>
+      <i class="bi bi-{{ $paymentsViewOnly ? 'eye' : 'shield-check' }}" style="font-size:28px;opacity:.4"></i>
+    </div></div>
+  </div>
 </div>
+
+@if($paymentsViewOnly)
+<div class="alert alert-secondary mb-3 py-2" style="font-size:13px;">
+  <i class="bi bi-eye mr-1"></i><strong>Super Admin — view only.</strong> You can browse payment transactions but cannot record or modify payments here.
+</div>
+@endif
 
 <div class="card mb-3"><div class="card-body py-2">
   <form method="GET" class="form-row align-items-end">
@@ -53,6 +68,11 @@
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h6 class="mb-0"><i class="bi bi-cash-stack mr-2"></i>Payment Transactions ({{ $payments->total() }})</h6>
+    @if($paymentsViewOnly)
+    <small class="text-muted">View only — no payment actions</small>
+    @else
+    <small class="text-muted">{{ ucfirst(str_replace('_', ' ', auth()->user()->user_type)) }}: payment history</small>
+    @endif
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -97,4 +117,43 @@
     </div>
   </div>
 </div>
+
+@if(auth()->user()->user_type === 'super_admin' && isset($auditLogs) && $auditLogs->count() > 0)
+<div class="card mt-4">
+  <div class="card-header">
+    <h6 class="mb-0"><i class="bi bi-shield-exclamation mr-2"></i>Payment Audit Logs (Super Admin Only)</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+    <table class="table table-sm mb-0" style="font-size:12px;">
+      <thead class="thead-light">
+        <tr>
+          <th>Action</th>
+          <th>User</th>
+          <th>Description</th>
+          <th>IP Address</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach($auditLogs as $log)
+        <tr>
+          <td>
+            <span class="badge badge-{{ $log->action === 'payment_verified' ? 'success' : ($log->action === 'payment_failed' ? 'danger' : 'info') }}">
+              {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+            </span>
+          </td>
+          <td>{{ $log->user->name ?? 'System' }}</td>
+          <td>{{ $log->description }}</td>
+          <td><code>{{ $log->ip_address }}</code></td>
+          <td>{{ $log->created_at->format('M d, Y H:i') }}</td>
+        </tr>
+        @endforeach
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+@endif
+
 @endsection

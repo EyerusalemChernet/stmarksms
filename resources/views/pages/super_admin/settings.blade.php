@@ -17,7 +17,7 @@
                         <div class="form-group row">
                             <label class="col-lg-3 col-form-label font-weight-semibold">Name of School <span class="text-danger">*</span></label>
                             <div class="col-lg-9">
-                                <input name="system_name" value="{{ $s['system_name'] }}" required type="text" class="form-control" placeholder="Name of School">
+                                <input name="system_name" value="{{ $s['system_name'] ?? '' }}" required type="text" class="form-control" placeholder="Name of School">
                             </div>
                         </div>
 
@@ -58,28 +58,28 @@
                         <div class="form-group row">
                             <label class="col-lg-3 col-form-label font-weight-semibold">School Acronym</label>
                             <div class="col-lg-9">
-                                <input name="system_title" value="{{ $s['system_title'] }}" type="text" class="form-control" placeholder="School Acronym">
+                                <input name="system_title" value="{{ $s['system_title'] ?? '' }}" type="text" class="form-control" placeholder="School Acronym">
                             </div>
                         </div>
 
                         <div class="form-group row">
                             <label class="col-lg-3 col-form-label font-weight-semibold">Phone</label>
                             <div class="col-lg-9">
-                                <input name="phone" value="{{ $s['phone'] }}" type="text" class="form-control" placeholder="Phone">
+                                <input name="phone" value="{{ $s['phone'] ?? '' }}" type="text" class="form-control" placeholder="Phone">
                             </div>
                         </div>
 
                         <div class="form-group row">
                             <label class="col-lg-3 col-form-label font-weight-semibold">School Email</label>
                             <div class="col-lg-9">
-                                <input name="system_email" value="{{ $s['system_email'] }}" type="email" class="form-control" placeholder="School Email">
+                                <input name="system_email" value="{{ $s['system_email'] ?? '' }}" type="email" class="form-control" placeholder="School Email">
                             </div>
                         </div>
 
                         <div class="form-group row">
                             <label class="col-lg-3 col-form-label font-weight-semibold">School Address <span class="text-danger">*</span></label>
                             <div class="col-lg-9">
-                                <input required name="address" value="{{ $s['address'] }}" type="text" class="form-control" placeholder="School Address">
+                                <input required name="address" value="{{ $s['address'] ?? '' }}" type="text" class="form-control" placeholder="School Address">
                             </div>
                         </div>
 
@@ -94,7 +94,7 @@
                             <label class="col-lg-3 col-form-label font-weight-semibold">{{ $ct->name }}</label>
                             <div class="col-lg-9">
                                 <input class="form-control"
-                                       value="{{ $s['next_term_fees_'.strtolower($ct->code)] }}"
+                                       value="{{ $s['next_term_fees_'.strtolower($ct->code)] ?? '' }}"
                                        name="next_term_fees_{{ strtolower($ct->code) }}"
                                        placeholder="{{ $ct->name }}" type="text">
                             </div>
@@ -109,7 +109,7 @@
                         <label class="col-lg-3 col-form-label font-weight-semibold">Change Logo:</label>
                         <div class="col-lg-9">
                             <div class="mb-3">
-                                <img style="width:100px;" height="100px" src="{{ $s['logo'] }}" alt="Logo">
+                                <img style="width:100px;" height="100px" src="{{ $s['logo'] ?? asset('global_assets/images/logo.png') }}" alt="Logo">
                             </div>
                             <input name="logo" accept="image/*" type="file" class="file-input" data-show-caption="false" data-show-upload="false" data-fouc>
                         </div>

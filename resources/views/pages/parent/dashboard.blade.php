@@ -72,6 +72,43 @@
 </div>
 @endif
 
+{{-- Outstanding Payments Alert --}}
+@php 
+$totalUnpaid = $childData->sum('unpaid');
+$totalBalance = $childData->sum('fee_balance');
+$firstUnpaidInvoice = null;
+foreach($childData as $cd) {
+    $unpaid = $cd['fee_invoices']->whereIn('status', ['unpaid', 'partial'])->first();
+    if($unpaid) {
+        $firstUnpaidInvoice = $unpaid;
+        break;
+    }
+}
+@endphp
+
+@if($totalUnpaid > 0)
+<div class="alert alert-warning mb-4" style="border-left:4px solid #f59e0b;">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h6 class="mb-1" style="color:#92400e;">
+        <i class="bi bi-exclamation-triangle mr-2"></i>Outstanding School Fees
+      </h6>
+      <p class="mb-0" style="color:#92400e;">
+        You have <strong>{{ $totalUnpaid }} unpaid invoice(s)</strong> with a total balance of <strong>ETB {{ number_format($totalBalance, 2) }}</strong>
+      </p>
+    </div>
+    <div class="col-md-4 text-right">
+      @if($firstUnpaidInvoice)
+      <a href="{{ route('parent.fee.payment', Qs::hash($firstUnpaidInvoice->id)) }}" 
+         class="btn btn-warning btn-lg" style="font-weight:700;">
+        <i class="bi bi-credit-card mr-2"></i>Pay ETB {{ number_format($firstUnpaidInvoice->balance, 2) }}
+      </a>
+      @endif
+    </div>
+  </div>
+</div>
+@endif
+
 {{-- Children Cards --}}
 @forelse($childData as $cd)
 @php $sr = $cd['sr']; @endphp
@@ -122,29 +159,6 @@
     {{-- Stats row --}}
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
 
-            {{-- Fees --}}
-            <div class="col-md-3 mb-3">
-                <div class="card border h-100">
-                    <div class="card-body text-center py-3">
-                        <i class="icon-coin-dollar icon-2x {{ $cd['unpaid'] > 0 ? 'text-danger' : 'text-success' }} mb-2"></i>
-                        @if($cd['unpaid'] > 0)
-                            <h4 class="text-danger">ETB {{ number_format($cd['fee_balance'], 0) }}</h4>
-                            <small class="text-muted">{{ $cd['unpaid'] }} unpaid invoice(s)</small>
-                            @if($cd['fee_discount'] > 0)
-                            <div class="mt-1"><span class="badge badge-success">Discount applied</span></div>
-                            @endif
-                            @if($cd['discount_type'])
-                            <div class="mt-1"><small class="text-muted">{{ \App\Services\DiscountService::discountTypeLabel($cd['discount_type']) }}</small></div>
-                            @endif
-                        @else
-                            <h4 class="text-success"><i class="icon-checkmark3"></i></h4>
-                            <small class="text-muted">All Fees Cleared</small>
-                        @endif
-                        <div class="mt-2">
-                            <a href="{{ route('parent.fees') }}" class="btn btn-xs btn-outline-primary">View Fees</a>
-                        </div>
-                    </div>
-                </div>
         {{-- Attendance --}}
         <div style="padding:20px;border-right:1px solid #f1f5f9;text-align:center;">
             @php $attColor = $cd['att_pct'] >= 75 ? '#10b981' : '#ef4444'; $attBg = $cd['att_pct'] >= 75 ? '#d1fae5' : '#fee2e2'; @endphp
@@ -203,8 +217,17 @@
                 <div style="font-size:22px;font-weight:800;color:#ef4444;line-height:1;">{{ $cd['unpaid'] }}</div>
                 <div style="font-size:11px;color:#64748b;margin-top:4px;font-weight:500;">Outstanding Fee(s)</div>
                 <div style="margin-top:8px;">
-                    <span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;">Payment Required</span>
+                    <span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;">ETB {{ number_format($cd['fee_balance'], 0) }}</span>
                 </div>
+                @if($cd['fee_invoices']->whereIn('status', ['unpaid', 'partial'])->first())
+                    @php $firstUnpaid = $cd['fee_invoices']->whereIn('status', ['unpaid', 'partial'])->first(); @endphp
+                    <div style="margin-top:6px;">
+                        <a href="{{ route('parent.fee.payment', Qs::hash($firstUnpaid->id)) }}" 
+                           style="background:#22c55e;color:#fff;font-size:11px;font-weight:700;padding:6px 12px;border-radius:16px;text-decoration:none;display:inline-block;box-shadow:0 2px 8px rgba(34,197,94,.3);">
+                            💳 Pay Now
+                        </a>
+                    </div>
+                @endif
             @else
                 <div style="font-size:22px;font-weight:800;color:#10b981;line-height:1;"><i class="bi bi-check-lg"></i></div>
                 <div style="font-size:11px;color:#64748b;margin-top:4px;font-weight:500;">All Fees Cleared</div>

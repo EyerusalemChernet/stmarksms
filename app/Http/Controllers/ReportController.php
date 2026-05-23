@@ -14,7 +14,6 @@ use App\Models\StudentFeeInvoice;
 use App\Models\StudentRecord;
 use App\Models\Promotion;
 use App\Models\Section;
-use App\Models\StudentRecord;
 use App\Repositories\MyClassRepo;
 use App\Repositories\UserRepo;
 use Illuminate\Http\Request;

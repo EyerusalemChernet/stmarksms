@@ -68,13 +68,30 @@ class StudentRecordController extends Controller
 
         // Auto-generate admission number: STM-{YEAR}-{4-digit sequence}
         $year = date('Y');
-        $lastStudent = \App\Models\StudentRecord::whereYear('created_at', $year)->latest()->first();
-        if ($lastStudent && $lastStudent->adm_no && preg_match('/STM-\d{4}-(\d{4})/', $lastStudent->adm_no, $m)) {
-            $sequence = intval($m[1]) + 1;
-        } else {
-            $sequence = 1;
-        }
-        $adm_no = 'STM-' . $year . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        
+        // Find the highest existing admission number for this year
+        $existingAdmNos = \App\Models\StudentRecord::where('adm_no', 'LIKE', "STM-{$year}-%")
+            ->pluck('adm_no')
+            ->map(function($adm_no) {
+                if (preg_match('/STM-\d{4}-(\d{4})/', $adm_no, $matches)) {
+                    return intval($matches[1]);
+                }
+                return 0;
+            })
+            ->filter()
+            ->sort();
+        
+        $sequence = $existingAdmNos->isEmpty() ? 1 : $existingAdmNos->last() + 1;
+        
+        // Ensure uniqueness by checking if the generated number already exists
+        do {
+            $adm_no = 'STM-' . $year . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+            $exists = \App\User::where('username', $adm_no)->exists() || 
+                     \App\Models\StudentRecord::where('adm_no', $adm_no)->exists();
+            if ($exists) {
+                $sequence++;
+            }
+        } while ($exists);
 
         $data['username'] = $adm_no;
 
@@ -293,13 +310,21 @@ class StudentRecordController extends Controller
         $ethiopianId = $nationalityMap['ethiopian']->id ?? null;
 
         // Pre-compute the next admission sequence once before the loop
-        $year    = date('Y');
-        $last    = \App\Models\StudentRecord::whereYear('created_at', $year)
-                        ->orderByDesc('id')->first();
-        $seq = 1;
-        if ($last && $last->adm_no && preg_match('/STM-\d{4}-(\d{4})/', $last->adm_no, $m)) {
-            $seq = intval($m[1]) + 1;
-        }
+        $year = date('Y');
+        
+        // Find the highest existing admission number for this year
+        $existingAdmNos = \App\Models\StudentRecord::where('adm_no', 'LIKE', "STM-{$year}-%")
+            ->pluck('adm_no')
+            ->map(function($adm_no) {
+                if (preg_match('/STM-\d{4}-(\d{4})/', $adm_no, $matches)) {
+                    return intval($matches[1]);
+                }
+                return 0;
+            })
+            ->filter()
+            ->sort();
+        
+        $seq = $existingAdmNos->isEmpty() ? 1 : $existingAdmNos->last() + 1;
 
         while (($line = fgetcsv($handle)) !== false) {
             $row++;
@@ -370,9 +395,17 @@ class StudentRecordController extends Controller
                 $nalId = $nationalityMap[strtolower($data['nationality'])]->id ?? $ethiopianId;
             }
 
-            // ── Generate admission number (sequential, no re-query) ──────────
-            $adm_no = 'STM-' . $year . '-' . str_pad($seq, 4, '0', STR_PAD_LEFT);
-            $seq++;
+            // ── Generate admission number (sequential, with uniqueness check) ──────────
+            do {
+                $adm_no = 'STM-' . $year . '-' . str_pad($seq, 4, '0', STR_PAD_LEFT);
+                $exists = \App\User::where('username', $adm_no)->exists() || 
+                         \App\Models\StudentRecord::where('adm_no', $adm_no)->exists();
+                if ($exists) {
+                    $seq++;
+                }
+            } while ($exists);
+            
+            $seq++; // Increment for next student
 
             $code = strtoupper(Str::random(10));
 

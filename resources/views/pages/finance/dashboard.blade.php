@@ -7,7 +7,6 @@
     @php
     $cards = [
         ['label'=>'Fees Collected',  'value'=>$total_fees_collected, 'icon'=>'bi-cash-coin',       'color'=>'#22c55e', 'bg'=>'#f0fdf4'],
-        ['label'=>'Pending Fees',    'value'=>$total_pending,        'icon'=>'bi-hourglass-split',  'color'=>'#f59e0b', 'bg'=>'#fffbeb'],
         ['label'=>'Total Expenses',  'value'=>$total_expenses,       'icon'=>'bi-arrow-down-circle','color'=>'#ef4444', 'bg'=>'#fef2f2'],
         ['label'=>'Other Income',    'value'=>$other_income,         'icon'=>'bi-arrow-up-circle',  'color'=>'#3b82f6', 'bg'=>'#eff6ff'],
         ['label'=>'Net Balance',     'value'=>$net_balance,          'icon'=>'bi-bar-chart-line',   'color'=>$net_balance>=0?'#22c55e':'#ef4444', 'bg'=>$net_balance>=0?'#f0fdf4':'#fef2f2'],
@@ -53,7 +52,6 @@
                 <canvas id="statusChart" height="180"></canvas>
                 <div class="d-flex gap-3 mt-3" style="font-size:12px;">
                     <span><span style="display:inline-block;width:10px;height:10px;background:#22c55e;border-radius:50%;margin-right:4px;"></span>Paid ({{ $status_counts['paid'] }})</span>
-                    <span><span style="display:inline-block;width:10px;height:10px;background:#f59e0b;border-radius:50%;margin-right:4px;"></span>Partial ({{ $status_counts['partial'] }})</span>
                     <span><span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:50%;margin-right:4px;"></span>Unpaid ({{ $status_counts['unpaid'] }})</span>
                 </div>
             </div>
@@ -113,8 +111,8 @@ new Chart(document.getElementById('monthlyChart'), {
 new Chart(document.getElementById('statusChart'), {
     type: 'doughnut',
     data: {
-        labels: ['Paid','Partial','Unpaid'],
-        datasets: [{ data: [{{ $status_counts['paid'] }},{{ $status_counts['partial'] }},{{ $status_counts['unpaid'] }}], backgroundColor: ['#22c55e','#f59e0b','#ef4444'], borderWidth: 0 }]
+        labels: ['Paid','Unpaid'],
+        datasets: [{ data: [{{ $status_counts['paid'] }},{{ $status_counts['unpaid'] }}], backgroundColor: ['#22c55e','#ef4444'], borderWidth: 0 }]
     },
     options: { responsive:true, cutout:'70%', plugins:{legend:{display:false}} }
 });

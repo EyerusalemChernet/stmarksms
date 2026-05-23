@@ -6,6 +6,12 @@
 <div class="alert alert-info mb-3" style="font-size:13px;">
   <i class="bi bi-info-circle mr-1"></i>
   Expenses you submit stay <strong>Pending</strong> until an administrator approves them. Approved expenses appear in reports and totals.
+  Only <strong>Super Admin</strong> can delete expenses.
+</div>
+@else
+<div class="alert alert-info mb-3 py-2" style="font-size:13px;">
+  <i class="bi bi-info-circle mr-1"></i>
+  All expenses go <strong>Pending</strong> first. You can approve or reject expenses submitted by others. Only <strong>Super Admin</strong> can delete expenses.
 </div>
 @endif
 
@@ -133,12 +139,16 @@
             @elseif(!$canApprove && $exp->isPending())
               <span class="badge badge-light text-muted"><i class="bi bi-hourglass-split"></i> Awaiting admin</span>
             @endif
-            @if(($canApprove && !$exp->is_locked) || (!$canApprove && $exp->isPending() && $exp->created_by === Auth::id()))
+            @if(\App\Services\FinancePermission::canEditExpense($exp))
               <a href="{{ route('expenses.edit',$exp->id) }}" class="btn btn-warning btn-xs"><i class="bi bi-pencil"></i></a>
-              <form action="{{ route('expenses.destroy',$exp->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this expense?')">@csrf @method('DELETE')<button class="btn btn-danger btn-xs"><i class="bi bi-trash"></i></button></form>
+            @elseif($exp->isApproved())
+              <span class="badge badge-secondary" title="Approved — cannot edit"><i class="bi bi-lock"></i></span>
             @endif
-            @if($exp->receipt_file)
-            <a href="{{ asset('storage/'.$exp->receipt_file) }}" target="_blank" class="btn btn-light btn-xs"><i class="bi bi-paperclip"></i></a>
+            @if($canDeleteExpenses)
+              <form action="{{ route('expenses.destroy',$exp->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this expense?')">@csrf @method('DELETE')<button class="btn btn-danger btn-xs" title="Delete (Super Admin only)"><i class="bi bi-trash"></i></button></form>
+            @endif
+            @if($exp->receipt_file && $exp->isApproved())
+            <a href="{{ \Illuminate\Support\Facades\Storage::url($exp->receipt_file) }}" target="_blank" class="btn btn-light btn-xs" title="View receipt"><i class="bi bi-paperclip"></i></a>
             @endif
           </td>
         </tr>

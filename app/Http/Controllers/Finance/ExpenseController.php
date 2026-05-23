@@ -23,11 +23,17 @@ class ExpenseController extends Controller
     public function categories()
     {
         $categories = ExpenseCategory::withCount('expenses')->orderBy('name')->get();
-        return view('pages.finance.expenses.categories', compact('categories'));
+        $canDeleteExpenseCategories = FP::canDeleteExpenseCategories();
+
+        return view('pages.finance.expenses.categories', compact('categories', 'canDeleteExpenseCategories'));
     }
 
     public function storeCategory(Request $req)
     {
+        if (Auth::user()->user_type !== 'accountant') {
+            return back()->with('flash_danger', 'Only accountants can create expense categories.');
+        }
+
         $req->validate([
             'name'        => 'required|string|max:100|unique:expense_categories',
             'description' => 'nullable|string',
@@ -49,6 +55,8 @@ class ExpenseController extends Controller
 
     public function destroyCategory($id)
     {
+        FP::require('delete_expenses');
+
         $cat = ExpenseCategory::withCount('expenses')->findOrFail($id);
         if ($cat->expenses_count > 0) {
             return back()->with('flash_danger', 'Cannot delete: this category has expenses attached.');
@@ -98,15 +106,19 @@ class ExpenseController extends Controller
             ? Expense::where('status', 'pending')->count()
             : Expense::where('status', 'pending')->where('created_by', Auth::id())->count();
 
+        $canDeleteExpenses = FP::canDeleteExpenses();
+
         return view('pages.finance.expenses.index', compact(
-            'expenses', 'categories', 'total', 'canApprove', 'pendingCount'
+            'expenses', 'categories', 'total', 'canApprove', 'pendingCount', 'canDeleteExpenses'
         ));
     }
 
     public function create()
     {
         $categories = ExpenseCategory::orderBy('name')->get();
-        return view('pages.finance.expenses.create', compact('categories'));
+        $autoApproveOnCreate = FP::autoApproveExpensesOnCreate();
+
+        return view('pages.finance.expenses.create', compact('categories', 'autoApproveOnCreate'));
     }
 
     public function store(Request $req)
@@ -128,7 +140,7 @@ class ExpenseController extends Controller
         $data['year']        = Qs::financeYearForDate($data['expense_date']);
         $data['receipt_no']  = 'EXP-' . strtoupper(uniqid());
 
-        if (FP::has('approve_expenses')) {
+        if (FP::autoApproveExpensesOnCreate()) {
             $data['status']      = 'approved';
             $data['approved_by'] = Auth::id();
             $data['approved_at'] = now();
@@ -145,7 +157,7 @@ class ExpenseController extends Controller
 
         $message = $data['status'] === 'pending'
             ? 'Expense submitted. Awaiting admin approval.'
-            : 'Expense added successfully.';
+            : 'Expense added and approved automatically.';
 
         return redirect()->route('expenses.index')->with('flash_success', $message);
     }
@@ -191,8 +203,9 @@ class ExpenseController extends Controller
 
     public function destroy($id)
     {
+        FP::require('delete_expenses');
+
         $expense = Expense::findOrFail($id);
-        $this->authorizeExpenseEdit($expense);
 
         if ($expense->receipt_file) {
             Storage::disk('public')->delete($expense->receipt_file);
@@ -313,15 +326,10 @@ class ExpenseController extends Controller
 
     private function authorizeExpenseEdit(Expense $expense): void
     {
-        if (FP::has('approve_expenses')) {
-            if ($expense->is_locked && $expense->isApproved()) {
-                abort(403, 'Approved expenses cannot be edited.');
-            }
-            return;
-        }
-
-        if ($expense->created_by !== Auth::id() || !$expense->isPending()) {
-            abort(403, 'You can only edit your own pending expenses.');
+        if (!FP::canEditExpense($expense)) {
+            abort(403, $expense->isApproved()
+                ? 'Approved expenses cannot be edited.'
+                : 'You can only edit your own pending expenses.');
         }
     }
 }

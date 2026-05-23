@@ -1,8 +1,19 @@
 @extends('layouts.master')
 @section('page_title','Fee Structures')
 @section('content')
+@if(!$canManageFeeSetup)
+<div class="alert alert-secondary mb-3"><i class="bi bi-eye mr-1"></i>View only — you cannot manage fee structures.</div>
+@elseif($canManageFeeSetup && !$canDeleteFeeSetup)
+<div class="alert alert-info mb-3 py-2" style="font-size:13px;">
+  <i class="bi bi-info-circle mr-1"></i> You can <strong>add</strong> structures and <strong>edit</strong> your own entries.
+  Rows with <strong>Super Admin activity</strong> are view-only for you. Only Super Admin can delete structures.
+</div>
+@endif
+@php $hasSidebar = $canCreateFeeSetup || $canManageFees; @endphp
 <div class="row">
+  @if($hasSidebar)
   <div class="col-md-5">
+    @if($canCreateFeeSetup)
     <div class="card mb-3">
       <div class="card-header"><h6 class="mb-0"><i class="bi bi-diagram-3 mr-2"></i>Add Fee Structure</h6></div>
       <div class="card-body">
@@ -42,7 +53,9 @@
         </form>
       </div>
     </div>
+    @endif
 
+    @if($canManageFees)
     <div class="card">
       <div class="card-header"><h6 class="mb-0"><i class="bi bi-people mr-2"></i>Bulk Assign to Class</h6></div>
       <div class="card-body">
@@ -73,9 +86,11 @@
         </form>
       </div>
     </div>
+    @endif
   </div>
+  @endif
 
-  <div class="col-md-7">
+  <div class="{{ $hasSidebar ? 'col-md-7' : 'col-md-12' }}">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h6 class="mb-0">
@@ -96,7 +111,7 @@
         <div class="table-responsive">
           <table class="table table-hover mb-0">
             <thead class="thead-light">
-              <tr><th>#</th><th>Category</th><th>Class</th><th>Amount</th><th>Inst.</th><th>Session</th><th></th></tr>
+              <tr><th>#</th><th>Category</th><th>Class</th><th>Amount</th><th>Inst.</th><th>Session</th><th class="d-none d-lg-table-cell">Super Admin activity</th>@if($canManageFeeSetup)<th></th>@endif</tr>
             </thead>
             <tbody>
               @forelse($structures as $i => $s)
@@ -110,19 +125,30 @@
                 <td><strong>ETB {{ number_format($s->amount, 2) }}</strong></td>
                 <td>{{ $s->installments }}</td>
                 <td>{{ $s->session }}</td>
+                <td class="d-none d-lg-table-cell" style="font-size:11px;max-width:200px;">
+                  @include('pages.finance.fees._admin_activity_cell', ['record' => $s])
+                </td>
+                @if($canManageFeeSetup)
                 <td class="text-nowrap">
+                  @if(\App\Services\FinancePermission::canEditFeeSetupRecord($s))
                   <button class="btn btn-warning btn-xs" data-toggle="modal" data-target="#editStruct{{ $s->id }}">
                     <i class="bi bi-pencil"></i>
                   </button>
+                  @elseif($canEditFeeSetup)
+                  <span class="badge badge-secondary" title="Created or updated by Super Admin — view only"><i class="bi bi-lock"></i></span>
+                  @endif
+                  @if($canDeleteFeeSetup)
                   <form action="{{ route('fees.structures.destroy', Qs::hash($s->id)) }}" method="POST" class="d-inline"
                         onsubmit="return confirm('Delete this structure?')">
                     @csrf @method('DELETE')
                     <button class="btn btn-danger btn-xs"><i class="bi bi-trash"></i></button>
                   </form>
+                  @endif
                 </td>
+                @endif
               </tr>
               @empty
-              <tr><td colspan="7" class="text-center text-muted py-4">
+              <tr><td colspan="{{ $canManageFeeSetup ? 8 : 7 }}" class="text-center text-muted py-4">
                 @if($sessionFilter)
                   No fee structures for session {{ $sessionFilter }}.
                 @else
@@ -140,6 +166,7 @@
 
 {{-- Edit Modals --}}
 @foreach($structures as $s)
+@if(\App\Services\FinancePermission::canEditFeeSetupRecord($s))
 <div class="modal fade" id="editStruct{{ $s->id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -174,5 +201,6 @@
     </div>
   </div>
 </div>
+@endif
 @endforeach
 @endsection
