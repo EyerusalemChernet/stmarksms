@@ -191,10 +191,8 @@
                 {{-- Settings --}}
                 <li class="sidebar-section-label">Settings</li>
                 <li class="nav-item"><a href="{{ route('rules.index') }}" class="nav-link {{ Route::is('rules.index') ? 'active' : '' }}"><i class="bi bi-sliders"></i><span>Rules Engine</span></a></li>
-                <li class="nav-item"><a href="{{ route('audit.index') }}" class="nav-link {{ Route::is('audit.index') ? 'active' : '' }}"><i class="bi bi-journal-text"></i><span>Audit Logs</span></a></li>
                 @if(Qs::userIsSuperAdmin())
-                <li class="nav-item"><a href="{{ route('discount_rules.index') }}" class="nav-link {{ Route::is('discount_rules.index') ? 'active' : '' }}"><i class="bi bi-percent"></i><span>Discount Rules</span></a></li>
-                <li class="nav-item"><a href="{{ route('penalties.index') }}" class="nav-link {{ Route::is('penalties.index') ? 'active' : '' }}"><i class="bi bi-exclamation-triangle"></i><span>Penalty Rules</span></a></li>
+                <li class="nav-item"><a href="{{ route('audit.index') }}" class="nav-link {{ Route::is('audit.index') ? 'active' : '' }}"><i class="bi bi-journal-text"></i><span>Audit Logs</span></a></li>
                 <li class="nav-item"><a href="{{ route('settings') }}" class="nav-link {{ Route::is('settings') ? 'active' : '' }}"><i class="bi bi-gear"></i><span>System Settings</span></a></li>
                 @endif
 
