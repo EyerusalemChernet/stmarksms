@@ -67,12 +67,15 @@
                 <div style="font-size:22px;font-weight:800;margin-bottom:16px;line-height:1.2;">
                     {{ $homeroom->my_class->name }} <span style="opacity:0.7;font-weight:400;font-size:18px;">- Sec {{ $homeroom->name }}</span>
                 </div>
-                <div style="display:flex;gap:10px;">
-                    <a href="{{ route('attendance.index') }}" style="flex:1;background:#fff;color:#4f46e5;text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;transition:all 0.2s;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <a href="{{ route('attendance.index') }}" style="flex:1;min-width:90px;background:#fff;color:#4f46e5;text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;transition:all 0.2s;">
                         <i class="bi bi-clipboard-check mr-1"></i> Attendance
                     </a>
-                    <a href="{{ route('students.list', $homeroom->my_class_id) }}" style="flex:1;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.2s;backdrop-filter:blur(4px);">
+                    <a href="{{ route('students.list', $homeroom->my_class_id) }}" style="flex:1;min-width:90px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.2s;backdrop-filter:blur(4px);">
                         <i class="bi bi-people mr-1"></i> Students
+                    </a>
+                    <a href="{{ route('marks.bulk', [$homeroom->my_class_id, $homeroom->id]) }}" style="flex:1;min-width:90px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.2s;backdrop-filter:blur(4px);">
+                        <i class="bi bi-file-earmark-text mr-1"></i> Report Cards
                     </a>
                 </div>
             </div>

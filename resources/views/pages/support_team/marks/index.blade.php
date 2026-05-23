@@ -140,8 +140,8 @@
         <div style="display:flex;gap:10px;align-items:flex-start;">
             <div style="background:#dbeafe;color:#3b82f6;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">1</div>
             <div>
-                <div style="font-weight:600;font-size:13px;color:#1e293b;">Select Exam & Class</div>
-                <div style="font-size:12px;color:#64748b;margin-top:2px;">Pick the semester exam, class, section, and subject above</div>
+                <div style="font-weight:600;font-size:13px;color:#1e293b;">Open Manage Marks</div>
+                <div style="font-size:12px;color:#64748b;margin-top:2px;">Choose exam, class, section, and subject — use <strong>Bulk Insert</strong> on the marks grid to paste many rows at once</div>
             </div>
         </div>
         <div style="display:flex;gap:10px;align-items:flex-start;">

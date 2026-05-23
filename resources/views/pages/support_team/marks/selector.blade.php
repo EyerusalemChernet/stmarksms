@@ -63,7 +63,11 @@
 
             <div class="col-md-2 mt-4">
                 <div class="text-right mt-1">
-                    <button type="submit" class="btn btn-primary">Manage Marks <i class="icon-paperplane ml-2"></i></button>
+                    <button type="submit" class="btn btn-primary">
+                        @if(!empty($submit_icon))<i class="bi {{ $submit_icon }} mr-1"></i>@endif
+                        {{ $submit_label ?? 'Manage Marks' }}
+                        @if(empty($submit_icon))<i class="icon-paperplane ml-2"></i>@endif
+                    </button>
                 </div>
             </div>
 

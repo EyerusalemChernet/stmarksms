@@ -36,8 +36,8 @@ class StudentRecordCreate extends FormRequest
             'lga_id'        => 'required',
             'nal_id'        => 'required',
             'my_class_id'   => 'required',
-            'section_id'    => 'required',
             'my_parent_id'  => 'required',
+            'birth_cert'    => 'sometimes|nullable|file|mimes:jpeg,gif,png,jpg,pdf|max:5120',
             'religion'      => 'sometimes|nullable|string|max:50',
         ];
     }
@@ -45,7 +45,6 @@ class StudentRecordCreate extends FormRequest
     public function attributes()
     {
         return [
-            'section_id'   => 'Section',
             'nal_id'       => 'Nationality',
             'my_class_id'  => 'Class',
             'state_id'     => 'Region',

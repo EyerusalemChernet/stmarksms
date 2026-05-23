@@ -5,6 +5,10 @@
     <span class="breadcrumb-item active">Mark</span>
 @endsection
 @section('content')
+
+@if(Qs::userIsTeacher())
+    @include('pages.support_team.attendance.teacher_manage')
+@else
 @include('partials.back_button')
 <div class="card">
     <div class="card-header bg-white">
@@ -56,4 +60,6 @@
         @endif
     </div>
 </div>
+@endif
+
 @endsection

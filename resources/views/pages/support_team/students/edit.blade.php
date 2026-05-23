@@ -2,6 +2,12 @@
 @section('page_title', 'Edit Student')
 @section('content')
 
+    <div class="mb-3">
+        <a href="{{ route('students.list', $sr->my_class_id) }}" class="btn btn-sm btn-secondary">
+            <i class="bi bi-arrow-left mr-1"></i>Back to {{ $sr->my_class->name ?? 'Class' }} List
+        </a>
+    </div>
+
         <div class="card">
             <div class="card-header bg-white header-elements-inline">
                 <h6 id="ajax-title" class="card-title">Please fill The form Below To Edit record of {{ $sr->user->name }}</h6>

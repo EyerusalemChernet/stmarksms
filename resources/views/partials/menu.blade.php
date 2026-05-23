@@ -47,7 +47,7 @@
 
                 {{-- Students --}}
                 <li class="sidebar-section-label">Students</li>
-                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.create','students.list','students.edit','students.show','students.promotion','students.promotion_manage','students.graduated']) ? 'nav-item-expanded nav-item-open' : '' }}">
+                <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.create','students.list','students.edit','students.show','students.promotion','students.promotion_manage']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-people"></i><span>Students</span></a>
                     <ul class="nav nav-group-sub">
                         <li class="nav-item"><a href="{{ route('students.create') }}" class="nav-link {{ Route::is('students.create') ? 'active' : '' }}"><i class="bi bi-person-plus mr-1"></i>Admit Student</a></li>
@@ -60,18 +60,17 @@
                                 @endforeach
                             </ul>
                         </li>
-                        <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.promotion','students.promotion_manage','promotion_rules.index','term_setup.index']) ? 'nav-item-expanded' : '' }}">
+                        <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['students.promotion','students.promotion_manage','students.auto_promotion','promotion_rules.index','promotion.batches.index','promotion.batches.workspace','promotion.batches.create','promotion.batches.summary']) ? 'nav-item-expanded' : '' }}">
                             <a href="#" class="nav-link"><i class="bi bi-arrow-up-circle mr-1"></i>Promotion</a>
                             <ul class="nav nav-group-sub">
                                 <li class="nav-item"><a href="{{ route('students.promotion') }}" class="nav-link {{ Route::is('students.promotion') ? 'active' : '' }}">Promote Students</a></li>
                                 <li class="nav-item"><a href="{{ route('students.promotion_manage') }}" class="nav-link {{ Route::is('students.promotion_manage') ? 'active' : '' }}">Manage Promotions</a></li>
                                 @if(Qs::userIsSuperAdmin())
+                                <li class="nav-item"><a href="{{ route('promotion.batches.index') }}" class="nav-link {{ Route::is('promotion.batches.*') || Route::is('students.auto_promotion') ? 'active' : '' }}">Promotion Center</a></li>
                                 <li class="nav-item"><a href="{{ route('promotion_rules.index') }}" class="nav-link {{ Route::is('promotion_rules.*') ? 'active' : '' }}">Promotion Rules</a></li>
-                                <li class="nav-item"><a href="{{ route('term_setup.index') }}#auto-promotion" class="nav-link {{ Route::is('term_setup.index') ? 'active' : '' }}">Auto-Promotion</a></li>
                                 @endif
                             </ul>
                         </li>
-                        <li class="nav-item"><a href="{{ route('students.graduated') }}" class="nav-link {{ Route::is('students.graduated') ? 'active' : '' }}"><i class="bi bi-mortarboard mr-1"></i>Graduated</a></li>
                     </ul>
                 </li>
 
@@ -207,6 +206,7 @@
                 @if(Qs::userIsTeacher())
 
                 <li class="sidebar-section-label">Academics</li>
+                <li class="nav-item"><a href="{{ route('calendar.index') }}" class="nav-link {{ Route::is('calendar.index') ? 'active' : '' }}"><i class="bi bi-calendar-range"></i><span>Academic Calendar</span></a></li>
                 <li class="nav-item nav-item-submenu {{ in_array(Route::currentRouteName(), ['marks.index','marks.manage','marks.bulk','marks.show']) ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-journal-check"></i><span>Exams & Marks</span></a>
                     <ul class="nav nav-group-sub">
@@ -490,6 +490,12 @@
                         <li class="nav-item"><a href="{{ route('compose') }}" class="nav-link {{ Route::is('compose') ? 'active' : '' }}">Compose</a></li>
                     </ul>
                 </li>
+
+                {{-- Academic calendar (view-only) for parents, students, and non-teaching staff --}}
+                @if(!Qs::userIsTeamSA() && !Qs::userIsTeacher())
+                <li class="sidebar-section-label">Academics</li>
+                @include('partials.calendar_menu_link')
+                @endif
 
                 {{-- Role-specific extra menu items --}}
                 @include('pages.'.Qs::getUserType().'.menu')

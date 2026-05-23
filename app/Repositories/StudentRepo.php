@@ -95,9 +95,25 @@ class StudentRepo {
         return Promotion::destroy($id);
     }
 
-    public function getAllPromotions()
+    public function getAllPromotions(array $filters = [])
     {
-        return Promotion::with(['student', 'fc', 'tc', 'fs', 'ts'])->where(['from_session' => Qs::getCurrentSession(), 'to_session' => Qs::getNextSession()])->get();
+        $query = Promotion::with(['student', 'fc', 'tc', 'fs', 'ts'])
+            ->where([
+                'from_session' => Qs::getCurrentSession(),
+                'to_session'   => Qs::getNextSession(),
+            ]);
+
+        if (!empty($filters['from_class'])) {
+            $query->where('from_class', (int) $filters['from_class']);
+        }
+        if (!empty($filters['from_section'])) {
+            $query->where('from_section', (int) $filters['from_section']);
+        }
+        if (!empty($filters['status']) && in_array($filters['status'], ['P', 'D', 'G'], true)) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->get();
     }
 
     public function getPromotions(array $where)

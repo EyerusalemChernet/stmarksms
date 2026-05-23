@@ -1,6 +1,11 @@
 @extends('layouts.master')
 @section('page_title', 'Student Profile - '.$sr->user->name)
 @section('content')
+<div class="mb-3">
+    <a href="{{ route('students.list', $sr->my_class_id) }}" class="btn btn-sm btn-secondary">
+        <i class="bi bi-arrow-left mr-1"></i>Back to {{ $sr->my_class->name ?? 'Class' }} List
+    </a>
+</div>
 <div class="row">
     <div class="col-md-3 text-center">
         <div class="card">

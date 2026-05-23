@@ -37,6 +37,12 @@
 .section-title { font-size:14px; font-weight:700; color:#4f46e5; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid #e5e7eb; }
 </style>
 
+<div class="mb-3">
+    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-secondary">
+        <i class="bi bi-arrow-left mr-1"></i>Back to Dashboard
+    </a>
+</div>
+
 <div class="card admission-card">
     <div class="card-header bg-white" style="padding:16px 20px;">
         <h6 class="mb-0" style="font-size:15px;font-weight:700;">Student Admission</h6>
@@ -271,9 +277,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="field-label d-block">Upload Passport Photo</label>
+                                <label class="field-label d-block">Profile Photo (passport)</label>
                                 <input type="file" name="photo" accept="image/*" class="form-input" style="padding:5px;">
-                                <small style="font-size:11px;color:#9ca3af;">Accepted: jpeg, png. Max 2MB</small>
+                                <small style="font-size:11px;color:#9ca3af;">Saved as student profile. jpeg/png, max 2MB. An image ID upload in step 1 is also used if no photo here.</small>
                             </div>
                         </div>
                     </div>
@@ -295,7 +301,7 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="field-label">Class <span class="req">*</span></label>
-                                <select name="my_class_id" id="f-class" class="form-input" onchange="getClassSections(this.value)">
+                                <select name="my_class_id" id="f-class" class="form-input">
                                     <option value="">-- Choose --</option>
                                     @foreach($my_classes as $c)
                                         <option value="{{ $c->id }}" {{ old('my_class_id')==$c->id ? 'selected':'' }}>{{ $c->name }}</option>
@@ -304,16 +310,13 @@
                                 <div class="error-msg" id="err-class">Class is required.</div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label class="field-label">Section <span class="req">*</span></label>
-                                <select name="section_id" id="section_id" class="form-input">
-                                    <option value="">-- Select Class First --</option>
-                                </select>
-                                <div class="error-msg" id="err-section">Section is required.</div>
+                        <div class="col-md-4">
+                            <div class="alert alert-info border-0 mb-0 py-2" style="font-size:12px;border-radius:8px;">
+                                <i class="bi bi-info-circle mr-1"></i>
+                                Section is assigned automatically to the class section with the fewest students.
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label class="field-label">Parent / Guardian <span class="req">*</span></label>
                                 <select name="my_parent_id" id="f-parent" class="form-input">
@@ -429,10 +432,10 @@
                         <th>phone</th>
                         <th>address</th>
                         <th>class_name <span class="text-danger">*</span></th>
-                        <th>section_name</th>
                         <th>year_admitted</th>
                         <th>religion</th>
                         <th>nationality</th>
+                        <th>parent_email</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -440,12 +443,12 @@
                         <td class="font-weight-bold">Example</td>
                         <td>ABEBE KEBEDE</td><td>Male</td><td>2012-05-12</td>
                         <td>abebe@email.com</td><td>0911234567</td><td>Addis Ababa</td>
-                        <td>Grade 1</td><td>A</td><td>{{ date('Y') }}</td>
-                        <td>Ethiopian Orthodox</td><td>Ethiopian</td>
+                        <td>Grade 1</td><td>{{ date('Y') }}</td>
+                        <td>Ethiopian Orthodox</td><td>Ethiopian</td><td>parent@email.com</td>
                     </tr>
                 </tbody>
             </table>
-            <small class="text-muted"><span class="text-danger">*</span> Required columns. DOB format: YYYY-MM-DD. Nationality defaults to Ethiopian if blank.</small>
+            <small class="text-muted"><span class="text-danger">*</span> Required columns. DOB format: YYYY-MM-DD. Section is auto-assigned per class. <code>parent_email</code> links an existing parent account (optional).</small>
         </div>
 
         <form id="bulk-upload-form" method="post" enctype="multipart/form-data" action="{{ route('students.bulk.import') }}">
@@ -458,18 +461,7 @@
                         <small style="font-size:11px;color:#9ca3af;">Max 5MB. UTF-8 encoded CSV only.</small>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label class="field-label">Default Section (fallback)</label>
-                        <select name="default_section_id" class="form-input">
-                            <option value="">-- Choose --</option>
-                            @foreach(App\Models\Section::all() as $sec)
-                                <option value="{{ $sec->id }}">{{ $sec->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-3">
+                <div class="col-md-6">
                     <div class="form-group">
                         <button type="button" id="bulk-preview-btn" class="btn-primary-custom" style="width:100%;background:#0ea5e9;">
                             <i class="bi bi-eye mr-1"></i>Preview CSV
@@ -593,7 +585,6 @@ function validateStep2() {
         else { el.classList.remove('error'); err.classList.remove('show'); }
     }
     check('f-class',   'err-class');
-    check('section_id','err-section');
     check('f-year',    'err-year');
     check('f-parent',  'err-parent');
     return ok;
@@ -615,7 +606,6 @@ document.getElementById('admission-form').addEventListener('submit', function(e)
         if (resp.ok) {
             flash({ msg: resp.msg || 'Student admitted successfully.', type: 'success' });
             document.getElementById('admission-form').reset();
-            document.getElementById('section_id').innerHTML = '<option value="">-- Select Class First --</option>';
             document.getElementById('lga_id').innerHTML = '<option value="">-- Select Region First --</option>';
             goToStep(1);
         } else {

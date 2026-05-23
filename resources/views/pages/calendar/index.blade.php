@@ -2,6 +2,14 @@
 @section('page_title', 'Academic Calendar')
 @section('content')
 
+@if(!empty($calendarReadOnly))
+<div class="alert alert-light border mb-3" style="font-size:13px;">
+    <i class="bi bi-eye mr-1 text-primary"></i>
+    <strong>View only</strong> — showing the current academic year
+    <strong>{{ $lockedYearLabel ?? '' }}</strong>. Contact an administrator to request changes.
+</div>
+@endif
+
 <ul class="nav nav-tabs mb-3" id="calendarTabs" role="tablist">
     <li class="nav-item">
         <a class="nav-link active" id="tab-calendar-link" data-toggle="tab" href="#tab-calendar" role="tab">
@@ -58,10 +66,14 @@
 
 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap" style="gap:10px;">
     <div class="d-flex align-items-center" style="gap:8px;">
+        @if(empty($calendarReadOnly))
         <button class="btn btn-sm btn-outline-secondary" id="btn-prev-year"><i class="bi bi-chevron-left"></i></button>
+        @endif
         <h5 class="mb-0 font-weight-bold" id="current-year-label" style="min-width:60px;text-align:center;"></h5>
+        @if(empty($calendarReadOnly))
         <button class="btn btn-sm btn-outline-secondary" id="btn-next-year"><i class="bi bi-chevron-right"></i></button>
         <button class="btn btn-sm btn-outline-primary ml-2" id="btn-today-year">Today</button>
+        @endif
     </div>
     <div class="btn-group btn-group-sm" role="group">
         <button type="button" class="btn btn-primary active" id="view-year">Year</button>

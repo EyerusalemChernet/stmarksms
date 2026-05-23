@@ -62,7 +62,7 @@ Route::group(['middleware' => 'auth'], function () {
 
         /*************** Students *****************/
         Route::group(['prefix' => 'students'], function(){
-            Route::get('reset_pass/{st_id}', 'StudentRecordController@reset_pass')->name('st.reset_pass');
+            Route::post('reset_pass/{st_id}', 'StudentRecordController@reset_pass')->name('st.reset_pass');
             Route::get('graduated', 'StudentRecordController@graduated')->name('students.graduated');
             Route::put('not_graduated/{id}', 'StudentRecordController@not_graduated')->name('st.not_graduated');
             Route::get('list/{class_id}', 'StudentRecordController@listByClass')->name('students.list')->middleware('teamSAT');
@@ -76,11 +76,31 @@ Route::group(['middleware' => 'auth'], function () {
             /* Promotions */
             Route::post('promote_selector', 'PromotionController@selector')->name('students.promote_selector');
             Route::get('promotion/manage', 'PromotionController@manage')->name('students.promotion_manage');
+            Route::get('promotion/auto', 'PromotionController@autoPromotion')->name('students.auto_promotion')->middleware('super_admin');
+            Route::post('promotion/auto', 'PromotionController@autoPromote')->name('students.auto_promote')->middleware('super_admin');
             Route::delete('promotion/reset/{pid}', 'PromotionController@reset')->name('students.promotion_reset');
             Route::delete('promotion/reset_all', 'PromotionController@reset_all')->name('students.promotion_reset_all');
             Route::get('promotion/{fc?}/{fs?}/{tc?}/{ts?}', 'PromotionController@promotion')->name('students.promotion');
             Route::post('promote/{fc}/{fs}/{tc}/{ts}', 'PromotionController@promote')->name('students.promote');
 
+        });
+
+        /*************** Promotion Batches (new enrollment-based engine) *****************/
+        Route::prefix('promotion')->group(function () {
+            Route::get('/batches',                           'PromotionBatchController@index')->name('promotion.batches.index');
+            Route::post('/batches/auto-run',                 'PromotionBatchController@runAuto')->name('promotion.batches.run_auto')->middleware('super_admin');
+            Route::get('/batches/create',                    'PromotionBatchController@create')->name('promotion.batches.create');
+            Route::post('/batches',                          'PromotionBatchController@store')->name('promotion.batches.store');
+            Route::get('/batches/{batch}/summary',           'PromotionBatchController@summary')->name('promotion.batches.summary');
+            Route::get('/batches/{batch}',                   'PromotionBatchController@workspace')->name('promotion.batches.workspace');
+            Route::post('/batches/{batch}/shuffle',          'PromotionBatchController@shuffle')->name('promotion.batches.shuffle');
+            Route::post('/batches/{batch}/finalize',         'PromotionBatchController@finalize')->name('promotion.batches.finalize');
+            Route::post('/batches/{batch}/rollback',         'PromotionBatchController@rollback')->name('promotion.batches.rollback');
+            Route::delete('/batches/{batch}',                'PromotionBatchController@destroy')->name('promotion.batches.destroy');
+            Route::patch('/drafts/{draft}',                  'PromotionWorkspaceController@updateDraft')->name('promotion.drafts.update');
+            Route::patch('/drafts/{draft}/lock',             'PromotionWorkspaceController@toggleLock')->name('promotion.drafts.lock');
+            Route::post('/sections',                         'PromotionWorkspaceController@addSection')->name('promotion.sections.add');
+            Route::delete('/sections/{section}',             'PromotionWorkspaceController@removeSection')->name('promotion.sections.remove');
         });
 
         /*************** Users *****************/
@@ -199,7 +219,6 @@ Route::group(['middleware' => 'auth'], function () {
         // Term & Semester Setup
         Route::get('term-setup',          'TermSetupController@index')->name('term_setup.index');
         Route::post('term-setup/settings','TermSetupController@saveSettings')->name('term_setup.settings');
-        Route::post('term-setup/auto-promote','TermSetupController@autoPromote')->name('term_setup.auto_promote');
 
         /*************** Attendance *****************/
         Route::group(['prefix' => 'attendance'], function(){
@@ -275,6 +294,11 @@ Route::group(['namespace' => 'SuperAdmin','middleware' => 'super_admin', 'prefix
     Route::delete('/promotion-rules/{rule}',    'PromotionRuleController@destroy')->name('promotion_rules.destroy');
 
     Route::get('/audit-logs', 'AuditLogController@index')->name('audit.index');
+
+    Route::get('/academic-years',                   'AcademicYearController@index')->name('academic_years.index');
+    Route::post('/academic-years',                  'AcademicYearController@store')->name('academic_years.store');
+    Route::patch('/academic-years/{year}/activate', 'AcademicYearController@activate')->name('academic_years.activate');
+    Route::delete('/academic-years/{year}',         'AcademicYearController@destroy')->name('academic_years.destroy');
 
     Route::get('/departments', 'DepartmentController@index')->name('departments.index');
     Route::post('/departments', 'DepartmentController@store')->name('departments.store');

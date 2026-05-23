@@ -1,10 +1,10 @@
 @extends('layouts.master')
-@section('page_title', 'Student Marksheet')
+@section('page_title', 'Student Report Card')
 @section('content')
 
     <div class="card">
         <div class="card-header text-center">
-            <h4 class="card-title font-weight-bold">Student Marksheet for =>  {{ $sr->user->name.' ('.$my_class->name.' '.$my_class->section->first()->name.')' }} </h4>
+            <h4 class="card-title font-weight-bold">Report Card — {{ $sr->user->name }} ({{ $my_class->name }} {{ $my_class->section->first()->name ?? '' }}) — {{ $year }}</h4>
         </div>
     </div>
 

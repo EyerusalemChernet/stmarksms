@@ -77,7 +77,11 @@
                         <td><img class="rounded-circle" style="height: 40px; width: 40px;" src="{{ $s->user->photo }}" alt="photo"></td>
                         <td>{{ $s->user->name }}</td>
                         <td>{{ $s->adm_no }}</td>
-                        <td><a class="btn btn-danger" href="{{ route('marks.year_select', Qs::hash($s->user_id)) }}">View Marksheet</a></td>
+                        <td>
+                            <a class="btn btn-success btn-sm" href="{{ route('marks.show', [$s->user_id, Qs::getCurrentSession()]) }}" target="_blank">
+                                <i class="bi bi-file-earmark-text mr-1"></i> Report Card
+                            </a>
+                        </td>
 
                     </tr>
                 @endforeach

@@ -2,6 +2,12 @@
 @section('page_title', 'Student Information - '.$my_class->name)
 @section('content')
 
+    <div class="mb-3">
+        <a href="{{ route('dashboard') }}" class="btn btn-sm btn-secondary">
+            <i class="bi bi-arrow-left mr-1"></i>Back to Dashboard
+        </a>
+    </div>
+
     <div class="card">
         <div class="card-header header-elements-inline">
             <h6 class="card-title">Students List</h6>
@@ -55,7 +61,8 @@
                                                 <a href="{{ route('students.show', Qs::hash($s->id)) }}" class="dropdown-item"><i class="icon-eye"></i> View Profile</a>
                                                 @if(Qs::userIsTeamSA())
                                                     <a href="{{ route('students.edit', Qs::hash($s->id)) }}" class="dropdown-item"><i class="icon-pencil"></i> Edit</a>
-                                                    <a href="{{ route('st.reset_pass', Qs::hash($s->user->id)) }}" class="dropdown-item"><i class="icon-lock"></i> Reset password</a>
+                                                    <a href="#" class="dropdown-item" onclick="event.preventDefault(); if(confirm('Reset this student\'s password to the default (student)?')) document.getElementById('reset-pass-{{ Qs::hash($s->user->id) }}').submit();"><i class="icon-lock"></i> Reset password</a>
+                                                    <form id="reset-pass-{{ Qs::hash($s->user->id) }}" method="post" action="{{ route('st.reset_pass', Qs::hash($s->user->id)) }}" class="d-none">@csrf</form>
                                                 @endif
                                                 <a target="_blank" href="{{ route('marks.year_selector', Qs::hash($s->user->id)) }}" class="dropdown-item"><i class="icon-check"></i> Marksheet</a>
 
@@ -105,9 +112,10 @@
                                                     <a href="{{ route('students.show', Qs::hash($sr->id)) }}" class="dropdown-item"><i class="icon-eye"></i> View Info</a>
                                                     @if(Qs::userIsTeamSA())
                                                         <a href="{{ route('students.edit', Qs::hash($sr->id)) }}" class="dropdown-item"><i class="icon-pencil"></i> Edit</a>
-                                                        <a href="{{ route('st.reset_pass', Qs::hash($sr->user->id)) }}" class="dropdown-item"><i class="icon-lock"></i> Reset password</a>
+                                                        <a href="#" class="dropdown-item" onclick="event.preventDefault(); if(confirm('Reset this student\'s password to the default (student)?')) document.getElementById('reset-pass-{{ Qs::hash($sr->user->id) }}').submit();"><i class="icon-lock"></i> Reset password</a>
+                                                        <form id="reset-pass-{{ Qs::hash($sr->user->id) }}" method="post" action="{{ route('st.reset_pass', Qs::hash($sr->user->id)) }}" class="d-none">@csrf</form>
                                                     @endif
-                                                    <a href="#" class="dropdown-item"><i class="icon-check"></i> Marksheet</a>
+                                                    <a target="_blank" href="{{ route('marks.year_selector', Qs::hash($sr->user->id)) }}" class="dropdown-item"><i class="icon-check"></i> Marksheet</a>
 
                                                     {{--Delete--}}
                                                     @if(Qs::userIsSuperAdmin())

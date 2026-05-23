@@ -155,7 +155,7 @@
 
     </div>
 
-    {{-- ── RIGHT: Settings + Auto-Promotion ──────────────────────────── --}}
+    {{-- ── RIGHT: Structure Settings ─────────────────────────────────── --}}
     <div class="col-lg-4">
 
         {{-- Structure Settings --}}
@@ -211,66 +211,6 @@
                         <i class="bi bi-save mr-1"></i>Save Settings
                     </button>
                 </form>
-            </div>
-        </div>
-        @endif
-
-        {{-- Auto-Promotion --}}
-        @if(Qs::userIsSuperAdmin())
-        <div class="ts-card" id="auto-promotion">
-            <div class="ts-card-header">
-                <div class="d-flex align-items-center" style="gap:8px;">
-                    <i class="bi bi-arrow-up-circle" style="color:#10b981;font-size:16px;"></i>
-                    <strong style="font-size:14px;color:#1e293b;">Auto-Promotion</strong>
-                </div>
-                <span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;">
-                    {{ $promotion_mode === 'auto' ? 'Active' : 'Manual mode' }}
-                </span>
-            </div>
-            <div class="ts-card-body">
-                <div class="alert alert-info border-0 mb-3" style="font-size:12px;border-radius:8px;">
-                    <i class="bi bi-info-circle mr-1"></i>
-                    Automatically promotes all students whose session average meets the minimum threshold.
-                    Students below the threshold are held back. Students with no marks are skipped.
-                </div>
-
-                <form method="POST" action="{{ route('term_setup.auto_promote') }}"
-                      onsubmit="return confirm('Run auto-promotion for session {{ $current_session }}?\n\nThis will move ALL students to the next session based on their average marks.\n\nThis action can be reversed from the Manage Promotions page.')">
-                    @csrf
-
-                    <div class="form-group mb-3">
-                        <label style="font-size:12px;font-weight:600;color:#475569;">
-                            Minimum Average to Promote (%)
-                        </label>
-                        <div class="input-group input-group-sm">
-                            <input type="number" name="min_average" min="0" max="100"
-                                   value="{{ $promotion_min_avg }}"
-                                   class="form-control">
-                            <div class="input-group-append">
-                                <span class="input-group-text">%</span>
-                            </div>
-                        </div>
-                        <small class="text-muted" style="font-size:11px;">Students at or above this average will be promoted</small>
-                    </div>
-
-                    <input type="hidden" name="promotion_mode" value="{{ $promotion_mode }}">
-
-                    <button type="submit" class="btn btn-success btn-sm btn-block">
-                        <i class="bi bi-arrow-up-circle mr-1"></i>
-                        Run Auto-Promotion for {{ $current_session }}
-                    </button>
-                </form>
-
-                <hr style="border-color:#e2e8f0;margin:16px 0;">
-
-                <div class="d-flex" style="gap:8px;">
-                    <a href="{{ route('students.promotion') }}" class="btn btn-outline-primary btn-sm flex-fill">
-                        <i class="bi bi-person-check mr-1"></i>Manual Promote
-                    </a>
-                    <a href="{{ route('students.promotion_manage') }}" class="btn btn-outline-secondary btn-sm flex-fill">
-                        <i class="bi bi-list-check mr-1"></i>Manage
-                    </a>
-                </div>
             </div>
         </div>
         @endif

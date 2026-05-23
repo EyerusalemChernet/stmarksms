@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Mark;
 use App\Repositories\MyClassRepo;
 use App\Repositories\StudentRepo;
+use App\Services\PromotionInsightService;
 use App\Services\RulesEngine;
 use Illuminate\Http\Request;
 
@@ -17,6 +18,7 @@ class PromotionController extends Controller
     public function __construct(MyClassRepo $my_class, StudentRepo $student)
     {
         $this->middleware('teamSA');
+        $this->middleware('super_admin')->only(['autoPromotion', 'autoPromote']);
 
         $this->my_class = $my_class;
         $this->student = $student;
@@ -121,11 +123,49 @@ class PromotionController extends Controller
         return redirect()->route('students.promotion')->with('flash_success', __('msg.update_ok'));
     }
 
-    public function manage()
+    /** Redirect legacy URL to unified promotion center. */
+    public function autoPromotion()
     {
-        $data['promotions'] = $this->student->getAllPromotions();
-        $data['old_year'] = Qs::getCurrentSession();
-        $data['new_year'] = Qs::getNextSession();
+        return redirect()->route('promotion.batches.index');
+    }
+
+    /** Legacy POST URL — runs unified batch auto-promotion. */
+    public function autoPromote(Request $req)
+    {
+        if (!$req->has('redistribution_mode')) {
+            $req->merge(['redistribution_mode' => 'balanced']);
+        }
+
+        return app(PromotionBatchController::class)->runAuto($req);
+    }
+
+    public function manage(Request $req)
+    {
+        $filters = array_filter([
+            'from_class'   => $req->query('fc'),
+            'from_section' => $req->query('fs'),
+            'status'       => $req->query('status'),
+        ]);
+
+        $data['promotions']  = $this->student->getAllPromotions($filters);
+        $data['old_year']     = Qs::getCurrentSession();
+        $data['new_year']     = Qs::getNextSession();
+        $data['my_classes']   = $this->my_class->all();
+        $data['sections']     = $this->my_class->getAllSections();
+        $data['filters']      = $filters;
+        $data['filter_fc']    = $req->query('fc');
+        $data['filter_fs']    = $req->query('fs');
+        $data['filter_status']= $req->query('status');
+
+        $passMark = (int) (Qs::getSetting('custom_pass_mark') ?: 50);
+        $data['insights'] = $data['promotions']->mapWithKeys(function ($p) use ($data, $passMark) {
+            return [$p->id => PromotionInsightService::forStudent(
+                $p->student_id,
+                $data['old_year'],
+                $p->status,
+                $passMark
+            )];
+        });
 
         return view('pages.support_team.students.promotion.reset', $data);
     }

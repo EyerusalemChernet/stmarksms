@@ -44,7 +44,17 @@ class CalendarController extends Controller
         $rules   = \App\Models\CalendarRule::orderBy('sort_order')->get();
         $current = \App\Models\AcademicYear::where('is_current', true)->first();
 
-        return view('pages.calendar.index', compact('icsUrl', 'gcalSubscribe', 'years', 'rules', 'current'));
+        $calendarReadOnly = !Qs::userIsTeamSA();
+        $lockedYearId     = $current?->id;
+        $lockedYearLabel  = $current?->name ?? Qs::getCurrentSession();
+        $lockedStartYear  = $current
+            ? (int) $current->start_date->format('Y')
+            : (int) date('Y');
+
+        return view('pages.calendar.index', compact(
+            'icsUrl', 'gcalSubscribe', 'years', 'rules', 'current',
+            'calendarReadOnly', 'lockedYearId', 'lockedYearLabel', 'lockedStartYear'
+        ));
     }
 
     // ── Events JSON for FullCalendar ──────────────────────────────────────────
@@ -53,10 +63,13 @@ class CalendarController extends Controller
     {
         $start  = $req->get('start');
         $end    = $req->get('end');
-        $yearId = $req->get('year_id'); // optional: browse a specific academic year
+        $yearId = $req->get('year_id');
 
-        // Resolve which academic year to show
-        if ($yearId) {
+        // Non-admin users may only view the current academic year
+        if (!Qs::userIsTeamSA()) {
+            $academicYear = \App\Models\AcademicYear::where('is_current', true)->first()
+                         ?? \App\Models\AcademicYear::where('status', 'active')->latest()->first();
+        } elseif ($yearId) {
             $academicYear = \App\Models\AcademicYear::find($yearId);
         } else {
             $academicYear = \App\Models\AcademicYear::where('is_current', true)->first()

@@ -78,18 +78,33 @@ class StudentRecordController extends Controller
 
         $data['username'] = $adm_no;
 
-        if($req->hasFile('photo')) {
-            $photo = $req->file('photo');
-            $f = Qs::getFileMetaData($photo);
+        $profileFile = $req->hasFile('photo') ? $req->file('photo') : null;
+        if (!$profileFile && $req->hasFile('birth_cert')) {
+            $bc = $req->file('birth_cert');
+            if (str_starts_with((string) $bc->getMimeType(), 'image/')) {
+                $profileFile = $bc;
+            }
+        }
+        if ($profileFile) {
+            $f = Qs::getFileMetaData($profileFile);
             $f['name'] = 'photo.' . $f['ext'];
-            $f['path'] = $photo->storeAs(Qs::getUploadPath('student').$data['code'], $f['name']);
+            $f['path'] = $profileFile->storeAs(Qs::getUploadPath('student').$data['code'], $f['name']);
             $data['photo'] = asset('storage/' . $f['path']);
         }
 
         $user = $this->user->create($data); // Create User
 
+        $enrollmentService = app(\App\Services\EnrollmentService::class);
+        try {
+            $section = $enrollmentService->assignAvailableSection((int) $req->my_class_id);
+        } catch (\RuntimeException $e) {
+            $user->delete();
+            return Qs::json($e->getMessage(), false);
+        }
+
         $sr['adm_no'] = $adm_no;
         $sr['user_id'] = $user->id;
+        $sr['section_id'] = $section->id;
         $sr['session'] = Qs::getSetting('current_session');
 
         // Auto-calculate age from DOB
@@ -110,18 +125,24 @@ class StudentRecordController extends Controller
             $sr['birth_cert_name'] = $doc->getClientOriginalName();
         }
 
-        // Save birth certificate / student ID document if uploaded
-        if ($req->hasFile('birth_cert')) {
-            $doc = $req->file('birth_cert');
-            $docPath = $doc->storeAs(
-                Qs::getUploadPath('student') . $data['code'],
-                'birth_cert.' . $doc->getClientOriginalExtension()
-            );
-            $sr['birth_cert_path'] = $docPath;
-            $sr['birth_cert_name'] = $doc->getClientOriginalName();
+        $studentRecord = $this->student->createRecord($sr); // Create Student
+
+        // Create enrollment record for the new enrollment-based system
+        try {
+            $yearId = $enrollmentService->activeYearId();
+            if ($yearId) {
+                $enrollmentService->createForAdmission(
+                    $user->id,
+                    $req->my_class_id,
+                    $section->id,
+                    $yearId
+                );
+            }
+        } catch (\Exception $e) {
+            // Non-fatal: enrollment creation failure should not block admission
+            \Illuminate\Support\Facades\Log::warning('Enrollment creation failed for student ' . $user->id . ': ' . $e->getMessage());
         }
 
-        $this->student->createRecord($sr); // Create Student
         AuditLog::log('created', 'students', "Student '{$data['name']}' admitted (Adm: {$data['username']})");
         return Qs::jsonStoreOk();
     }
@@ -222,8 +243,8 @@ class StudentRecordController extends Controller
      */
     public function bulkTemplate()
     {
-        $headers = ['name','gender','dob','email','phone','address','class_name','section_name','year_admitted','religion','nationality','parent_email'];
-        $example = ['ABEBE KEBEDE','Male','2012-05-12','abebe@email.com','0911234567','Addis Ababa','Grade 1','A',date('Y'),'Ethiopian Orthodox','Ethiopian','parent@email.com'];
+        $headers = ['name','gender','dob','email','phone','address','class_name','year_admitted','religion','nationality','parent_email'];
+        $example = ['ABEBE KEBEDE','Male','2012-05-12','abebe@email.com','0911234567','Addis Ababa','Grade 1',date('Y'),'Ethiopian Orthodox','Ethiopian','parent@email.com'];
 
         $csv = implode(',', $headers)."\n".implode(',', $example)."\n";
 
@@ -329,16 +350,11 @@ class StudentRecordController extends Controller
                 continue;
             }
 
-            // ── Resolve section ──────────────────────────────────────────────
-            $section = \App\Models\Section::where('my_class_id', $class->id)
-                ->where('name', $data['section_name'] ?? '')->first();
-            if (!$section) {
-                $section = $req->default_section_id
-                    ? \App\Models\Section::find($req->default_section_id)
-                    : \App\Models\Section::where('my_class_id', $class->id)->first();
-            }
-            if (!$section) {
-                $errors[] = "Row {$row}: No section found for class '{$data['class_name']}' — skipped.";
+            // ── Auto-assign section (lowest enrollment) ─────────────────────
+            try {
+                $section = app(\App\Services\EnrollmentService::class)->assignAvailableSection($class->id);
+            } catch (\RuntimeException $e) {
+                $errors[] = "Row {$row}: {$e->getMessage()} — skipped.";
                 continue;
             }
 
@@ -389,6 +405,17 @@ class StudentRecordController extends Controller
                     ? (\App\User::where('email', $data['parent_email'])->where('user_type','parent')->value('id') ?? null)
                     : null,
             ]);
+
+            // Create enrollment record for the new enrollment-based system
+            try {
+                $enrollmentService = app(\App\Services\EnrollmentService::class);
+                $yearId = $enrollmentService->activeYearId();
+                if ($yearId) {
+                    $enrollmentService->createForAdmission($user->id, $class->id, $section->id, $yearId);
+                }
+            } catch (\Exception $e) {
+                // Non-fatal — log but don't block bulk import
+            }
 
             $imported++;
         }
