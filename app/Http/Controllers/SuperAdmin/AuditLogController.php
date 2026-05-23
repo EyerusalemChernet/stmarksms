@@ -247,3 +247,4 @@ class AuditLogController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+}
