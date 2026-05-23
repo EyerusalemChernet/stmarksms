@@ -540,10 +540,6 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
     Route::get('/payroll/{id}',           'PayrollController@show')->name('hr.payroll.show');
     Route::put('/payroll/{id}',           'PayrollController@update')->name('hr.payroll.update');
 
-    // ── Audit Logs for HR Manager ─────────────────────────────────────────
-    Route::get('/audit-logs',        '\App\Http\Controllers\SuperAdmin\AuditLogController@hrManagerAuditLog')->name('hr.audit_logs');
-    Route::get('/audit-logs/export', '\App\Http\Controllers\SuperAdmin\AuditLogController@exportHrManagerAuditLog')->name('hr.audit_logs.export');
-
     /*************** Payments (Legacy) *****************/
     Route::group(['prefix' => 'payments'], function(){
         Route::get('manage/{class_id?}', 'PaymentController@manage')->name('payments.manage');
@@ -560,6 +556,10 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
         Route::get('/', 'HRController@dashboard')->name('hr.index');
         Route::get('/staff', 'HRController@index')->name('hr.staff');
         Route::get('/staff/{hrId}', 'HRController@show')->name('hr.show');
+
+        // Audit Logs for HR Manager
+        Route::get('/audit-logs', '\App\Http\Controllers\SuperAdmin\AuditLogController@hrManagerAuditLog')->name('hr.audit_logs');
+        Route::get('/audit-logs/export', '\App\Http\Controllers\SuperAdmin\AuditLogController@exportHrManagerAuditLog')->name('hr.audit_logs.export');
 
         // Employee create
         Route::get('/employees/create', 'HRController@createEmployee')->name('hr.employees.create');
