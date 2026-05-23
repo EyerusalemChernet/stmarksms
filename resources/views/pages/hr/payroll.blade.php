@@ -200,6 +200,7 @@
                     </td>
                     <td>
                         @if($pr && $pr->id)
+                            <!-- DEBUG: Payroll ID={{ $pr->id }}, Edit URL={{ route('hr.payroll.edit', $pr->id) }} -->
                             <!-- View payroll details -->
                             <a href="{{ route('hr.payroll.show', $pr->id) }}" class="btn btn-xs btn-info" title="View payroll details">
                                 <i class="bi bi-eye"></i>

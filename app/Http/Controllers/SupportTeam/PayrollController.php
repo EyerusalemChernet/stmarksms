@@ -117,53 +117,77 @@ class PayrollController extends Controller
 
     public function edit($id)
     {
-        // Convert to int and validate
-        $id = intval($id);
-        
-        if ($id <= 0) {
-            return redirect()->route('hr.payroll')
-                ->with('flash_danger', 'Invalid payroll ID.');
+        \Log::debug('=== PayrollController@edit START ===', [
+            'id_raw' => $id,
+            'id_type' => gettype($id),
+        ]);
+
+        try {
+            // Don't validate - just try to find it
+            $id = intval($id);
+            
+            \Log::debug('PayrollController@edit - converted ID', [
+                'id_intval' => $id,
+            ]);
+
+            // Fetch payroll with relationships
+            $payroll = StaffPayroll::with([
+                'employee.employmentDetails.department',
+                'employee.employmentDetails.position',
+                'items',
+                'approvedBy'
+            ])->find($id);
+
+            \Log::debug('PayrollController@edit - payroll found', [
+                'found' => $payroll ? 'yes' : 'no',
+                'payroll_id' => $payroll?->id,
+            ]);
+
+            if (!$payroll) {
+                \Log::error('PayrollController@edit - Payroll not found', [
+                    'id' => $id,
+                ]);
+                return redirect()->route('hr.payroll')
+                    ->with('flash_danger', "Payroll record #{$id} not found.");
+            }
+            
+            // Validate payroll has employee
+            if (!$payroll->employee) {
+                return redirect()->route('hr.payroll')
+                    ->with('flash_danger', "Payroll record is corrupted: associated employee not found.");
+            }
+
+            // ── Validate payroll integrity ───────────────────────────────────────
+            $validator = new PayrollValidator();
+            $validation = $validator->validatePayrollIntegrity($payroll);
+            $warnings = $validator->getWarnings();
+
+            // ── Calculate breakdown ──────────────────────────────────────────────
+            $calculator = new PayrollCalculator($payroll->employee, $payroll->month);
+            $calculations = $calculator->getCalculations();
+
+            // ── Get analytics ────────────────────────────────────────────────────
+            $earnings = $payroll->getEarningsBreakdown();
+            $deductions = $payroll->getDeductionsBreakdown();
+            $tax_rate = $payroll->getEffectiveTaxRate();
+            $processing_time = $payroll->getProcessingTime();
+            $status_info = $payroll->getStatusInfo();
+
+            \Log::debug('=== PayrollController@edit SUCCESS ===');
+
+            return view('pages.hr.payroll_edit', compact(
+                'payroll', 'validation', 'warnings', 'calculations',
+                'earnings', 'deductions', 'tax_rate', 'processing_time', 'status_info'
+            ));
+
+        } catch (\Exception $e) {
+            \Log::error('PayrollController@edit - Exception', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            throw $e;
         }
-        
-        // Fetch payroll with relationships
-        $payroll = StaffPayroll::with([
-            'employee.employmentDetails.department',
-            'employee.employmentDetails.position',
-            'items',
-            'approvedBy'
-        ])->find($id);
-
-        if (!$payroll) {
-            return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record #{$id} not found. The payroll may have been deleted or doesn't exist yet. Please generate payroll for the desired month.");
-        }
-        
-        // Validate payroll has employee
-        if (!$payroll->employee) {
-            return redirect()->route('hr.payroll')
-                ->with('flash_danger', "Payroll record is corrupted: associated employee not found. Contact system administrator.");
-        }
-
-        // ── Validate payroll integrity ───────────────────────────────────────
-        $validator = new PayrollValidator();
-        $validation = $validator->validatePayrollIntegrity($payroll);
-        $warnings = $validator->getWarnings();
-
-        // ── Calculate breakdown ──────────────────────────────────────────────
-        $calculator = new PayrollCalculator($payroll->employee, $payroll->month);
-        $calculations = $calculator->getCalculations();
-
-        // ── Get analytics ────────────────────────────────────────────────────
-        $earnings = $payroll->getEarningsBreakdown();
-        $deductions = $payroll->getDeductionsBreakdown();
-        $tax_rate = $payroll->getEffectiveTaxRate();
-        $processing_time = $payroll->getProcessingTime();
-        $status_info = $payroll->getStatusInfo();
-
-        return view('pages.hr.payroll_edit', compact(
-            'payroll', 'validation', 'warnings', 'calculations',
-            'earnings', 'deductions', 'tax_rate', 'processing_time', 'status_info'
-        ));
     }
 
     // ── UPDATE BASE SALARY / NOTES ────────────────────────────────────────────
