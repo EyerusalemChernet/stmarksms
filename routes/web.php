@@ -540,19 +540,11 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
     Route::get('/payroll/{id}',           'PayrollController@show')->name('hr.payroll.show');
     Route::put('/payroll/{id}',           'PayrollController@update')->name('hr.payroll.update');
 
-    // ── Audit Logs for HR Manager ─────────────────────────────────────────
-    Route::get('/audit-logs',        '\App\Http\Controllers\SuperAdmin\AuditLogController@hrManagerAuditLog')->name('hr.audit_logs');
-    Route::get('/audit-logs/export', '\App\Http\Controllers\SuperAdmin\AuditLogController@exportHrManagerAuditLog')->name('hr.audit_logs.export');
-
-    /*************** Payments (Legacy → unified finance) *****************/
-    Route::group(['namespace' => 'Finance', 'prefix' => 'payments'], function () {
-        Route::get('manage/{class_id?}', 'LegacyPaymentRedirectController@manage')->name('payments.manage');
-        Route::get('invoice/{id}/{year?}', 'LegacyPaymentRedirectController@invoice')->name('payments.invoice');
-        Route::get('receipts/{id}', 'LegacyPaymentRedirectController@receipts')->name('payments.receipts');
-        Route::post('select_year', 'LegacyPaymentRedirectController@selectYear')->name('payments.select_year');
-        Route::post('select_class', 'LegacyPaymentRedirectController@selectClass')->name('payments.select_class');
-    });
-    Route::group(['prefix' => 'payments'], function () {
+    /*************** Payments (Legacy) *****************/
+    Route::group(['prefix' => 'payments'], function(){
+        Route::get('manage/{class_id?}', 'PaymentController@manage')->name('payments.manage');
+        Route::get('invoice/{id}/{year?}', 'PaymentController@invoice')->name('payments.invoice');
+        Route::get('receipts/{id}', 'PaymentController@receipts')->name('payments.receipts');
         Route::get('pdf_receipts/{id}', 'PaymentController@pdf_receipts')->name('payments.pdf_receipts');
         Route::delete('reset_record/{id}', 'PaymentController@reset_record')->name('payments.reset_record');
         Route::post('pay_now/{id}', 'PaymentController@pay_now')->name('payments.pay_now');
@@ -564,6 +556,10 @@ Route::group(['namespace' => 'SupportTeam', 'middleware' => 'hr_manager', 'prefi
         Route::get('/', 'HRController@dashboard')->name('hr.index');
         Route::get('/staff', 'HRController@index')->name('hr.staff');
         Route::get('/staff/{hrId}', 'HRController@show')->name('hr.show');
+
+        // Audit Logs for HR Manager
+        Route::get('/audit-logs', '\App\Http\Controllers\SuperAdmin\AuditLogController@hrManagerAuditLog')->name('hr.audit_logs');
+        Route::get('/audit-logs/export', '\App\Http\Controllers\SuperAdmin\AuditLogController@exportHrManagerAuditLog')->name('hr.audit_logs.export');
 
         // Employee create
         Route::get('/employees/create', 'HRController@createEmployee')->name('hr.employees.create');
