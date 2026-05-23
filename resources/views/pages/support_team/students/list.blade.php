@@ -68,13 +68,6 @@
                                     <a href="{{ route('students.edit', Qs::hash($s->id)) }}" class="btn btn-xs btn-outline-secondary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button type="button" class="btn btn-xs btn-outline-warning"
-                                            title="Reset Password"
-                                            onclick="confirmResetPassword('{{ Qs::hash($s->user->id) }}', '{{ addslashes($s->user->name) }}')">
-                                        <i class="bi bi-key"></i>
-                                    </button>
-                                    <form id="reset-pass-{{ Qs::hash($s->user->id) }}" method="post"
-                                          action="{{ route('st.reset_pass', Qs::hash($s->user->id)) }}" class="d-none">@csrf</form>
                                     @endif
                                     <a target="_blank" href="{{ route('marks.year_selector', Qs::hash($s->user->id)) }}" class="btn btn-xs btn-outline-primary" title="Marksheet">
                                         <i class="bi bi-journal-check"></i>
@@ -122,13 +115,6 @@
                                     <a href="{{ route('students.edit', Qs::hash($sr->id)) }}" class="btn btn-xs btn-outline-secondary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button type="button" class="btn btn-xs btn-outline-warning"
-                                            title="Reset Password"
-                                            onclick="confirmResetPassword('{{ Qs::hash($sr->user->id) }}', '{{ addslashes($sr->user->name) }}')">
-                                        <i class="bi bi-key"></i>
-                                    </button>
-                                    <form id="reset-pass-{{ Qs::hash($sr->user->id) }}" method="post"
-                                          action="{{ route('st.reset_pass', Qs::hash($sr->user->id)) }}" class="d-none">@csrf</form>
                                     @endif
                                     <a target="_blank" href="{{ route('marks.year_selector', Qs::hash($sr->user->id)) }}" class="btn btn-xs btn-outline-primary" title="Marksheet">
                                         <i class="bi bi-journal-check"></i>
@@ -159,18 +145,6 @@
 
 @section('scripts')
 <script>
-function confirmResetPassword(userId, studentName) {
-    swal({
-        title: 'Reset Password',
-        text: 'Reset ' + studentName + '\'s password to "student"? They will be prompted to change it on next login.',
-        icon: 'warning',
-        buttons: ['Cancel', 'Yes, Reset'],
-        dangerMode: true,
-    }).then(function(confirmed) {
-        if (confirmed) {
-            document.getElementById('reset-pass-' + userId).submit();
-        }
-    });
-}
+// No custom scripts needed
 </script>
 @endsection
