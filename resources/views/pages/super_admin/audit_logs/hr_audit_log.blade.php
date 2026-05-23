@@ -116,6 +116,7 @@
                                     'training' => 'secondary',
                                     'attendance' => 'dark',
                                     'contract' => 'info',
+                                    'hr' => 'info',
                                     default => 'light',
                                 };
                             @endphp
@@ -125,7 +126,7 @@
                         </td>
                         <td class="small">
                             <span title="{{ $log->description }}">
-                                {{ Str::limit($log->description, 80) }}
+                                {{ substr($log->description, 0, 80) }}{{ strlen($log->description) > 80 ? '...' : '' }}
                             </span>
                         </td>
                         <td class="small text-muted">{{ $log->ip_address }}</td>
