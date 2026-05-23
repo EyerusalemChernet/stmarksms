@@ -35,6 +35,14 @@ class Department extends Model
         return $this->hasMany(StaffRecord::class);
     }
 
+    /** Many-to-many: teachers can belong to multiple departments */
+    public function teachers()
+    {
+        return $this->belongsToMany(\App\User::class, 'department_teacher', 'department_id', 'user_id')
+                    ->where('user_type', 'teacher')
+                    ->orderBy('name');
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     /** Count of active employees in this department */

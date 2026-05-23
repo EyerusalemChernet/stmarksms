@@ -6,7 +6,12 @@
 @section('content')
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0"><i class="bi bi-bar-chart-line mr-2"></i>Reports & Analytics — {{ $year }}</h5>
+    <div class="d-flex align-items-center" style="gap:12px;">
+        <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h5 class="mb-0"><i class="bi bi-bar-chart-line mr-2"></i>Reports & Analytics — {{ $year }}</h5>
+    </div>
 </div>
 
 <div class="row">
