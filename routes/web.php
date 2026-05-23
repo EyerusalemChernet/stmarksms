@@ -230,7 +230,7 @@ Route::group(['middleware' => 'auth'], function () {
 
             // Write: teachers only
             Route::post('/open', 'AttendanceController@create')->name('attendance.create')->middleware('teacher');
-            Route::get('/manage/{session_id}', 'AttendanceController@manage')->name('attendance.manage')->middleware('teacher');
+            Route::get('/manage/{session_id}', 'AttendanceController@manage')->name('attendance.manage')->middleware('teamSAT');
             Route::post('/save/{session_id}', 'AttendanceController@store')->name('attendance.store')->middleware('teacher');
         });
 

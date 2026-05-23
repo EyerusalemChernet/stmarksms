@@ -257,6 +257,12 @@ class UserController extends Controller
             if (!in_array($data['gender'] ?? '', ['Male', 'Female'])) {
                 $errors[] = "Row {$row}: Gender must be Male or Female — skipped."; continue;
             }
+            if (empty($data['email'])) {
+                $errors[] = "Row {$row}: Email is required — skipped."; continue;
+            }
+            if (empty($data['phone'])) {
+                $errors[] = "Row {$row}: Phone is required — skipped."; continue;
+            }
             if (!empty($data['email']) && \App\User::where('email', $data['email'])->exists()) {
                 $errors[] = "Row {$row}: Email '{$data['email']}' already exists — skipped."; continue;
             }
@@ -334,6 +340,18 @@ class UserController extends Controller
             // ── Required: gender ─────────────────────────────────────────────
             if (!in_array($data['gender'] ?? '', ['Male', 'Female'])) {
                 $errors[] = "Row {$row}: Gender must be 'Male' or 'Female' — skipped.";
+                continue;
+            }
+
+            // ── Required: email ──────────────────────────────────────────────
+            if (empty($data['email'])) {
+                $errors[] = "Row {$row}: Email is required — skipped.";
+                continue;
+            }
+
+            // ── Required: phone ──────────────────────────────────────────────
+            if (empty($data['phone'])) {
+                $errors[] = "Row {$row}: Phone is required — skipped.";
                 continue;
             }
 

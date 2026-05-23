@@ -67,8 +67,9 @@ class StudentRecordController extends Controller
         $data['photo'] = Qs::getDefaultUserImage();
 
         // Auto-generate admission number: STM-{YEAR}-{4-digit sequence}
+        // Query the highest existing sequence for this year to avoid duplicates
         $year = date('Y');
-        
+
         // Find the highest existing admission number for this year
         $existingAdmNos = \App\Models\StudentRecord::where('adm_no', 'LIKE', "STM-{$year}-%")
             ->pluck('adm_no')
@@ -80,13 +81,13 @@ class StudentRecordController extends Controller
             })
             ->filter()
             ->sort();
-        
+
         $sequence = $existingAdmNos->isEmpty() ? 1 : $existingAdmNos->last() + 1;
-        
+
         // Ensure uniqueness by checking if the generated number already exists
         do {
             $adm_no = 'STM-' . $year . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
-            $exists = \App\User::where('username', $adm_no)->exists() || 
+            $exists = \App\User::where('username', $adm_no)->exists() ||
                      \App\Models\StudentRecord::where('adm_no', $adm_no)->exists();
             if ($exists) {
                 $sequence++;

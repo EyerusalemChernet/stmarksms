@@ -104,14 +104,17 @@ class AttendanceController extends Controller
         $uid     = Auth::id();
         $session = AttendanceSession::with(['my_class', 'section'])->findOrFail($session_id);
 
-        // Teacher must own this section
-        $isHomeroom = Section::where('id', $session->section_id)
-            ->where('teacher_id', $uid)
-            ->exists();
+        // Super admin / admin can view any session (read-only)
+        if (!Qs::userIsTeamSA()) {
+            // Teacher must own this section
+            $isHomeroom = Section::where('id', $session->section_id)
+                ->where('teacher_id', $uid)
+                ->exists();
 
-        if (!$isHomeroom) {
-            return redirect()->route('attendance.index')
-                ->with('flash_danger', 'You are not assigned to this class.');
+            if (!$isHomeroom) {
+                return redirect()->route('attendance.index')
+                    ->with('flash_danger', 'You are not assigned to this class.');
+            }
         }
 
         $students = $this->student->getRecord([
@@ -140,6 +143,12 @@ class AttendanceController extends Controller
     {
         $uid     = Auth::id();
         $session = AttendanceSession::with('my_class')->findOrFail($session_id);
+
+        // Admin can view but not save attendance (teacher-only write)
+        if (Qs::userIsTeamSA()) {
+            return redirect()->route('attendance.sessions')
+                ->with('flash_danger', 'Only the homeroom teacher can save attendance records.');
+        }
 
         // Teacher must own this section
         $isHomeroom = Section::where('id', $session->section_id)
@@ -221,15 +230,32 @@ class AttendanceController extends Controller
     {
         $uid = Auth::id();
 
-        if (Qs::userIsTeamSA()) {
-            $sessions = AttendanceSession::with(['my_class', 'section', 'teacher'])
-                ->orderByDesc('date')->paginate(30);
-        } else {
-            $mySectionIds = Section::where('teacher_id', $uid)->pluck('id');
-            $sessions = AttendanceSession::whereIn('section_id', $mySectionIds)
-                ->with(['my_class', 'section', 'teacher'])
-                ->orderByDesc('date')->paginate(30);
+        $query = Qs::userIsTeamSA()
+            ? \App\Models\AttendanceSession::query()
+            : \App\Models\AttendanceSession::whereIn('section_id',
+                \App\Models\Section::where('teacher_id', $uid)->pluck('id')
+              );
+
+        // Apply filters
+        if (request('class_id')) {
+            $query->where('my_class_id', request('class_id'));
         }
+        if (request('section_id')) {
+            $query->where('section_id', request('section_id'));
+        }
+        if (request('teacher_id')) {
+            $query->where('teacher_id', request('teacher_id'));
+        }
+        if (request('date_from')) {
+            $query->where('date', '>=', request('date_from'));
+        }
+        if (request('date_to')) {
+            $query->where('date', '<=', request('date_to'));
+        }
+
+        $sessions = $query->with(['my_class', 'section', 'teacher'])
+            ->orderByDesc('date')
+            ->paginate(30);
 
         return view('pages.support_team.attendance.sessions', ['sessions' => $sessions]);
     }

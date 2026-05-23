@@ -76,8 +76,8 @@
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label>Email address: </label>
-                                        <input value="{{ old('email', $linkEmployee->email ?? '') }}" type="email" name="email" class="form-control" placeholder="your@email.com">
+                                        <label>Email address: <span class="text-danger">*</span></label>
+                                        <input value="{{ old('email') }}" type="email" name="email" required class="form-control" placeholder="your@email.com">
                                     </div>
                                 </div>
 
@@ -90,8 +90,8 @@
 
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label>Phone <small class="text-muted">(09XXXXXXXX)</small>:</label>
-                                        <input value="{{ old('phone', $linkEmployee->phone ?? '') }}" type="text" name="phone"
+                                        <label>Phone <small class="text-muted">(09XXXXXXXX)</small>: <span class="text-danger">*</span></label>
+                                        <input value="{{ old('phone') }}" type="text" name="phone" required
                                                class="form-control" placeholder="e.g. 0911434321"
                                                pattern="09[0-9]{8}" title="10 digits starting with 09">
                                     </div>
@@ -233,9 +233,9 @@
                                         <th>user_type <span class="text-danger">*</span></th>
                                         <th>name <span class="text-danger">*</span></th>
                                         <th>gender <span class="text-danger">*</span></th>
-                                        <th>email</th>
+                                        <th>email <span class="text-danger">*</span></th>
                                         <th>username</th>
-                                        <th>phone</th>
+                                        <th>phone <span class="text-danger">*</span></th>
                                         <th>dob</th>
                                         <th>address</th>
                                         <th>emp_date</th>
@@ -328,8 +328,8 @@
                                     <tr>
                                         <th>Column</th>
                                         <th>name <span class="text-danger">*</span></th>
-                                        <th>email</th>
-                                        <th>phone</th>
+                                        <th>email <span class="text-danger">*</span></th>
+                                        <th>phone <span class="text-danger">*</span></th>
                                         <th>phone2</th>
                                         <th>gender <span class="text-danger">*</span></th>
                                         <th>dob</th>

@@ -1,12 +1,16 @@
 @extends('layouts.master')
-@section('page_title', 'Edit Student')
+@section('page_title', 'Edit Student — '.$sr->user->name)
 @section('content')
 
-    <div class="mb-3">
-        <a href="{{ route('students.list', $sr->my_class_id) }}" class="btn btn-sm btn-secondary">
-            <i class="bi bi-arrow-left mr-1"></i>Back to {{ $sr->my_class->name ?? 'Class' }} List
-        </a>
+<div class="d-flex align-items-center mb-4" style="gap:12px;">
+    <a href="{{ route('students.list', $sr->my_class_id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+        <h5 style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 2px;">Edit Student</h5>
+        <small class="text-muted">{{ $sr->user->name }} — {{ $sr->adm_no }}</small>
     </div>
+</div>
 
         <div class="card">
             <div class="card-header bg-white header-elements-inline">

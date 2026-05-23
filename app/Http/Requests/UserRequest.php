@@ -27,11 +27,11 @@ class UserRequest extends FormRequest
             'password'  => ['nullable', 'string', 'min:8', 'regex:/^(?=.*[A-Z])(?=.*\d).+$/'],
             'user_type' => 'required',
             'gender'    => 'required|string',
-            'phone'     => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
+            'phone'     => ['required', 'regex:/^09[0-9]{8}$/'],
             'phone2'    => ['sometimes', 'nullable', 'regex:/^09[0-9]{8}$/'],
-            'email'     => 'sometimes|nullable|email|max:100|unique:users',
+            'email'     => 'required|email|max:100|unique:users',
             'username'  => 'sometimes|nullable|alpha_dash|min:8|max:100|unique:users',
-            'photo'     => 'sometimes|nullable|image|mimes:jpeg,gif,png,jpg|max:2048',
+            'photo'     => 'required|image|mimes:jpeg,gif,png,jpg|max:2048',
             'address'   => 'required|string|min:6|max:120',
             'state_id'  => 'required|exists:states,id',
             'lga_id'    => 'required|exists:lgas,id',
@@ -92,9 +92,11 @@ class UserRequest extends FormRequest
     public function messages()
     {
         return [
-            'password.regex' => 'Password must be at least 8 characters with at least 1 uppercase letter and 1 number.',
-            'phone.regex'    => 'Phone number must be 10 digits starting with 09 (e.g. 0911434321).',
-            'phone2.regex'   => 'Alternative phone must be 10 digits starting with 09 (e.g. 0911434321).',
+            'phone.required'  => 'Phone number is required.',
+            'phone.regex'     => 'Phone number must be 10 digits starting with 09 (e.g. 0911434321).',
+            'phone2.regex'    => 'Alternative phone must be 10 digits starting with 09 (e.g. 0911434321).',
+            'email.required'  => 'Email address is required.',
+            'photo.required'  => 'A passport/profile photo is required.',
         ];
     }
 
