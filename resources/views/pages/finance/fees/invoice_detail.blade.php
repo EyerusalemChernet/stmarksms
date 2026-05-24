@@ -85,11 +85,6 @@
     </div>
     @endif
     <a href="{{ route('fees.invoices') }}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left mr-1"></i>Back to Invoices</a>
-    @if($inv->balance > 0 && $canManageFees)
-    <a href="{{ route('discount_requests.create', Qs::hash($inv->id)) }}" class="btn btn-outline-info btn-sm ml-1">
-      <i class="bi bi-percent mr-1"></i>Request Discount
-    </a>
-    @endif
   </div>
   <div class="col-md-4">
     @if($canEditInvoices && $inv->status !== 'paid' && $inv->amount_paid <= 0 && !$inv->admin_updated_at)

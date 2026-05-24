@@ -415,15 +415,6 @@ Route::group(['namespace' => 'Finance', 'middleware' => ['auth', 'finance_access
         Route::post('/', 'DiscountRequestController@ruleStore')->name('discount_rules.store')->middleware('super_admin');
     });
 
-    // --- Discount Requests (per-invoice; static paths before dynamic {id}) ---
-    Route::group(['prefix' => 'discounts'], function() {
-        Route::get('/', 'DiscountRequestController@index')->name('discount_requests.index');
-        Route::get('/create/{invoice_id}', 'DiscountRequestController@create')->name('discount_requests.create');
-        Route::post('/{invoice_id}', 'DiscountRequestController@store')->name('discount_requests.store');
-        Route::post('/{id}/approve', 'DiscountRequestController@approve')->name('discount_requests.approve');
-        Route::post('/{id}/reject', 'DiscountRequestController@reject')->name('discount_requests.reject');
-    });
-
     // --- Expenses ---
     Route::group(['prefix' => 'expenses'], function() {
         Route::get('/', 'ExpenseController@index')->name('expenses.index');

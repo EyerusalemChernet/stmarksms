@@ -365,12 +365,11 @@
                 </li>
 
                 {{-- Discounts --}}
-                @php $discActive = str_starts_with(Route::currentRouteName() ?? '', 'discount'); @endphp
+                @php $discActive = Route::is('discount_rules.index'); @endphp
                 <li class="nav-item nav-item-submenu {{ $discActive ? 'nav-item-expanded nav-item-open' : '' }}">
                     <a href="#" class="nav-link"><i class="bi bi-percent"></i><span>Discounts</span></a>
                     <ul class="nav nav-group-sub">
-                        <li class="nav-item"><a href="{{ route('discount_requests.index') }}" class="nav-link {{ str_starts_with(Route::currentRouteName() ?? '', 'discount_requests') ? 'active' : '' }}">Discount Requests</a></li>
-                        <li class="nav-item"><a href="{{ route('discount_rules.index') }}" class="nav-link {{ Route::is('discount_rules.index') ? 'active' : '' }}">View Discount Rules</a></li>
+                        <li class="nav-item"><a href="{{ route('discount_rules.index') }}" class="nav-link {{ Route::is('discount_rules.index') ? 'active' : '' }}">Discount Rules</a></li>
                     </ul>
                 </li>
 
